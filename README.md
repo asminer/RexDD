@@ -1,3 +1,5 @@
 # RexDD
 
-Rule on Edge, complemented, swapped, decision diagram library
+Rule on Edge, Complemented, Swapped, Decision Diagram library
+
+Open source C library.
