@@ -1,3 +1,4 @@
+#include <stdbool.h>
 
 /*
   TBD: probably want to define the forest struct here,
@@ -45,12 +46,40 @@ void done_forest(forestptr F);
 
   Lower 56 bits:
     nonterminal node handle (means a max of 2^56 > 10^16 nodes)
-    terminal 32-bit int or float
+    terminal 32-bit int or float (toggle 33rd bit for int and float)
 */
 typedef unsigned long rexdd_edge;
 
+/**
+  Reduction rules:
+    N, X, LZ, LN, HZ, HN, ELZ, ELN, EHZ, EHN, ALZ, ALN, AHZ, AHN
+*/
+typedef unsigned char rexdd_rule;
+
+enum reduction_rule {
+  N = 0,
+  X = 1,
+  LZ = 2,
+  LN = 3,
+  HZ = 4,
+  HN = 5,
+  ELZ = 6,
+  ELN = 7,
+  EHZ = 8,
+  EHN = 9,
+  ALZ = 10,
+  ALN = 11,
+  AHZ = 12,
+  AHN = 13
+};
+
 /*
   Probably want edge macros:
+
+    get_rule(rexdd_edge e) -> unsigned char
+
+    is_comp(rexdd_edge e)
+    is_swap(rexdd_edge e)
 
     is_terminal(rexdd_edge e)
     is_nonterminal(rexdd_edge e)
@@ -63,13 +92,23 @@ typedef unsigned long rexdd_edge;
 
     get_nonterminal(rexdd_edge e) -> target node
 
-    get_rule(rexdd_edge e)  -> unsigned char
-    get_comp(rexdd_edge e)  -> 0 or non-zero
-    get_swap(rexdd_edge e)  -> 0 or non-zero
-
     build_int_terminal(forestptr F, int term) -> rexdd_edge
     build_float_terminal(forestptr F, float term) -> rexdd_edge
 */
+
+rexdd_rule get_rule(rexdd_edge e);
+
+bool is_comp(rexdd_edge e);
+bool is_swap(rexdd_edge e);
+
+bool is_terminal(rexdd_edge e);
+bool is_nonterminal(rexdd_edge e);
+
+bool is_int_terminal(rexdd_edge e);
+bool is_float_terminal(rexdd_edge e);
+
+int get_int_terminal(rexdd_edge e);
+float get_float_terminal(rexdd_edge e);
 
 /**
   Evaluate the function encoded by an edge.
@@ -84,14 +123,13 @@ typedef unsigned long rexdd_edge;
 
     @return The terminal node reached, as an edge.
 */
-rexdd_edge  eval_edge(forestptr F, rexdd_edge e, const char* vars);
+rexdd_edge eval_edge(forestptr F, rexdd_edge e, const char* vars);
 
 typedef struct {
   unsigned level;
   rexdd_edge low;
   rexdd_edge high;
 } rexdd_node;
-
 
 /**
   TBD: should there be an edge rule also?
@@ -111,8 +149,6 @@ rexdd_edge reduce_node(forestptr F, const rexdd_node* node);
     @param  node    Pointer to struct, will be filled in.
 */
 void get_node(forestptr F, rexdd_edge e, rexdd_node* node);
-
-
 
 /*
   TBD:
