@@ -1,7 +1,7 @@
 #include <stdbool.h>
 
 /*
-    TBD: probably want to define the forest struct here,
+	TBD: probably want to define the forest struct here,
     so users can access things like 'number of levels'.
     Or we can have macros for that, e.g.,
         num_levels(forestptr F)
@@ -11,13 +11,13 @@
         unlock_node(forestptr F, rexdd_edge)
     for managing the list of root nodes.
 */
-typedef struct forest* forestptr;
+typedef struct rexdd_forest* rexdd_forestptr;
 
 typedef struct {
     // TBD: allowed edge rules
     char allow_complement;
     char allow_swap;
-} forest_settings;
+} rexdd_forest_settings;
 
 /**
     Initialize a forest.
@@ -28,13 +28,13 @@ typedef struct {
     @param  s           Pointer to forest settings to use.
                         If null, then default settings are used.
 */
-void init_forest(forestptr F, unsigned num_levels, const forest_settings* s);
+void rexdd_init_forest(rexdd_forestptr F, unsigned num_levels, const rexdd_forest_settings* s);
 
 /**
     Free all memory used by a forest.
     @param  F           Pointer to forest struct
 */
-void done_forest(forestptr F);
+void rexdd_done_forest(rexdd_forestptr F);
 
 /**
     Edge, with edge annotations and destination node.
@@ -56,7 +56,7 @@ typedef unsigned long rexdd_edge;
 */
 typedef unsigned char rexdd_rule;
 
-enum reduction_rule {
+enum rexdd_reduction_rule {
     N = 0,
     X = 1,
     LZ = 2,
@@ -96,19 +96,19 @@ enum reduction_rule {
         build_float_terminal(forestptr F, float term) -> rexdd_edge
 */
 
-rexdd_rule get_rule(rexdd_edge e);
+rexdd_rule rexdd_get_rule(rexdd_edge e);
 
-bool is_comp(rexdd_edge e);
-bool is_swap(rexdd_edge e);
+bool rexdd_is_comp(rexdd_edge e);
+bool rexdd_is_swap(rexdd_edge e);
 
-bool is_terminal(rexdd_edge e);
-bool is_nonterminal(rexdd_edge e);
+bool rexdd_is_terminal(rexdd_edge e);
+bool rexdd_is_nonterminal(rexdd_edge e);
 
-bool is_int_terminal(rexdd_edge e);
-bool is_float_terminal(rexdd_edge e);
+bool rexdd_is_int_terminal(rexdd_edge e);
+bool rexdd_is_float_terminal(rexdd_edge e);
 
-int get_int_terminal(rexdd_edge e);
-float get_float_terminal(rexdd_edge e);
+int rexdd_get_int_terminal(rexdd_edge e);
+float rexdd_get_float_terminal(rexdd_edge e);
 
 /**
     Evaluate the function encoded by an edge.
@@ -123,7 +123,7 @@ float get_float_terminal(rexdd_edge e);
 
     @return The terminal node reached, as an edge.
 */
-rexdd_edge eval_edge(forestptr F, rexdd_edge e, const char* vars);
+rexdd_edge rexdd_eval_edge(rexdd_forestptr F, rexdd_edge e, const char* vars);
 
 typedef struct {
     unsigned level;
@@ -140,7 +140,7 @@ typedef struct {
     @return An edge that encodes the same function as the node
             (or should it be an edge to a node?)
 */
-rexdd_edge reduce_node(forestptr F, const rexdd_node* node);
+rexdd_edge rexdd_reduce_node(rexdd_forestptr F, const rexdd_node* node);
 
 /**
     Get node information from an edge.
@@ -148,7 +148,7 @@ rexdd_edge reduce_node(forestptr F, const rexdd_node* node);
     @param  e       Edge we care about. Edge annotations are ignored.
     @param  node    Pointer to struct, will be filled in.
 */
-void get_node(forestptr F, rexdd_edge e, rexdd_node* node);
+void rexdd_get_node(rexdd_forestptr F, rexdd_edge e, rexdd_node* node);
 
 /*
     TBD:
