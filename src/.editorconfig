@@ -12,7 +12,7 @@ trim_trailing_whitespace = true
 # Settings for C sources
 [*.{c,h}]
 charset = utf-8
-indent_stype = space
+indent_style = space
 indent_size = 4
 
 # Settings for Makefiles
