@@ -11,7 +11,7 @@
         unlock_node(forestptr F, rexdd_edge)
     for managing the list of root nodes.
 */
-typedef struct rexdd_forest* rexdd_forestptr;
+typedef struct rexdd_forest* rexdd_forestp;
 
 typedef struct {
     // TBD: allowed edge rules
@@ -28,13 +28,13 @@ typedef struct {
     @param  s           Pointer to forest settings to use.
                         If null, then default settings are used.
 */
-void rexdd_init_forest(rexdd_forestptr F, unsigned num_levels, const rexdd_forest_settings* s);
+void rexdd_init_forest(rexdd_forestp F, unsigned num_levels, const rexdd_forest_settings* s);
 
 /**
     Free all memory used by a forest.
     @param  F           Pointer to forest struct
 */
-void rexdd_done_forest(rexdd_forestptr F);
+void rexdd_done_forest(rexdd_forestp F);
 
 /**
     Edge, with edge annotations and destination node.
@@ -123,24 +123,27 @@ float rexdd_get_float_terminal(rexdd_edge e);
 
     @return The terminal node reached, as an edge.
 */
-rexdd_edge rexdd_eval_edge(rexdd_forestptr F, rexdd_edge e, const char* vars);
+rexdd_edge rexdd_eval_edge(rexdd_forestp F, rexdd_edge e, const char* vars);
 
-typedef struct {
-    unsigned level;
+struct rexdd_node {
     rexdd_edge low;
     rexdd_edge high;
-} rexdd_node;
+    unsigned level;
+    unsigned char error;
+};
+
+typedef struct rexdd_node* rexdd_nodep;
 
 /**
-    TBD: should there be an edge rule also?
-
     Add a node to the forest.
     @param  F       Pointer to forest struct
+    @param  rule    Rule on the edge to the node
     @param  node    Node to add
     @return An edge that encodes the same function as the node
             (or should it be an edge to a node?)
 */
-rexdd_edge rexdd_reduce_node(rexdd_forestptr F, const rexdd_node* node);
+rexdd_edge rexdd_reduce_edge(rexdd_forestp F, rexdd_reduction_rule rule,
+        const rexdd_nodep node);
 
 /**
     Get node information from an edge.
@@ -148,7 +151,11 @@ rexdd_edge rexdd_reduce_node(rexdd_forestptr F, const rexdd_node* node);
     @param  e       Edge we care about. Edge annotations are ignored.
     @param  node    Pointer to struct, will be filled in.
 */
-void rexdd_get_node(rexdd_forestptr F, rexdd_edge e, rexdd_node* node);
+void rexdd_get_node(rexdd_forestp F, rexdd_edge e, rexdd_nodep node);
+
+/*
+    TBD: locking / unlocking mechanism for root nodes in a forest
+*/
 
 /*
     TBD:

@@ -8,13 +8,15 @@ root = true
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
-
-# Settings for C sources
-[*.{c,h}]
-charset = utf-8
 indent_style = space
-indent_size = 4
+indent_size = 2
 
 # Settings for Makefiles
 [Makefile]
 indent_style = tab
+indent_size = 1
+
+# Settings for C sources
+[*.{c,h}]
+indent_size = 4
+
