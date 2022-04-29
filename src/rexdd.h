@@ -13,11 +13,24 @@
 */
 typedef struct rexdd_forest* rexdd_forestp;
 
-typedef struct {
+struct rexdd_forest_settings {
     // TBD: allowed edge rules
     char allow_complement;
     char allow_swap;
-} rexdd_forest_settings;
+};
+
+typedef struct rexdd_forest_settings* rexdd_forest_settingsp;
+
+
+/**
+    Fill in defaults for the struct of forest settings.
+    This makes it easier to modify one or two settings
+    and use defaults for the rest.
+
+    @param  s   Settings; will be overwritten (unless null).
+
+ */
+void rexdd_default_forest_settings(rexdd_forest_settingsp s);
 
 /**
     Initialize a forest.
@@ -28,7 +41,7 @@ typedef struct {
     @param  s           Pointer to forest settings to use.
                         If null, then default settings are used.
 */
-void rexdd_init_forest(rexdd_forestp F, unsigned num_levels, const rexdd_forest_settings* s);
+void rexdd_init_forest(rexdd_forestp F, unsigned num_levels, const rexdd_forest_settingsp s);
 
 /**
     Free all memory used by a forest.
@@ -123,7 +136,7 @@ float rexdd_get_float_terminal(rexdd_edge e);
 
     @return The terminal node reached, as an edge.
 */
-rexdd_edge rexdd_eval_edge(rexdd_forestp F, rexdd_edge e, const char* vars);
+rexdd_edge rexdd_eval_edge(rexdd_forestp F, rexdd_edge e, const unsigned char* vars);
 
 struct rexdd_node {
     rexdd_edge low;
@@ -152,6 +165,7 @@ rexdd_edge rexdd_reduce_edge(rexdd_forestp F, rexdd_reduction_rule rule,
     @param  node    Pointer to struct, will be filled in.
 */
 void rexdd_get_node(rexdd_forestp F, rexdd_edge e, rexdd_nodep node);
+
 
 /*
     TBD: locking / unlocking mechanism for root nodes in a forest
