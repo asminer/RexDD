@@ -1,56 +1,16 @@
+#ifndef REXDD_H
+#define REXDD_H
+
 #include <stdbool.h>
 
-/*
-	TBD: probably want to define the forest struct here,
-    so users can access things like 'number of levels'.
-    Or we can have macros for that, e.g.,
-        num_levels(forestptr F)
+/********************************************************************
 
-    TBD: mark and sweep GC stuff, maybe
-        lock_node(forestptr F, rexdd_edge)
-        unlock_node(forestptr F, rexdd_edge)
-    for managing the list of root nodes.
-*/
-typedef struct rexdd_forest* rexdd_forestp;
+    Edge encoding.
 
-struct rexdd_forest_settings {
-    // TBD: allowed edge rules
-    char allow_complement;
-    char allow_swap;
-};
-
-typedef struct rexdd_forest_settings* rexdd_forest_settingsp;
+    We use 64 bits for an edge, as an unsigned long integer,
+    with bits divided out for each portion of the edge:
 
 
-/**
-    Fill in defaults for the struct of forest settings.
-    This makes it easier to modify one or two settings
-    and use defaults for the rest.
-
-    @param  s   Settings; will be overwritten (unless null).
-
- */
-void rexdd_default_forest_settings(rexdd_forest_settingsp s);
-
-/**
-    Initialize a forest.
-    @param  F           Pointer to forest struct
-    @param  num_levels  Number of variables, numbered 1..num_levels,
-                        with 0 for terminal nodes, 1 for the bottom-most
-                        level, and num_levels for the top-most level.
-    @param  s           Pointer to forest settings to use.
-                        If null, then default settings are used.
-*/
-void rexdd_init_forest(rexdd_forestp F, unsigned num_levels, const rexdd_forest_settingsp s);
-
-/**
-    Free all memory used by a forest.
-    @param  F           Pointer to forest struct
-*/
-void rexdd_done_forest(rexdd_forestp F);
-
-/**
-    Edge, with edge annotations and destination node.
     Upper 8 bits:
         5 bits for edge rule -> 32 edge rules max
         1 complement bit
@@ -59,12 +19,23 @@ void rexdd_done_forest(rexdd_forestp F);
 
     Lower 56 bits:
         nonterminal node handle (means a max of 2^56 > 10^16 nodes)
-        terminal 32-bit int or float (toggle 33rd bit for int and float)
-*/
+        or
+        terminal node handle
+            strip off a few of the 56 bits for type information (int/float)
+            and use bottom 32-bits (or more?) for the terminal value.
+
+
+    These definitions and macros should be used when
+    manipulating edges, in case the internal representation changes.
+
+********************************************************************/
+
+/// Edge (with rules) to a node within a forest.
 typedef unsigned long rexdd_edge;
 
+
 /**
-    Reduction rules:
+    Reduction rules (TBD):
         N, X, LZ, LN, HZ, HN, ELZ, ELN, EHZ, EHN, ALZ, ALN, AHZ, AHN
 */
 typedef unsigned char rexdd_rule;
@@ -86,28 +57,8 @@ enum rexdd_reduction_rule {
     AHN = 13
 };
 
-/*
-    Probably want edge macros:
 
-        get_rule(rexdd_edge e) -> unsigned char
-
-        is_comp(rexdd_edge e)
-        is_swap(rexdd_edge e)
-
-        is_terminal(rexdd_edge e)
-        is_nonterminal(rexdd_edge e)
-
-        is_int_terminal(rexdd_edge e)
-        is_float_terminal(rexdd_edge e)
-
-        get_int_terminal(rexdd_edge e) -> integer
-        get_float_terminal(rexdd_edge r) -> float
-
-        get_nonterminal(rexdd_edge e) -> target node
-
-        build_int_terminal(forestptr F, int term) -> rexdd_edge
-        build_float_terminal(forestptr F, float term) -> rexdd_edge
-*/
+// TBD: define these as macros, use all caps or not?
 
 rexdd_rule rexdd_get_rule(rexdd_edge e);
 
@@ -123,6 +74,126 @@ bool rexdd_is_float_terminal(rexdd_edge e);
 int rexdd_get_int_terminal(rexdd_edge e);
 float rexdd_get_float_terminal(rexdd_edge e);
 
+
+/********************************************************************
+
+    Nodes.
+
+    Note that this is the interface;
+    inside a forest, nodes may be stored completely differently.
+
+********************************************************************/
+
+/**
+    Structure used to create, fetch nodes from a forest.
+*/
+struct rexdd_node {
+    rexdd_edge low;
+    rexdd_edge high;
+    unsigned level;
+    unsigned char error;    // not sure yet if we need this
+};
+
+typedef struct rexdd_node* rexdd_nodep;
+
+
+/********************************************************************
+
+    Forest settings.
+
+    There are not many settings for now, but to keep the
+    interface stable, all forest settings should be incorporated
+    into this structure.
+
+    Current settings:
+
+        num_levels:     number of variables.  In the struct for
+                        consistency.
+
+    Probable additions:
+
+        terminal_type:  booleans, integers, reals, or custom?
+
+        switching on/off various rules, complement bits, swap bits
+
+********************************************************************/
+
+struct rexdd_forest_settings {
+    unsigned num_levels;
+
+    // TBD
+};
+
+typedef struct rexdd_forest_settings* rexdd_forest_settingsp;
+
+
+
+/**
+    Fill in defaults for the struct of forest settings.
+    This makes it easier to modify one or two settings
+    and use defaults for the rest.
+
+    @param  L   Number of variables.
+    @param  s   Settings; will be overwritten (unless null).
+
+ */
+void rexdd_default_forest_settings(unsigned L, rexdd_forest_settingsp s);
+
+
+/********************************************************************
+
+    BDD Forest.
+
+    Not sure if we want to expose this or not.
+
+    Benefits of exposing:
+        will simplify the interface, as users can grab
+        items they need (e.g., current #nodes, peak #nodes, etc.)
+
+        could include an error code within the struct, for
+        the result of the last operation
+        (malloc error, etc.)
+
+        Can have stack allocated forests.
+
+
+    Benefits of not exposing:
+        really discourages users from tinkering with the struct
+
+
+    We could have a public version of the struct, and
+    a function that returns a (const) pointer to it.
+    something like
+
+        struct rexdd_forest_readable {
+            unsigned long current_nodes;
+            unsigned long peak_nodes;
+            // etc.
+        };
+
+        const struct rexdd_forest_readable* rexdd_read_forest(rexdd_forestp F)
+
+********************************************************************/
+
+/*
+    TBD: define struct rexdd_forest here, or not?
+*/
+
+typedef struct rexdd_forest* rexdd_forestp;
+
+
+/**
+    Allocate and initialize a forest.
+    @param  s           Pointer to forest settings to use.
+*/
+rexdd_forestp rexdd_create_forest(const rexdd_forest_settingsp s);
+
+/**
+    Free all memory used by a forest.
+    @param  F           Pointer to forest struct
+*/
+void rexdd_destroy_forest(rexdd_forestp F);
+
 /**
     Evaluate the function encoded by an edge.
     @param  F       Pointer to forest struct
@@ -131,21 +202,18 @@ float rexdd_get_float_terminal(rexdd_edge e);
                     where vars[k] gives the assignment
                     (either 0 or 1 as an integer)
                     to the level k variable.
+                    Levels are numbered from 1 (bottom) to num_levels (top).
                     The array must be at least dimension
                     1+num_levels.
 
-    @return The terminal node reached, as an edge.
+    @return     The terminal node reached, as an edge.
+                The edge rule will be N,
+                the swap bit will be 0,
+                the terminal bit will be 1.
 */
-rexdd_edge rexdd_eval_edge(rexdd_forestp F, rexdd_edge e, const unsigned char* vars);
+rexdd_edge rexdd_evaluate(rexdd_forestp F, rexdd_edge e,
+                const unsigned char* vars);
 
-struct rexdd_node {
-    rexdd_edge low;
-    rexdd_edge high;
-    unsigned level;
-    unsigned char error;
-};
-
-typedef struct rexdd_node* rexdd_nodep;
 
 /**
     Add a node to the forest.
@@ -153,7 +221,6 @@ typedef struct rexdd_node* rexdd_nodep;
     @param  rule    Rule on the edge to the node
     @param  node    Node to add
     @return An edge that encodes the same function as the node
-            (or should it be an edge to a node?)
 */
 rexdd_edge rexdd_reduce_edge(rexdd_forestp F, rexdd_reduction_rule rule,
         const rexdd_nodep node);
@@ -168,10 +235,14 @@ void rexdd_get_node(rexdd_forestp F, rexdd_edge e, rexdd_nodep node);
 
 
 /*
-    TBD: locking / unlocking mechanism for root nodes in a forest
+    TBD: locking / unlocking mechanism for root nodes in a forest,
+    needed for mark and sweep garbage collection
 */
+
 
 /*
     TBD:
     apply operations.
 */
+
+#endif
