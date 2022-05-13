@@ -142,51 +142,44 @@ void rexdd_default_forest_settings(unsigned L, rexdd_forest_settingsp s);
 
 /********************************************************************
 
-    BDD Forest.
-
-    Not sure if we want to expose this or not.
-
-    Benefits of exposing:
-        will simplify the interface, as users can grab
-        items they need (e.g., current #nodes, peak #nodes, etc.)
-
-        could include an error code within the struct, for
-        the result of the last operation
-        (malloc error, etc.)
-
-        Can have stack allocated forests.
-
-
-    Benefits of not exposing:
-        really discourages users from tinkering with the struct
-
-
-    We could have a public version of the struct, and
-    a function that returns a (const) pointer to it.
-    something like
-
-        struct rexdd_forest_readable {
-            unsigned long current_nodes;
-            unsigned long peak_nodes;
-            // etc.
-        };
-
-        const struct rexdd_forest_readable* rexdd_read_forest(rexdd_forestp F)
+    User-readable portion of a BDD Forest.
 
 ********************************************************************/
 
-/*
-    TBD: define struct rexdd_forest here, or not?
-*/
+struct rexdd_forest_stats {
+    unsigned long current_nodes;
+    unsigned long peak_nodes;
+
+    // TBD - current and peak memory?
+    // TBD - garbage collection stats?
+};
+
+typedef struct rexdd_forest_stats* rexdd_forest_statsp;
+
+/********************************************************************
+
+    BDD Forest.
+
+    Details (except for rexdd_forest_stats) are hidden.
+
+********************************************************************/
 
 typedef struct rexdd_forest* rexdd_forestp;
 
 
 /**
     Allocate and initialize a forest.
-    @param  s           Pointer to forest settings to use.
+    @param  s       Pointer to forest settings to use.
+    @return         A pointer to a newly allocated forest, or null on error.
 */
 rexdd_forestp rexdd_create_forest(const rexdd_forest_settingsp s);
+
+/**
+    Access the readable portion of a forest.
+    @param  F       Pointer to forest we want.
+    @return         A pointer to the readable portion of the forest.
+*/
+const rexdd_forest_statsp rexdd_readable_forest(const rexdd_forestp F);
 
 /**
     Free all memory used by a forest.
@@ -212,7 +205,7 @@ void rexdd_destroy_forest(rexdd_forestp F);
                 the terminal bit will be 1.
 */
 rexdd_edge rexdd_evaluate(rexdd_forestp F, rexdd_edge e,
-                const unsigned char* vars);
+                const bool* vars);
 
 
 /**
