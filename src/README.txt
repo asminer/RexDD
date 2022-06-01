@@ -1,13 +1,12 @@
 
-TBD.  How to organize headers.
+Working on split interface.
 
-Option 1: one huge rexdd.h header.
+unpacked.h  :   interface for "unpacked" nodes
 
-Option 2: several headers, rexdd.h simply includes them all
-          (probably in a subdirectory, e.g., rexdd/forest.h, rexdd/apply.h)
+nodeman.h   :   efficient storage for large collections of nodes.
 
 
-What's contained in each source file:
+OLD STUFF:
 
 forest.c  : forest settings, and forest functions.
 
