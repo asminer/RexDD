@@ -13,7 +13,7 @@
 /*
  * Node handle.
  */
-typedef uint64  rexdd_node_handle;
+typedef uint64_t  rexdd_node_handle;
 
 /*
  * TBD - design this struct
@@ -87,7 +87,7 @@ rexdd_node_handle SET_NEXT_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h,
  *  Is a node marked?
  *      (probably as a macro)
  */
-uint64  IS_HANDLE_MARKED(const rexdd_nodeman_p M, rexdd_node_handle h);
+uint64_t  IS_HANDLE_MARKED(const rexdd_nodeman_p M, rexdd_node_handle h);
 
 /*
  *  Mark a node.
