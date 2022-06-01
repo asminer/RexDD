@@ -89,7 +89,7 @@ int rexdd_pack_handle(rexdd_nodeman_p M, rexdd_node_handle h,
 
 /*
  *  Get the next handle in a chain.
- *      (probably as a macro or static inline function (allowed since C11))
+ *      (probably as a macro or static inline function (allowed since C99))
  */
 rexdd_node_handle GET_NEXT_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h);
 
