@@ -13,7 +13,7 @@
 /*
  * Node handle.
  */
-typedef uint64_t  rexdd_node_handle;
+typedef uint_fast64_t  rexdd_node_handle;
 
 /*
  * TBD - design this struct

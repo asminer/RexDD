@@ -29,11 +29,11 @@ enum rexdd_reduction_rule {
  * "Unpacked" node
  */
 struct rexdd_unpacked_node {
-    uint64_t child[2];
-    uint32_t level;
-    uint8_t  edgerule[2];
-    uint8_t  complement[2];
-    uint8_t  swap[2];
+    uint_fast64_t child[2];
+    uint_fast32_t level;
+    uint_fast8_t  edgerule[2];
+    uint_fast8_t  complement[2];
+    uint_fast8_t  swap[2];
 };
 
 typedef struct rexdd_unpacked_node* rexdd_unpacked_node_p;
