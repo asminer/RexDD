@@ -61,17 +61,35 @@ int rexdd_destroy_nodeman(rexdd_nodeman_p M);
  */
 
 /*
+ *  Get a free node handle
+ */
+rexdd_node_handle   rexdd_new_handle(rexdd_nodeman_p M);
+
+/*
+ *  Return a node handle to the free store
+ */
+void    rexdd_free_handle(rexdd_nodeman_p M, rexdd_node_handle h);
+
+
+/*
  *  Fill in an unpacked node from a node handle.
  *
  *  return 0 on success...
  */
-int rexdd_fill_unpacked(const rexdd_nodeman_p M, rexdd_node_handle h,
-        rexdd_unpacked_node_p u);
+int rexdd_unpack_handle(rexdd_unpacked_node_p u,
+        const rexdd_nodeman_p M, rexdd_node_handle h);
+
+
+/*
+ *  Fill in a packed node at the specified handle.
+ */
+int rexdd_pack_handle(rexdd_nodeman_p M, rexdd_node_handle h,
+        const rexdd_unpacked_node_p u);
 
 
 /*
  *  Get the next handle in a chain.
- *      (probably as a macro)
+ *      (probably as a macro or static inline function (allowed since C11))
  */
 rexdd_node_handle GET_NEXT_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h);
 
@@ -80,7 +98,7 @@ rexdd_node_handle GET_NEXT_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h);
  *  Set the next handle in a chain.
  *      (probably as a macro)
  */
-rexdd_node_handle SET_NEXT_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h,
+rexdd_node_handle SET_NEXT_HANDLE(rexdd_nodeman_p M, rexdd_node_handle h,
         rexdd_node_handle nxt);
 
 /*
@@ -93,12 +111,12 @@ uint64_t  IS_HANDLE_MARKED(const rexdd_nodeman_p M, rexdd_node_handle h);
  *  Mark a node.
  *      (probably as a macro)
  */
-void    MARK_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h);
+void    MARK_HANDLE(rexdd_nodeman_p M, rexdd_node_handle h);
 
 /*
  *  Unmark a node.
  *      (probably as a macro)
  */
-void    UNMARK_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h);
+void    UNMARK_HANDLE(rexdd_nodeman_p M, rexdd_node_handle h);
 
 #endif
