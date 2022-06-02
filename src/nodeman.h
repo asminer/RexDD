@@ -119,4 +119,15 @@ void    MARK_HANDLE(rexdd_nodeman_p M, rexdd_node_handle h);
  */
 void    UNMARK_HANDLE(rexdd_nodeman_p M, rexdd_node_handle h);
 
+
+/*
+ *  Compute a raw hash value for a node.
+ *      (inline)
+ */
+static inline uint64_t HASH_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h)
+{
+    // TBD
+    return 0;
+}
+
 #endif
