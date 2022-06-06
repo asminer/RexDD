@@ -18,26 +18,28 @@ typedef uint_fast64_t  rexdd_node_handle;
 /*
  * TBD - design this struct
  */
-struct rexdd_nodepage {
+typedef struct {
     /*  Array for node storage. */
     /*  first unallocated */
     /*  list of free slots */
     /*  total number of free slots */
     /*  pointer (index) for various lists of pages */
-};
+} rexdd_nodepage_t;
+
+typedef rexdd_nodepage_t* rexdd_nodepage_p;
 
 /*
  *  TBD - design this struct
  *      should be visible b/c it will be needed for macros below.
  */
-struct rexdd_nodeman {
+typedef struct {
     /* Array of pointers to rexdd_nodepage  */
     /* array size */
     /* last used in the array */
     /* list of pages with free slots, in increasing order of #free slots */
-};
+} rexdd_nodeman_t;
 
-typedef struct rexdd_nodeman* rexdd_nodeman_p;
+typedef rexdd_nodeman_t* rexdd_nodeman_p;
 
 /*
  *  Initialize a node manager.

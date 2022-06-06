@@ -2,6 +2,7 @@
 #define UNPACKED_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /*
  *  Reduction rules (TBD):
@@ -24,19 +25,31 @@ enum rexdd_reduction_rule {
     AHN = 13
 };
 
+/*
+ * Edge label info
+ */
+typedef struct {
+    enum rexdd_reduction_rule rule;
+    bool complemented;
+    bool swapped;
+} rexdd_edge_label_t;
+
+/*
+ * A complete edge
+ */
+typedef struct {
+    rexdd_edge_label_t label;
+    uint_fast64_t target;
+} rexdd_edge_t;
 
 /*
  * "Unpacked" node
  */
-struct rexdd_unpacked_node {
-    uint_fast64_t child[2];
+typedef struct {
     uint_fast32_t level;
-    uint_fast8_t  edgerule[2];
-    uint_fast8_t  complement[2];
-    uint_fast8_t  swap[2];
-};
+    rexdd_edge_t  edge;
+} rexdd_unpacked_node_t;
 
-typedef struct rexdd_unpacked_node* rexdd_unpacked_node_p;
-
+typedef rexdd_unpacked_node_t* rexdd_unpacked_node_p;
 
 #endif

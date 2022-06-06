@@ -10,12 +10,12 @@
 /*
  * TBD - design this struct
  */
-struct rexdd_unique_table {
+typedef struct {
     const rexdd_nodeman_p M;    /* node manager */
     // ...
-};
+} rexdd_unique_table_t;
 
-typedef struct rexdd_unique_table* rexdd_unique_table_p;
+typedef rexdd_unique_table_t* rexdd_unique_table_p;
 
 /*
  * Initialize a unique table
