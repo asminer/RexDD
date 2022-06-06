@@ -11,12 +11,12 @@
 #define REXDD_PAGESIZE (1024*1024)
 
 /*
- * Node handle.
+ *  Node handle.
  */
 typedef uint_fast64_t  rexdd_node_handle;
 
 /*
- * TBD - design this struct
+ *  TBD - design this struct
  */
 typedef struct {
     /*  Array for node storage. */

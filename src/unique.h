@@ -2,7 +2,7 @@
 #define UNIQUE_H
 
 /*
- * Unique table.
+ *  Unique table.
  */
 
 #include "nodeman.h"
@@ -18,34 +18,34 @@ typedef struct {
 typedef rexdd_unique_table_t* rexdd_unique_table_p;
 
 /*
- * Initialize a unique table
+ *  Initialize a unique table
  *
- * return 0 on success, ...
+ *  return 0 on success, ...
  */
 int rexdd_create_UT(rexdd_unique_table_p T, const rexdd_nodeman_p M);
 
 /*
- * Destroy a unique table
+ *  Destroy a unique table
  */
 void rexdd_destroy_UT(rexdd_unique_table_p T);
 
 /*
- * Add a handle to the unique table.
- * If unique, returns the same handle;
- * otherwise, returns the handle of the duplicate.
+ *  Add a handle to the unique table.
+ *  If unique, returns the same handle;
+ *  otherwise, returns the handle of the duplicate.
  */
 rexdd_node_handle rexdd_UT_insert(rexdd_unique_table_p T, rexdd_node_handle h);
 
 /*
- * Remove a single handle from the unique table.
+ *  Remove a single handle from the unique table.
  */
 void rexdd_UT_remove(rexdd_unique_table_p T, rexdd_node_handle h);
 
 
 /*
- * Remove all marked/unmarked nodes from the unique table.
- *  @param  T   Unique table to modify
- *  @param  b   if true, remove marked; if false, remove unmarked.
+ *  Remove all marked/unmarked nodes from the unique table.
+ *      @param  T   Unique table to modify
+ *      @param  b   if true, remove marked; if false, remove unmarked.
  */
 void rexdd_UT_remove_all(rexdd_unique_table_p T, bool b);
 
