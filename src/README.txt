@@ -1,18 +1,24 @@
+What's in each header file:
+============================================================
 
-Working on split interface.
+forest.h    :   forest interface
+
+nodeman.h   :   efficient storage for large collections of nodes.
+                used by a forest.
+
+unique.h    :   unique table for detecting duplicate nodes.
+                used by a forest.
 
 unpacked.h  :   interface for "unpacked" nodes
 
-nodeman.h   :   efficient storage for large collections of nodes
 
-unique.h    :   unique table for detecting duplicate nodes
 
+General conventions:
 ============================================================
 
-OLD STUFF:
+  For typedefs:
+      structs and other types have names ending in _t.
+      pointers to structs have names ending in _p.
 
-forest.c  : forest settings, and forest functions.
 
-rexdd.c   : preliminary edge functions, probably should
-            become macros in rexdd.h
 

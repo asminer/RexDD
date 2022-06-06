@@ -8,7 +8,7 @@
  *  Reduction rules (TBD):
  *      N, X, LZ, LN, HZ, HN, ELZ, ELN, EHZ, EHN, ALZ, ALN, AHZ, AHN
 */
-enum rexdd_reduction_rule {
+typedef enum {
     N = 0,
     X = 1,
     LZ = 2,
@@ -23,13 +23,13 @@ enum rexdd_reduction_rule {
     ALN = 11,
     AHZ = 12,
     AHN = 13
-};
+} rexdd_rule_t;
 
 /*
  * Edge label info
  */
 typedef struct {
-    enum rexdd_reduction_rule rule;
+    rexdd_rule_t rule;
     bool complemented;
     bool swapped;
 } rexdd_edge_label_t;
@@ -47,7 +47,7 @@ typedef struct {
  */
 typedef struct {
     uint_fast32_t level;
-    rexdd_edge_t  edge;
+    rexdd_edge_t  edge[2];
 } rexdd_unpacked_node_t;
 
 typedef rexdd_unpacked_node_t* rexdd_unpacked_node_p;
