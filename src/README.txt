@@ -6,6 +6,8 @@ forest.h    :   forest interface
 nodeman.h   :   efficient storage for large collections of nodes.
                 used by a forest.
 
+packed.h    :   packed node structure and helper (inline) functions.
+
 unique.h    :   unique table for detecting duplicate nodes.
                 used by a forest.
 
