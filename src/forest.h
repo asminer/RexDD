@@ -2,6 +2,8 @@
 #define FOREST_H
 
 #include "unpacked.h"
+#include "nodeman.h"
+#include "unique.h"
 
 /********************************************************************
 
@@ -64,18 +66,30 @@ typedef rexdd_forest_t* rexdd_forest_p;
 
 
 /**
-    Allocate and initialize a forest.
-    @param  s       Pointer to forest settings to use.
-    @return         A pointer to a newly allocated forest, or null on error.
-*/
+ *  Allocate and initialize a forest.
+ *      @param  s       Pointer to forest settings to use.
+ *      @return         A pointer to a newly allocated forest, or null on error.
+ */
 rexdd_forest_p rexdd_create_forest(const rexdd_forest_settings_p s);
 
 /**
-    Free all memory used by a forest.
-    @param  F           Pointer to forest struct
-*/
+ *  Free all memory used by a forest.
+ *      @param  F           Pointer to forest struct
+ */
 void rexdd_destroy_forest(rexdd_forest_p F);
 
 
+/**
+ *  Reduce an edge.
+ *      @param  F       Forest for the edge.
+ *      @param  l       Desired edge labels
+ *      @param  n       Desired target node, unpacked
+ *      @param  out     Reduced edge will be written here.
+ */
+void rexdd_reduce_edge(
+        rexdd_forest_p F,
+        rexdd_edge_label_t l,
+        rexdd_unpacked_node_t n,
+        rexdd_edge_t *out);
 
 #endif
