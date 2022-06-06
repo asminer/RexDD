@@ -27,7 +27,7 @@
 ********************************************************************/
 
 typedef struct {
-    unsigned num_levels;
+    uint_fast32_t num_levels;
 
     // TBD
 } rexdd_forest_settings_t;
@@ -45,7 +45,9 @@ typedef rexdd_forest_settings_t* rexdd_forest_settings_p;
     @param  s   Settings; will be overwritten (unless null).
 
  */
-void rexdd_default_forest_settings(unsigned L, rexdd_forest_settings_p s);
+void rexdd_default_forest_settings(
+        uint_fast32_t L,
+        rexdd_forest_settings_p s);
 
 
 /********************************************************************
@@ -70,26 +72,30 @@ typedef rexdd_forest_t* rexdd_forest_p;
  *      @param  s       Pointer to forest settings to use.
  *      @return         A pointer to a newly allocated forest, or null on error.
  */
-rexdd_forest_p rexdd_create_forest(const rexdd_forest_settings_p s);
+rexdd_forest_p rexdd_create_forest(
+        const rexdd_forest_settings_p s);
 
 /**
  *  Free all memory used by a forest.
  *      @param  F           Pointer to forest struct
  */
-void rexdd_destroy_forest(rexdd_forest_p F);
+void rexdd_destroy_forest(
+        rexdd_forest_p F);
 
 
 /**
  *  Reduce an edge.
  *      @param  F       Forest for the edge.
- *      @param  l       Desired edge labels
- *      @param  n       Desired target node, unpacked
+ *      @param  n       Level number
+ *      @param  l       Desired edge labels; might not be possible
+ *      @param  p       Desired target node, unpacked
  *      @param  out     Reduced edge will be written here.
  */
 void rexdd_reduce_edge(
-        rexdd_forest_p F,
-        rexdd_edge_label_t l,
-        rexdd_unpacked_node_t n,
-        rexdd_edge_t *out);
+        rexdd_forest_p          F,
+        uint_fast_32_t          n,
+        rexdd_edge_label_t      l,
+        rexdd_unpacked_node_t   p,
+        rexdd_edge_t            *out);
 
 #endif
