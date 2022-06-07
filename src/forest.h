@@ -6,25 +6,25 @@
 #include "unique.h"
 
 /********************************************************************
-
-    Forest settings.
-
-    There are not many settings for now, but to keep the
-    interface stable, all forest settings should be incorporated
-    into this structure.
-
-    Current settings:
-
-        num_levels:     number of variables.  In the struct for
-                        consistency.
-
-    Probable additions:
-
-        terminal_type:  booleans, integers, reals, or custom?
-
-        switching on/off various rules, complement bits, swap bits
-
-********************************************************************/
+ *
+ *  Forest settings.
+ *
+ *  There are not many settings for now, but to keep the
+ *  interface stable, all forest settings should be incorporated
+ *  into this structure.
+ *
+ *  Current settings:
+ *
+ *      num_levels:     number of variables.  In the struct for
+ *                      consistency.
+ *
+ *  Probable additions:
+ *
+ *      terminal_type:  booleans, integers, reals, or custom?
+ *
+ *      switching on/off various rules, complement bits, swap bits
+ *
+ ********************************************************************/
 
 typedef struct {
     uint_fast32_t num_levels;
@@ -50,21 +50,24 @@ void rexdd_default_forest_settings(
         rexdd_forest_settings_p s);
 
 
+
 /********************************************************************
+ *
+ *  BDD Forest.
+ *
+ ********************************************************************/
 
-    BDD Forest.
-
-********************************************************************/
-
-typedef struct {
+struct rexdd_forest_s {
     rexdd_forest_settings_t S;
     rexdd_nodeman_t M;
     rexdd_unique_table_t UT;
 
     // ...
-} rexdd_forest_t;
+    struct rexdd_function_s *roots;
+};
 
-typedef rexdd_forest_t* rexdd_forest_p;
+typedef struct rexdd_forest_s   rexdd_forest_t;
+typedef struct rexdd_forest_s*  rexdd_forest_p;
 
 
 /**
@@ -97,5 +100,57 @@ void rexdd_reduce_edge(
         rexdd_edge_label_t      l,
         rexdd_unpacked_node_t   p,
         rexdd_edge_t            *out);
+
+
+
+/********************************************************************
+ *
+ *  Top-level, easy to use functions.
+ *
+ ********************************************************************/
+
+struct rexdd_function_s {
+
+    // Not sure if this is needed, but it's good for sanity checks.
+    const rexdd_forest_p owner;
+
+    rexdd_edge_t root;
+
+    struct rexdd_function_s* prev;
+    struct rexdd_function_s* next;
+};
+
+typedef struct rexdd_function_s     rexdd_function_t;
+typedef struct rexdd_function_s*    rexdd_function_p;
+
+/*
+ *  Initialize.  Just fill with zeroes.
+ */
+static inline void rexdd_init_function(rexdd_function_p f)
+{
+    if (f) {
+        f->owner = 0;
+        f->prev = 0;
+        f->next = 0;
+    }
+}
+
+/*
+ *  Overwrite a function and update lists appropriately.
+ *      Same forest - just overwrite the root.
+ *      Different forest - remove from old forest's list of roots,
+ *          add to new forest list of roots (unless new forest is null).
+ */
+void rexdd_set_function(rexdd_function_p fn, rexdd_forest_p For, rexdd_edge_t r);
+
+/*
+ * Done with a function.
+ */
+static inline void rexdd_done_function(rexdd_function_p f)
+{
+    rexdd_edge_t dummy;
+    rexdd_set_function(f, 0, dummy);
+}
+
 
 #endif
