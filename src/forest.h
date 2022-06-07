@@ -111,8 +111,7 @@ void rexdd_reduce_edge(
 
 struct rexdd_function_s {
 
-    // Not sure if this is needed, but it's good for sanity checks.
-    const rexdd_forest_p owner;
+    rexdd_forest_p owner;
 
     rexdd_edge_t root;
 
