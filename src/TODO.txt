@@ -1,4 +1,12 @@
 
+  ()  Runtime error mechanism.
+      Maybe:
+        rexdd_error(__FILE__, __LINE__, format, ...)
+
+      Allow users to provide this function.
+      Otherwise, default is to print the message to stderr and exit.
+
+
   ()  Move node page to its own header for readability.
 
   ()  A function to print (to FILE*) the nodeman structure,
@@ -9,13 +17,5 @@
 
   ()  A function to print (to FILE*) all nodes under a
       root edge, by levels, for debugging purposes.
-
-  ()  Root functions
-
-  ()  Terminal -> root function
-
-  ()  Variable -> root function
-
-  ()  ITE operation, on root functions
 
   ()  compute table interface
