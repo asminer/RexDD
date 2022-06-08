@@ -4,6 +4,7 @@
 #include "unpacked.h"
 #include "nodeman.h"
 #include "unique.h"
+#include "error.h"
 
 /********************************************************************
  *
@@ -124,26 +125,31 @@ typedef struct rexdd_function_s     rexdd_function_t;
 typedef struct rexdd_function_s*    rexdd_function_p;
 
 /*
- *  TBD
+ *  TBD: probably don't make this inlined
  *
  *  Add a function node to its owner's list of roots.
  *
  */
 static inline void rexdd_add_to_forest_roots(rexdd_function_p f)
 {
+    if (0==f) rexdd_error(__FILE__, __LINE__, "null pointer for f\n");
+
     // TBD.
     // Add node f to the front of f->owner's list of roots,
     // and update doubly-linked list pointers.
 }
 
 /*
- *  TBD
+ *  TBD: probably don't make this inlined
  *
- *  Remove a function node from its owner's list of roots.
+ *  Remove a function node from its owner's list of roots,
+ *  and set the owner and list pointers to null.
  *
  */
 static inline void rexdd_remove_from_forest_roots(rexdd_function_p f)
 {
+    if (0==f) rexdd_error(__FILE__, __LINE__, "null pointer for f\n");
+
     //
     // TBD.
     // update f->prev, f->next, and other pointers.
@@ -162,11 +168,11 @@ static inline void rexdd_remove_from_forest_roots(rexdd_function_p f)
  */
 static inline void rexdd_init_function(rexdd_function_p f)
 {
-    if (f) {
-        f->owner = 0;
-        f->prev = 0;
-        f->next = 0;
-    }
+    if (0==f) rexdd_error(__FILE__, __LINE__, "null pointer for f\n");
+
+    f->owner = 0;
+    f->prev = 0;
+    f->next = 0;
 }
 
 
@@ -175,10 +181,9 @@ static inline void rexdd_init_function(rexdd_function_p f)
  */
 static inline void rexdd_done_function(rexdd_function_p f)
 {
-    if (f) {
-        rexdd_remove_from_forest_roots(f);
-    }
+    if (0==f) rexdd_error(__FILE__, __LINE__, "null pointer for f\n");
 
+    rexdd_remove_from_forest_roots(f);
 }
 
 
