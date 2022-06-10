@@ -98,7 +98,7 @@ void rexdd_destroy_forest(
  */
 void rexdd_reduce_edge(
         rexdd_forest_p          F,
-        uint_fast_32_t          n,
+        uint_fast32_t           n,
         rexdd_edge_label_t      l,
         rexdd_unpacked_node_t   p,
         rexdd_edge_t            *out);
