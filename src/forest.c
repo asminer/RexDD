@@ -71,11 +71,28 @@ void rexdd_destroy_forest(rexdd_forest_p F)
 void rexdd_reduce_edge(
         rexdd_forest_p          F,
         uint_fast32_t           n,
-        rexdd_edge_label_t      l,
-        rexdd_unpacked_node_t   p,
-        rexdd_edge_t            *out)
+        rexdd_edge_label_t      l, // rexdd_rule_t, bool, bool
+        rexdd_unpacked_node_t   p, // uint_fast32_t level, rexdd_edge_t edge[2]
+        rexdd_edge_t            *out) // rexdd_edge_lable_t, uint_fast64_t
 {
     // TBD
+    /*
+     * Hash node
+     */
+
+     /*
+     * Check if it is in this forest
+     */
+
+    /* 
+     * Reduce and get the legal and canonical node; if can not, be the same
+     */
+
+    
+    /*
+     * Create this new node and add to the unique table (forest)
+     */
+
 }
 
 /********************************************************************
