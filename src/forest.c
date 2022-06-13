@@ -30,7 +30,7 @@ void rexdd_default_forest_settings(unsigned L, rexdd_forest_settings_p s)
 
 rexdd_forest_p rexdd_create_forest(const rexdd_forest_settings_p s)
 {
-    rexdd_forest_p Fp = malloc(sizeof(rexdd_forest_p));
+    rexdd_forest_p Fp = malloc(sizeof(rexdd_forest_t));
     if (Fp == NULL) {
         fprintf(stderr, "%s\n", "malloc error!");
         exit(1);
@@ -76,14 +76,19 @@ void rexdd_reduce_edge(
         rexdd_edge_t            *out) // rexdd_edge_lable_t, uint_fast64_t
 {
     // TBD
+    rexdd_node_handle handle = rexdd_new_handle(&(F->M));
+    if (rexdd_pack_handle(&(F->M), handle, &(p)) !=0){
+        fprintf(stderr, "%s\n", "Fill in a packed node at the specified handle failed!");
+        exit(1);
+    }
     /*
      * Hash node
      */
-
+    uint64_t H = HASH_HANDLE(&(F->M), handle); // HASH_HANDLE may use node itself instead of handle?
      /*
      * Check if it is in this forest
      */
-
+    
     /* 
      * Reduce and get the legal and canonical node; if can not, be the same
      */
