@@ -73,11 +73,12 @@ typedef struct rexdd_forest_s*  rexdd_forest_p;
 
 
 /**
- *  Allocate and initialize a forest.
+ *  Initialize a forest.
+ *      @param  F       Forest to initialize.
  *      @param  s       Pointer to forest settings to use.
- *      @return         A pointer to a newly allocated forest, or null on error.
  */
-rexdd_forest_p rexdd_create_forest(
+void rexdd_create_forest(
+        rexdd_forest_p F,
         const rexdd_forest_settings_p s);
 
 /**
