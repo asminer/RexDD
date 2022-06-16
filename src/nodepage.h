@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-#define REXDD_PAGESIZE (16*1024*1024)
+#define REXDD_PAGE_SIZE (16*1024*1024)
 
 /****************************************************************************
  *
@@ -82,10 +82,13 @@ rexdd_fill_free_page_slot(
  *      @param  node    Where to store the unpacked node.
  *
  */
-void rexdd_fill_unpacked_from_page(
+static inline void rexdd_fill_unpacked_from_page(
         const rexdd_nodepage_p page,
         uint_fast32_t slot,
-        rexdd_unpacked_node_p node);
+        rexdd_unpacked_node_p node)
+{
+    rexdd_packed_to_unpacked(page->chunk+slot, node);
+}
 
 
 /****************************************************************************
@@ -95,17 +98,37 @@ void rexdd_fill_unpacked_from_page(
  *      @param  slot    Slot number within the page
  *
  */
-void rexdd_recycle_page_slot(rexdd_nodepage_p page, uint_fast32_t slot);
+static inline void
+rexdd_recycle_page_slot(rexdd_nodepage_p page, uint_fast32_t slot)
+{
+    if (slot+1 < page->first_unalloc) {
+        /*
+         * Not the last slot, add it to the free list
+         */
+        page->chunk[slot].fourth32 = 0;
+        page->chunk[slot].third32 = page->free_list;
+        page->free_list = slot+1;
+    } else {
+        /*
+         * It's the last slot, add it to the unallocated end portion.
+         */
+        --page->first_unalloc;
+    }
+    ++page->num_unused;
+}
 
 
 /****************************************************************************
  *
  *  Dump an entire page, in human-readable format, for debugging purposes.
- *      @param  fout    Where to dump
- *      @param  page    Page struct to dump
+ *      @param  fout        Where to dump
+ *      @param  page        Page struct to dump
+ *      @param  show_used   If true, display the used nodes
+ *      @param  show_unused If true, display the unused nodes
  *
  */
-void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page);
+void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
+        bool show_used, bool show_unused);
 
 
 #endif
