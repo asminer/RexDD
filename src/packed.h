@@ -150,6 +150,14 @@ rexdd_packed_to_unpacked(const rexdd_packed_node_p pN, rexdd_unpacked_node_p uN)
     // TBD
 }
 
+static inline void
+rexdd_recycle_packed(rexdd_packed_node_p N, uint_fast32_t next_free)
+{
+    N->first64 = 0;
+    N->second64 = 0;
+    N->third32 = next_free;
+    N->fourth32 = 0;
+}
 
 // Get the low child from a packed node.
 static inline uint64_t

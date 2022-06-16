@@ -105,8 +105,7 @@ rexdd_recycle_page_slot(rexdd_nodepage_p page, uint_fast32_t slot)
         /*
          * Not the last slot, add it to the free list
          */
-        page->chunk[slot].fourth32 = 0;
-        page->chunk[slot].third32 = page->free_list;
+        rexdd_recycle_packed(page->chunk+slot, page->free_list);
         page->free_list = slot+1;
     } else {
         /*
