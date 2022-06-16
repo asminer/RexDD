@@ -28,30 +28,33 @@ void rexdd_default_forest_settings(unsigned L, rexdd_forest_settings_p s)
  *
  ********************************************************************/
 
-rexdd_forest_p rexdd_create_forest(const rexdd_forest_settings_p s)
+void rexdd_create_forest(rexdd_forest_p F, const rexdd_forest_settings_p s)
 {
-    rexdd_forest_p Fp = malloc(sizeof(rexdd_forest_t));
-    if (Fp == NULL) {
-        fprintf(stderr, "%s\n", "malloc error!");
+    if (F == NULL) {
+        fprintf(stderr, "%s\n", "forest not exist!");
         exit(1);
     }
-    Fp->S = *s;
-    if (rexdd_create_nodeman(&(Fp->M)) != 0) 
+    
+    // realloc the memory of the forest
+    F = realloc(F,sizeof(rexdd_forest_t)); 
+    
+    // Initialize its members
+    F->S = *s;
+    if (rexdd_create_nodeman(&(F->M)) != 0) 
         fprintf(stderr, "\n%s\n", "Initialize the node manager error!");
-    if (rexdd_create_UT(&(Fp->UT), &(Fp->M)) != 0) 
+    if (rexdd_create_UT(&(F->UT), &(F->M)) != 0) 
         fprintf(stderr, "\n%s\n", "Initialize the unique table error!");
 
     // TBD *roots...
-    rexdd_init_function(Fp->roots);
+    rexdd_init_function(F->roots);
 
-    return Fp;
 }
 
 /* ================================================================= */
 
 void rexdd_destroy_forest(rexdd_forest_p F)
 {
-    // TBD
+
     rexdd_default_forest_settings(0, &(F->S));
     rexdd_destroy_nodeman(&(F->M));
     rexdd_destroy_UT(&(F->UT));
@@ -88,7 +91,7 @@ void rexdd_reduce_edge(
      /*
      * Check if it is in this forest
      */
-    
+
     /* 
      * Reduce and get the legal and canonical node; if can not, be the same
      */
