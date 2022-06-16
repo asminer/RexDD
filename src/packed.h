@@ -37,6 +37,8 @@ typedef struct {
     /* bits 00..21: hich (lower 22)
      * bits 22..26: loru
      * bits 27..31: hiru
+     *
+     * Note - for unused nodes, this is the next pointer in the free list.
      */
     uint32_t third32;
 
@@ -44,6 +46,8 @@ typedef struct {
      * bits 29..29: losw
      * bits 30..30: hisw
      * bits 31..31: hico
+     *
+     * Note - if this is zero, then the node is unused.
      */
     uint32_t fourth32;
 } rexdd_packed_node_t;
@@ -65,40 +69,87 @@ typedef rexdd_packed_node_t* rexdd_packed_node_p;
 #define BIT30_MASK  0x40000000
 #define BIT31_MASK  0x80000000
 
-// Get the next pointer from a packed node.
+
+/****************************************************************************
+ *
+ * Get the next pointer from a packed node.
+ * static inlined for speed.
+ *      @param      N packed node
+ *      @return     N's next pointer.
+ */
 static inline uint_fast64_t
 rexdd_get_packed_next(const rexdd_packed_node_p N)
 {
     return N->first64 & NEXT_MASK;
 }
 
-// Set the next pointer in a packed node.
+/****************************************************************************
+ *
+ * Set the next pointer in a packed node.
+ * static inlined for speed.
+ *      @param      N   packed node
+ *      @param      nxt what to assign to N.next
+ */
 static inline void
 rexdd_set_packed_next(rexdd_packed_node_p N, uint64_t nxt)
 {
     N->first64 = (N->first64 & ~NEXT_MASK) | (nxt & NEXT_MASK);
 }
 
-// Is the packed node marked.
+/****************************************************************************
+ *
+ *  For a given packed node, is it marked?
+ *  static inlined for speed.
+ *      @param      N   packed node
+ *      @return     true, iff N is marked.
+ */
 static inline bool
 rexdd_is_packed_marked(const rexdd_packed_node_p N)
 {
     return N->first64 & MARK_MASK;
 }
 
-// Mark a packed node
+/****************************************************************************
+ *
+ *  Mark the specified packed node.
+ *  static inlined for speed.
+ *      @param      N   packed node to mark.
+ */
 static inline void
 rexdd_mark_packed(rexdd_packed_node_p N)
 {
     N->first64 |= MARK_MASK;
 }
 
-// Unmark a packed node
+/****************************************************************************
+ *
+ *  Unmark the specified packed node.
+ *  static inlined for speed.
+ *      @param      N   packed node to mark.
+ */
 static inline void
 rexdd_unmark_packed(rexdd_packed_node_p N)
 {
     N->first64 &= ~MARK_MASK;
 }
+
+//
+// TBD FROM HERE DOWN - rewrite as packed -> unpacked and vice versa,
+// because (1) that's what we'll use anyway and (2) we can simplify some.
+//
+
+static inline void
+rexdd_unpacked_to_packed(const rexdd_unpacked_node_p uN, rexdd_packed_node_p pN)
+{
+    // TBD
+}
+
+static inline void
+rexdd_packed_to_unpacked(const rexdd_packed_node_p pN, rexdd_unpacked_node_p uN)
+{
+    // TBD
+}
+
 
 // Get the low child from a packed node.
 static inline uint64_t

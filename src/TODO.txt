@@ -1,13 +1,12 @@
 
-  ()  Runtime error mechanism.
-      Maybe:
+  ()  Runtime error mechanism:
         rexdd_error(__FILE__, __LINE__, format, ...)
 
-      Allow users to provide this function.
-      Otherwise, default is to print the message to stderr and exit.
+      Allow users to provide their own rexdd_error function.
+      (How?  Either have a library initialization function
+      with defaults, like we have for forests; otherwise
+      make it a forest option (uglier)).
 
-
-  ()  Move node page to its own header for readability.
 
   ()  A function to print (to FILE*) the nodeman structure,
       for debugging purposes.
