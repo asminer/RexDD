@@ -4,6 +4,8 @@
 #include "unpacked.h"
 #include "packed.h"
 
+#include <stdio.h>
+
 #define REXDD_PAGESIZE (16*1024*1024)
 
 /****************************************************************************
@@ -43,7 +45,7 @@ typedef rexdd_nodepage_t* rexdd_nodepage_p;
  *  The chunk is allocated, and every slot is set to "unused".
  *
  */
-void rexdd_init_nodepage(rexdd_nodepage_p np);
+void rexdd_init_nodepage(rexdd_nodepage_p page);
 
 
 /****************************************************************************
@@ -52,7 +54,7 @@ void rexdd_init_nodepage(rexdd_nodepage_p np);
  *  The chunk is deallocated.
  *
  */
-void rexdd_init_nodepage(rexdd_nodepage_p np);
+void rexdd_free_nodepage(rexdd_nodepage_p page);
 
 
 /****************************************************************************
