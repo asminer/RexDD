@@ -160,8 +160,8 @@ rexdd_unpacked_to_packed(const rexdd_unpacked_node_p uN, rexdd_packed_node_p pN)
         |
         (uN->edge[1].target & LOW22_MASK);
 
-    pN->forth32 =
-        (uN->edge[1].label.complemented * << BIT31_MASK)
+    pN->fourth32 =
+        (uN->edge[1].label.complemented * BIT31_MASK)
         |
         (uN->edge[1].label.swapped * BIT30_MASK)
         |
