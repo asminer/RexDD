@@ -1,37 +1,17 @@
 #ifndef NODEMAN_H
 #define NODEMAN_H
 
-#include "unpacked.h"
-#include "packed.h"
+#include "nodepage.h"
 
 /*
  *  Efficient storage of lots of nodes, for use by a forest.
  *
  */
 
-#define REXDD_PAGESIZE (1024*1024)
-
 /*
  *  Node handle.
  */
 typedef uint_fast64_t  rexdd_node_handle;
-
-
-/****************************************************************************
- *
- *  TBD: page of nodes.
- *
- */
-typedef struct {
-    /*  Array for node storage. */
-    /*  first unallocated */
-    /*  list of free slots */
-    /*  total number of free slots */
-    /*  pointer (index) for various lists of pages */
-} rexdd_nodepage_t;
-
-typedef rexdd_nodepage_t* rexdd_nodepage_p;
-
 
 
 /****************************************************************************
