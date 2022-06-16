@@ -133,23 +133,81 @@ rexdd_unmark_packed(rexdd_packed_node_p N)
     N->first64 &= ~MARK_MASK;
 }
 
-//
-// TBD FROM HERE DOWN - rewrite as packed -> unpacked and vice versa,
-// because (1) that's what we'll use anyway and (2) we can simplify some.
-//
-
+/****************************************************************************
+ *
+ *  Fill in a packed node from an unpacked one.
+ *  static inlined for speed.
+ *      @param      uN  Unpacked node to read from.
+ *      @param      pN  Packed node to fill.
+ */
 static inline void
 rexdd_unpacked_to_packed(const rexdd_unpacked_node_p uN, rexdd_packed_node_p pN)
 {
-    // TBD
+    pN->first64 =
+        (pN->first64 & ~TOP14_MASK)
+        |
+        ( (uN->edge[0].target << 14) & TOP14_MASK);
+
+    pN->second64 =
+        ( (uN->edge[1].target << 14) & ~LOW36_MASK)
+        |
+        (uN->edge[0].target & LOW36_MASK);
+
+    pN->third32 =
+        ( (uN->edge[1].label.rule << 27) & HIRU_MASK )
+        |
+        ( (uN->edge[0].label.rule << 22) & LORU_MASK )
+        |
+        (uN->edge[1].target & LOW22_MASK);
+
+    pN->forth32 =
+        (uN->edge[1].label.complemented * << BIT31_MASK)
+        |
+        (uN->edge[1].label.swapped * BIT30_MASK)
+        |
+        (uN->edge[0].label.swapped * BIT29_MASK)
+        |
+        (uN->level & LOW29_MASK);
 }
 
+
+/****************************************************************************
+ *
+ *  Fill in an unpacked node from a packed one.
+ *  static inlined for speed.
+ *      @param      pN  Packed node to read from.
+ *      @param      uN  Unpacked node to fill.
+ */
 static inline void
 rexdd_packed_to_unpacked(const rexdd_packed_node_p pN, rexdd_unpacked_node_p uN)
 {
-    // TBD
+    uN->edge[0].label.rule = (pN->third32 & LORU_MASK) >> 22;
+    uN->edge[0].label.swapped = pN->fourth32 & BIT29_MASK;
+    uN->edge[0].label.complemented = 0;
+    uN->edge[0].target =
+        ((pN->first64 & TOP14_MASK) >> 14)
+        |
+        (pN->second64 & LOW36_MASK);
+
+    uN->edge[1].label.rule = (pN->third32 & HIRU_MASK) >> 27;
+    uN->edge[1].label.swapped = pN->fourth32 & BIT30_MASK;
+    uN->edge[1].label.complemented = pN->fourth32 & BIT31_MASK;
+    uN->edge[1].target =
+        ((pN->second64 & ~LOW36_MASK) >> 14)
+        |
+        (pN->third32 & LOW22_MASK);
+
+    uN->level = pN->fourth32 & LOW29_MASK;
 }
 
+
+/****************************************************************************
+ *
+ *  Fill in a packed node as appropriate for recycling into a free list.
+ *  static inlined for speed.
+ *      @param      N           Packed node to update.
+ *      @param      next_free   Next "pointer" in free list.
+ */
 static inline void
 rexdd_recycle_packed(rexdd_packed_node_p N, uint_fast32_t next_free)
 {
@@ -159,124 +217,13 @@ rexdd_recycle_packed(rexdd_packed_node_p N, uint_fast32_t next_free)
     N->fourth32 = 0;
 }
 
-// Get the low child from a packed node.
-static inline uint64_t
-rexdd_get_packed_loch(const rexdd_packed_node_p N)
-{
-    return ((N->first64 & TOP14_MASK) >> 14)
-            |
-           (N->second64 & LOW36_MASK);
-}
 
-// Set the low child in a packed node.
-static inline void
-rexdd_set_packed_loch(rexdd_packed_node_p N, uint64_t c)
-{
-    N->first64 = (N->first64 & ~TOP14_MASK) | ( (c << 14) & TOP14_MASK);
-    N->second64 = (N->second64 & ~LOW36_MASK) | (c & LOW36_MASK);
-}
-
-// Get the high child from a packed node.
-static inline uint64_t
-rexdd_get_packed_hich(const rexdd_packed_node_p N)
-{
-    return ((N->second64 & ~LOW36_MASK) >> 14)
-            |
-           (N->third32 & LOW22_MASK);
-}
-
-// Set the high child in a packed node.
-static inline void
-rexdd_set_packed_hich(rexdd_packed_node_p N, uint64_t c)
-{
-    N->second64 = (N->second64 & LOW36_MASK) | ( (c << 14) & ~LOW36_MASK );
-    N->third32 = (N->third32 & ~LOW22_MASK) | (c & LOW22_MASK);
-}
-
-// Get the low rule in a packed node.
-static inline uint8_t
-rexdd_get_packed_loru(const rexdd_packed_node_p N)
-{
-    return (N->third32 & LORU_MASK) >> 22;
-}
-
-// Set the low rule in a packed node
-static inline void
-rexdd_set_packed_loru(rexdd_packed_node_p N, uint32_t r)
-{
-    N->third32 = (N->third32 & ~LORU_MASK) | ( (r << 22) & LORU_MASK );
-}
-
-// Get the high rule in a packed node.
-static inline uint8_t
-rexdd_get_packed_hiru(const rexdd_packed_node_p N)
-{
-    return (N->third32 & HIRU_MASK) >> 27;
-}
-
-// Set the high rule in a packed node
-static inline void
-rexdd_set_packed_hiru(rexdd_packed_node_p N, uint32_t r)
-{
-    N->third32 = (N->third32 & ~HIRU_MASK) | ( (r << 27) & HIRU_MASK );
-}
-
-// Get the level from a packed node.
-static inline uint_fast32_t
-rexdd_get_packed_level(const rexdd_packed_node_p N)
-{
-    return N->fourth32 & LOW29_MASK;
-}
-
-// Set the level of a packed node.
-static inline void
-rexdd_set_packed_level(rexdd_packed_node_p N, uint32_t L)
-{
-    N->fourth32 = (N->fourth32 & ~LOW29_MASK) | (L & LOW29_MASK);
-}
-
-
-// Get the low swap flag from a packed node.
-static inline bool
-rexdd_get_packed_losw(const rexdd_packed_node_p N)
-{
-    return N->fourth32 & BIT29_MASK;
-}
-
-// Set the low swap flag in a packed node.
-static inline void rexdd_set_packed_losw(rexdd_packed_node_p N, uint32_t s)
-{
-    N->fourth32 = (N->fourth32 & ~BIT29_MASK) | ((s << 29) & BIT29_MASK);
-}
-
-// Get the high swap flag from a packed node.
-static inline bool
-rexdd_get_packed_hisw(const rexdd_packed_node_p N)
-{
-    return N->fourth32 & BIT30_MASK;
-}
-
-// Set the high swap flag in a packed node.
-static inline void rexdd_set_packed_hisw(rexdd_packed_node_p N, uint32_t s)
-{
-    N->fourth32 = (N->fourth32 & ~BIT30_MASK) | ((s << 30) & BIT30_MASK);
-}
-
-// Get the high complement flag from a packed node.
-static inline bool
-rexdd_get_packed_hico(const rexdd_packed_node_p N)
-{
-    return N->fourth32 & BIT31_MASK;
-}
-
-// Set the high complement flag in a packed node.
-static inline void rexdd_set_packed_hico(rexdd_packed_node_p N, uint32_t s)
-{
-    N->fourth32 = (N->fourth32 & ~BIT31_MASK) | (s << 31);
-}
-
-
-// Check if two nodes are duplicates.
+/****************************************************************************
+ *
+ *  Check if two packed nodes are duplicates.
+ *  (This is faster than unpacking and comparing unpacked nodes.)
+ *  static inlined for speed.
+ */
 static inline bool
 rexdd_are_packed_duplicates(const rexdd_packed_node_p P,
         const rexdd_packed_node_p Q)
