@@ -77,36 +77,80 @@ void rexdd_reduce_edge(
         rexdd_unpacked_node_t   p,      // uint_fast32_t level, rexdd_edge_t edge[2]
         rexdd_edge_t            *out)   // rexdd_edge_lable_t, uint_fast64_t
 {
-    // TBD
     if (n != p.level) {
-        rexdd_error(__FILE__, __LINE__, "Target node level unmatched")
+        rexdd_error(__FILE__, __LINE__, "Target node level unmatched");
     }
 
-    rexdd_nodeman_t M = F->M;
-    rexdd_nodepage_t first_page = *(F->M->pages);
+
+    /* 
+     * Node handle things [confused] TBD
+        Note: node handle may includes the information of storage location (which page and chunk)?
+     */
 
     rexdd_node_handle handle = rexdd_new_handle(&(F->M));
-    
     if (rexdd_pack_handle(&(F->M), handle, &(p)) !=0){
         rexdd_error(__FILE__, __LINE__, "Fill in a packed node fail");
     }
+
 
     /*
      * Hash node
      */
     uint64_t H = HASH_HANDLE(&(F->M), handle); // HASH_HANDLE may use node itself instead of handle?
-     /*
-     * Check if it is in this forest
+    /*
+     * Check if it is in this forest. if so, return it; or do the following steps
      */
+    // TBD
 
-    /* 
-     * Reduce and get the legal and canonical node; if can not, be the same
-     */
+    /* ======REDUCE======= */
+    /*
+        {Merge rexdd_edge_label_t and reduced node}
+            {reduce node by the patterns}
+    */
 
+    uint_fast64_t terminal;     // TBD the terminal node handle?
+    if (p.level == 0){
+        out->target = terminal;
+        out->label = l;
+    }
+ 
+    rexdd_packed_node_p pN;
+    rexdd_unpacked_node_p uN = &p;
+    rexdd_unpacked_to_packed(uN, pN);
+    // 
+    if (l.swapped == 1) {
+        // swap the target node (its loch loru and hich hiru)TBD
+
+    }
+
+    rexdd_edge_t *reduced;
+    if ((pN->first64 & 0xf000000000000000 == 1)|| (pN->second64 & 0xf000000000000000 == 1)) {
+        // loch or hich are nonterm
+        // pattern (a)
+        if ((((pN->third32 & LORU_MASK) >> 22 == N)||((pN->third32 & LORU_MASK) >> 22 == X))
+                && (((pN->third32 & HIRU_MASK) >> 27 == N)||((pN->third32 & HIRU_MASK) >> 27 == X))){
+            reduced->target =   ((pN->first64 & TOP14_MASK) >> 14)
+                            |
+                            (pN->second64 & LOW36_MASK);
+            // ... TBD
+
+        }
+        // pattern (b)-(g) TBD
+    } else {
+        // loch and hich are term
+        // pattern (a)-(g) TBD
+    }
+
+    // Normalize out (figure 6: the decision table to choose canonical node)
+
+    // Merge l and reduced into out TBD
+
+    /* ======END REDUCE====== */
     
     /*
      * Create this new node and add to the unique table (forest)
      */
+    // TBD
 
 }
 
