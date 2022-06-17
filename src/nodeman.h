@@ -21,9 +21,17 @@ typedef uint_fast64_t  rexdd_node_handle;
  */
 typedef struct {
     /* Array of pointers to rexdd_nodepage  */
+    rexdd_nodepage_p pages;
+
     /* array size */
+    uint_fast32_t num_pages;
+    
     /* last used in the array */
+    uint_fast32_t last_unused;
+    
     /* list of pages with free slots, in increasing order of #free slots */
+    uint_fast32_t pages_freeslots;
+    
 } rexdd_nodeman_t;
 
 typedef rexdd_nodeman_t* rexdd_nodeman_p;
