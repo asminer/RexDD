@@ -62,7 +62,7 @@ typedef rexdd_packed_node_t* rexdd_packed_node_p;
 
 #define LOW22_MASK  0x003fffff
 #define LORU_MASK   0x07c00000
-#define HIRU_MASK   0xf1000000
+#define HIRU_MASK   0xf8000000
 
 #define LOW29_MASK  0x1fffffff
 #define BIT29_MASK  0x20000000
@@ -136,6 +136,7 @@ rexdd_unmark_packed(rexdd_packed_node_p N)
 /****************************************************************************
  *
  *  Fill in a packed node from an unpacked one.
+ *  Sets next to 0 and clears the marked bit.
  *  static inlined for speed.
  *      @param      uN  Unpacked node to read from.
  *      @param      pN  Packed node to fill.
@@ -144,8 +145,6 @@ static inline void
 rexdd_unpacked_to_packed(const rexdd_unpacked_node_p uN, rexdd_packed_node_p pN)
 {
     pN->first64 =
-        (pN->first64 & ~TOP14_MASK)
-        |
         ( (uN->edge[0].target << 14) & TOP14_MASK);
 
     pN->second64 =

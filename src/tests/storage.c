@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const unsigned TESTS=10;
+const unsigned TESTS=1000000;
 
 const uint64_t LOW49= (0x01ul << 49)-1;
 const uint64_t LOW50= (0x01ul << 50)-1;
@@ -39,26 +39,30 @@ bool equal(const rexdd_unpacked_node_p P, const rexdd_unpacked_node_p Q)
     return true;
 }
 
+static inline uint64_t random64()
+{
+    uint64_t x = random();
+    x <<= 31;
+    return x | random();
+}
+
+static inline bool randombit()
+{
+    return random() & 0x01;
+}
+
 void fill_random(rexdd_unpacked_node_p P)
 {
     if (0==P) return;
 
-    unsigned a = random();  // 31 random bits
-    if (0==a) ++a;
-    P->level = a;
+    if (0==P->level) {
+        P->level++; // level can't be zero
+    }
 
-    a = random();
-    unsigned b = random();
+    P->edge[0].target = random64();
+    P->edge[1].target = random64();
 
-    uint64_t x = a;
-    P->edge[0].target = (x << 31) | b;
-
-    x = random();
-    b = random();
-
-    P->edge[1].target = (x << 31) | b;
-
-    a = random();
+    unsigned a = random();
 
     P->edge[0].label.rule = a & LOW5;
     a >>= 5;
@@ -117,13 +121,26 @@ int main()
     srandom(12345678);
     rexdd_unpacked_node_t P, Q, R;
 
+    printf("Storing random nodes (with next)...\n");
+
     uint_fast32_t h;
     unsigned i;
+    bool mark, b;
     for (i=0; i<TESTS; i++) {
         fill_random(&P);
         copy_and_mask(&Q, &P);
 
         h = rexdd_fill_free_page_slot(&page, &Q);
+
+        // random next
+        rexdd_set_packed_next(
+            page.chunk+h, random64()
+        );
+
+        // random mark/unmark
+        if ((mark = randombit())) {
+            rexdd_mark_packed(page.chunk+h);
+        }
 
         rexdd_fill_unpacked_from_page(&page, h, &R);
 
@@ -135,8 +152,17 @@ int main()
             break;
         }
 
+        b = rexdd_is_packed_marked(page.chunk+h);
+        if (b != mark) {
+            printf("Mark bit mismatch\n");
+            printf("    We think the bit is %x\n", mark);
+            printf("    Packed thinks it is %x\n", b);
+            break;
+        }
+
         rexdd_recycle_page_slot(&page, h);
     }
+    printf("%u tests passed\n", TESTS);
 
     rexdd_free_nodepage(&page);
 
