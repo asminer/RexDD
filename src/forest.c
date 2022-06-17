@@ -31,8 +31,7 @@ void rexdd_default_forest_settings(unsigned L, rexdd_forest_settings_p s)
 void rexdd_create_forest(rexdd_forest_p F, const rexdd_forest_settings_p s)
 {
     if (F == NULL) {
-        fprintf(stderr, "%s\n", "forest not exist!");
-        exit(1);
+        rexdd_error(__FILE__, __LINE__, "Null forest");
     }
     
     // realloc the memory of the forest
@@ -41,9 +40,9 @@ void rexdd_create_forest(rexdd_forest_p F, const rexdd_forest_settings_p s)
     // Initialize its members
     F->S = *s;
     if (rexdd_create_nodeman(&(F->M)) != 0) 
-        fprintf(stderr, "\n%s\n", "Initialize the node manager error!");
+        rexdd_error(__FILE__, __LINE__, "Initialize the node manager error!");
     if (rexdd_create_UT(&(F->UT), &(F->M)) != 0) 
-        fprintf(stderr, "\n%s\n", "Initialize the unique table error!");
+        rexdd_error(__FILE__, __LINE__, "Initialize the unique table error!");
 
     // TBD *roots...
     rexdd_init_function(F->roots);
@@ -72,18 +71,26 @@ void rexdd_destroy_forest(rexdd_forest_p F)
 /* ================================================================= */
 
 void rexdd_reduce_edge(
-        rexdd_forest_p          F,
-        uint_fast32_t           n,
-        rexdd_edge_label_t      l, // rexdd_rule_t, bool, bool
-        rexdd_unpacked_node_t   p, // uint_fast32_t level, rexdd_edge_t edge[2]
-        rexdd_edge_t            *out) // rexdd_edge_lable_t, uint_fast64_t
+        rexdd_forest_p          F,      // the forest (S, M, UT)
+        uint_fast32_t           n,      // node level
+        rexdd_edge_label_t      l,      // rexdd_rule_t, bool, bool
+        rexdd_unpacked_node_t   p,      // uint_fast32_t level, rexdd_edge_t edge[2]
+        rexdd_edge_t            *out)   // rexdd_edge_lable_t, uint_fast64_t
 {
     // TBD
-    rexdd_node_handle handle = rexdd_new_handle(&(F->M));
-    if (rexdd_pack_handle(&(F->M), handle, &(p)) !=0){
-        fprintf(stderr, "%s\n", "Fill in a packed node at the specified handle failed!");
-        exit(1);
+    if (n != p.level) {
+        rexdd_error(__FILE__, __LINE__, "Target node level unmatched")
     }
+
+    rexdd_nodeman_t M = F->M;
+    rexdd_nodepage_t first_page = *(F->M->pages);
+
+    rexdd_node_handle handle = rexdd_new_handle(&(F->M));
+    
+    if (rexdd_pack_handle(&(F->M), handle, &(p)) !=0){
+        rexdd_error(__FILE__, __LINE__, "Fill in a packed node fail");
+    }
+
     /*
      * Hash node
      */
