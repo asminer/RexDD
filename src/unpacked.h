@@ -25,7 +25,7 @@ typedef enum {
     AHN = 13
 } rexdd_rule_t;
 
-const char* rexdd_rule_name[] = {
+static const char* rexdd_rule_name[] = {
     "N",
     "X",
     "L0",
@@ -39,7 +39,9 @@ const char* rexdd_rule_name[] = {
     "AL0",
     "AL1",
     "AH0",
-    "AH1"
+    "AH1",
+    "?",
+    "?"
 };
 
 /*

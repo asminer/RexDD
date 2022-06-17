@@ -14,7 +14,7 @@ indent_size = 2
 # Settings for Makefiles
 [Makefile]
 indent_style = tab
-indent_size = 1
+indent_size = 2
 
 # Settings for C sources
 [*.{c,h}]
