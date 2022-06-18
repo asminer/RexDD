@@ -4,7 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// #define SHOW_PAGE
+
+#ifdef SHOW_PAGE
+const unsigned TESTS=100;
+#else
 const unsigned TESTS=1000000;
+#endif
 
 const uint64_t LOW49= (0x01ul << 49)-1;
 const uint64_t LOW50= (0x01ul << 50)-1;
@@ -170,9 +176,17 @@ int main()
             break;
         }
 
-        rexdd_recycle_page_slot(&page, h);
     }
     printf("%u tests passed\n", TESTS);
+
+#ifdef SHOW_PAGE
+    printf("Page details:\n");
+    for (i=0; i<TESTS; i+=3) {
+        rexdd_recycle_page_slot(&page, i);
+    }
+    rexdd_dump_page(stdout, &page, true, true);
+#endif
+
 
     rexdd_free_nodepage(&page);
 

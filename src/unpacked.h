@@ -41,7 +41,24 @@ static const char* rexdd_rule_name[] = {
     "AH0",
     "AH1",
     "?",
-    "?"
+    "?",
+//
+    "IN",
+    "IX",
+    "IL0",
+    "IL1",
+    "IH0",
+    "IH1",
+    "IEL0",
+    "IEL1",
+    "IEH0",
+    "IEH1",
+    "IAL0",
+    "IAL1",
+    "IAH0",
+    "IAH1",
+    "I?",
+    "I?",
 };
 
 /*
