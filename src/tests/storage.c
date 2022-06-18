@@ -126,6 +126,7 @@ int main()
     uint_fast32_t h;
     unsigned i;
     bool mark, b;
+    uint64_t n1, n2, n3;
     for (i=0; i<TESTS; i++) {
         fill_random(&P);
         copy_and_mask(&Q, &P);
@@ -133,9 +134,8 @@ int main()
         h = rexdd_fill_free_page_slot(&page, &Q);
 
         // random next
-        rexdd_set_packed_next(
-            page.chunk+h, random64()
-        );
+        n1 = random64();
+        rexdd_set_packed_next(page.chunk+h, n1);
 
         // random mark/unmark
         if ((mark = randombit())) {
@@ -145,16 +145,26 @@ int main()
         rexdd_fill_unpacked_from_page(&page, h, &R);
 
         if (!equal(&Q, &R)) {
-            printf("Test %u failed\n", i);
+            printf("Node storage test %u failed\n", i);
             print_unpacked("Original:", &P);
             print_unpacked("Masked  :", &Q);
             print_unpacked("Unpacked:", &R);
             break;
         }
 
+        n2 = n1 & LOW49;
+        n3 = rexdd_get_packed_next(page.chunk+h);
+        if (n3 != n2) {
+            printf("Next test %u failed\n", i);
+            printf("  Next as set: %llx\n", n1);
+            printf("  Masked     : %llx\n", n2);
+            printf("  Retrieved  : %llx\n", n3);
+            break;
+        }
+
         b = rexdd_is_packed_marked(page.chunk+h);
         if (b != mark) {
-            printf("Mark bit mismatch\n");
+            printf("Mark bit mismatch on test %u\n", i);
             printf("    We think the bit is %x\n", mark);
             printf("    Packed thinks it is %x\n", b);
             break;
