@@ -35,8 +35,7 @@ void rexdd_init_nodeman(rexdd_nodeman_p M, unsigned maxpages)
     M->empty_pages = 0;
     unsigned i;
     for (i=M->pages_size; i; i--) {
-        M->pages[i-1].chunk = 0;
-        M->pages[i-1].next = M->empty_pages;
+        rexdd_zero_nodepage(M->pages+i-1, M->empty_pages);
         M->empty_pages = i;
     }
 }

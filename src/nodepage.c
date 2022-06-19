@@ -10,7 +10,7 @@
  *  Fill a nodepage struct with zeroes.
  *
  */
-void rexdd_zero_nodepage(rexdd_nodepage_p page)
+void rexdd_zero_nodepage(rexdd_nodepage_p page, uint_fast32_t next)
 {
     rexdd_sanity1(page, "Null page");
 
@@ -18,7 +18,7 @@ void rexdd_zero_nodepage(rexdd_nodepage_p page)
     page->first_unalloc = 0;
     page->free_list = 0;
     page->num_unused = 0;
-    page->next = 0;
+    page->next = next;
 }
 
 

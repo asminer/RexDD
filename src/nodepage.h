@@ -42,9 +42,11 @@ typedef rexdd_nodepage_t* rexdd_nodepage_p;
 /****************************************************************************
  *
  *  Fill a nodepage struct with zeroes.
+ *      @param  page    Page to set.
+ *      @param  next    Next pointer.
  *
  */
-void rexdd_zero_nodepage(rexdd_nodepage_p page);
+void rexdd_zero_nodepage(rexdd_nodepage_p page, uint_fast32_t next);
 
 /****************************************************************************
  *
