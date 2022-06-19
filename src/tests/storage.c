@@ -129,7 +129,8 @@ int main()
 
     printf("Storing random nodes (with next)...\n");
 
-    uint_fast32_t h;
+    uint_fast32_t h = rexdd_page_free_slot(&page);
+
     unsigned i;
     bool mark, b;
     uint64_t n1, n2, n3;
@@ -137,7 +138,7 @@ int main()
         fill_random(&P);
         copy_and_mask(&Q, &P);
 
-        h = rexdd_fill_free_page_slot(&page, &Q);
+        rexdd_unpacked_to_packed(&Q, page.chunk+h);
 
         // random next
         n1 = random64();
@@ -148,7 +149,7 @@ int main()
             rexdd_mark_packed(page.chunk+h);
         }
 
-        rexdd_fill_unpacked_from_page(&page, h, &R);
+        rexdd_packed_to_unpacked(page.chunk+h, &R);
 
         if (!equal(&Q, &R)) {
             printf("Node storage test %u failed\n", i);

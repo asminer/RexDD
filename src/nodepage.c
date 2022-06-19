@@ -4,6 +4,24 @@
 #include <stdlib.h>
 #include <assert.h>
 
+
+/****************************************************************************
+ *
+ *  Fill a nodepage struct with zeroes.
+ *
+ */
+void rexdd_zero_nodepage(rexdd_nodepage_p page)
+{
+    rexdd_sanity1(page, "Null page");
+
+    page->chunk = 0;
+    page->first_unalloc = 0;
+    page->free_list = 0;
+    page->num_unused = 0;
+    page->next = 0;
+}
+
+
 /****************************************************************************
  *
  *  Initialize a page of nodes.
@@ -11,19 +29,16 @@
  */
 void rexdd_init_nodepage(rexdd_nodepage_p page)
 {
-    if (0==page) {
-        rexdd_error(__FILE__, __LINE__, "Null page");
-    }
+    rexdd_sanity1(page, "Null page");
 
     page->chunk = malloc(REXDD_PAGE_SIZE * sizeof(rexdd_packed_node_t));
-    if (0==page->chunk) {
-        rexdd_error(__FILE__, __LINE__, "malloc fail in nodepage");
-    }
+
+    rexdd_check1(page->chunk, "malloc fail in nodepage");
 
     page->first_unalloc = 0;
     page->free_list = 0;
     page->num_unused = REXDD_PAGE_SIZE;
-    page->next = 0;   // Unsure about this one
+    page->next = 0;
 }
 
 
@@ -34,73 +49,96 @@ void rexdd_init_nodepage(rexdd_nodepage_p page)
  */
 void rexdd_free_nodepage(rexdd_nodepage_p page)
 {
-    if (0==page) {
-        rexdd_error(__FILE__, __LINE__, "Null page");
-    }
-    if (0==page->chunk) {
-        rexdd_error(__FILE__, __LINE__, "Freed empty node page");
-    }
+    rexdd_sanity1(page, "Null page");
     free(page->chunk);
-    page->chunk = 0;
 }
 
 
 /****************************************************************************
  *
- *  Get a free slot, and fill it with an unpacked node.
+ *  Get a free slot in a page.
  *      @param  page    Page to use.  If num_unused is zero,
  *                      rexdd_error will be called.
- *      @param  node    The unpacked node to store.
- *
  *      @return The slot number used.
  *
  */
 uint_fast32_t
-rexdd_fill_free_page_slot(
-        rexdd_nodepage_p page,
-        const rexdd_unpacked_node_p node)
+rexdd_page_free_slot(rexdd_nodepage_p page)
 {
-    if (0==page) {
-        rexdd_error(__FILE__, __LINE__, "Null page");
-    }
-    if (0==page->num_unused) {
-        rexdd_error(__FILE__, __LINE__, "Slot request from full page");
-    }
+    rexdd_sanity1(page, "Null page");
+    rexdd_sanity1(page->chunk, "Slot request from unallocated page");
+    rexdd_sanity1(page->num_unused, "Slot request from full page");
+
+    --page->num_unused;
 
     /*
      * There are definitely free slots.
      * If the free list is not empty, pull from there.
      */
-    uint_fast32_t slot;
     if (page->free_list) {
         /*
          * Pull from the free list
          */
-        slot = page->free_list-1;
-        if (slot >= REXDD_PAGE_SIZE) {
-            rexdd_error(__FILE__, __LINE__, "Bad free list entry in page: %lu",
-                slot);
-        }
-        if (page->chunk[slot].fourth32) {
-            rexdd_error(__FILE__, __LINE__, "Page free list entry %lu in use?",
-                slot);
-        }
-        page->free_list = page->chunk[slot].third32;
-    } else {
-        /*
-         * Free list is empty, so pull from the unallocated end portion.
-         */
-        slot = page->first_unalloc++;
-    }
-    --page->num_unused;
+        uint_fast32_t slot = page->free_list-1;
+        rexdd_sanity2(slot < REXDD_PAGE_SIZE,
+                "Bad free list entry in page: %lu", slot
+        );
+        rexdd_sanity2(0==page->chunk[slot].fourth32,
+            "Page free list entry %lu in use?", slot
+        );
 
+        page->free_list = page->chunk[slot].third32;
+        return slot;
+    }
 
     /*
-     * We have a free slot; now fill it with the given node.
+     * Free list is empty, so pull from the unallocated end portion.
      */
-    rexdd_unpacked_to_packed(node, page->chunk+slot);
+    return page->first_unalloc++;
+}
 
-    return slot;
+
+/****************************************************************************
+ *
+ *  Sweep a page.
+ *  For each node in the page, check if it is marked or not.
+ *  If marked, the mark bit is cleared.
+ *  If unmarked, the node is recycled.
+ *      @param  page    Page we care about
+ *
+ */
+void rexdd_sweep_page(rexdd_nodepage_p page)
+{
+    rexdd_sanity1(page, "Null page");
+    if (0==page->chunk) return;
+
+    //
+    // Expand the unallocated portion as much as we can
+    //
+    while (page->first_unalloc) {
+        if (rexdd_is_packed_marked(page->chunk+page->first_unalloc-1)) break;
+
+        page->first_unalloc--;
+    }
+
+    page->num_unused = REXDD_PAGE_SIZE - page->first_unalloc;
+
+    //
+    // Now, rebuild the free list, by scanning all nodes backwards.
+    // Unmarked nodes are added to the list.
+    //
+    page->free_list = 0;
+    unsigned i;
+    for (i=page->first_unalloc; i; --i) {
+        if (rexdd_is_packed_marked(page->chunk+i-1)) {
+            rexdd_unmark_packed(page->chunk+i-1);
+        } else {
+            rexdd_recycle_packed(page->chunk+i-1, page->free_list);
+            page->free_list = i;
+            page->num_unused++;
+        }
+    }
+
 }
 
 //
@@ -128,10 +166,7 @@ static inline void rexdd_show_edge(FILE* fout, rexdd_edge_t e)
 void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
         bool show_used, bool show_unused)
 {
-    if (0==page) {
-        fprintf(fout, "    Null page\n");
-        return;
-    }
+    rexdd_sanity1(page, "Null page");
     if (0==page->chunk) {
         fprintf(fout, "    Unallocated page\n");
         return;
@@ -148,7 +183,7 @@ void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
         if (page->chunk[i].fourth32) {
             /* In use */
             if (show_used) {
-                rexdd_fill_unpacked_from_page(page, i, &node);
+                rexdd_packed_to_unpacked(page->chunk+i, &node);
                 fprintf(fout, "    Slot %-8u: lvl %u, ",
                     i, (unsigned) node.level);
                 rexdd_show_edge(fout, node.edge[0]);

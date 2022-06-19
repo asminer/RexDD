@@ -41,6 +41,13 @@ typedef rexdd_nodepage_t* rexdd_nodepage_p;
 
 /****************************************************************************
  *
+ *  Fill a nodepage struct with zeroes.
+ *
+ */
+void rexdd_zero_nodepage(rexdd_nodepage_p page);
+
+/****************************************************************************
+ *
  *  Initialize a page of nodes.
  *  The chunk is allocated, and every slot is set to "unused".
  *
@@ -59,62 +66,27 @@ void rexdd_free_nodepage(rexdd_nodepage_p page);
 
 /****************************************************************************
  *
- *  Get a free slot, and fill it with an unpacked node.
+ *  Get a free slot in a page.
  *      @param  page    Page to use.  If num_unused is zero,
  *                      rexdd_error will be called.
- *      @param  node    The unpacked node to store.
- *
  *      @return The slot number used.
  *
  */
 uint_fast32_t
-rexdd_fill_free_page_slot(
-        rexdd_nodepage_p page,
-        const rexdd_unpacked_node_p node);
+rexdd_page_free_slot(rexdd_nodepage_p page);
 
 
 /****************************************************************************
  *
- *  Unpack the node stored at a given slot.
- *      @param  page    Page to use.
- *      @param  slot    Slot storing the desired node.
- *                      Will call rexdd_error if this slot is unallocated.
- *      @param  node    Where to store the unpacked node.
- *
- */
-static inline void rexdd_fill_unpacked_from_page(
-        const rexdd_nodepage_p page,
-        uint_fast32_t slot,
-        rexdd_unpacked_node_p node)
-{
-    rexdd_packed_to_unpacked(page->chunk+slot, node);
-}
-
-
-/****************************************************************************
- *
- *  Recycle a slot.
+ *  Sweep a page.
+ *  For each node in the page, check if it is marked or not.
+ *  If marked, the mark bit is cleared.
+ *  If unmarked, the node is recycled.
  *      @param  page    Page we care about
- *      @param  slot    Slot number within the page
  *
  */
-static inline void
-rexdd_recycle_page_slot(rexdd_nodepage_p page, uint_fast32_t slot)
-{
-    if (slot+1 < page->first_unalloc) {
-        /*
-         * Not the last slot, add it to the free list
-         */
-        rexdd_recycle_packed(page->chunk+slot, page->free_list);
-        page->free_list = slot+1;
-    } else {
-        /*
-         * It's the last slot, add it to the unallocated end portion.
-         */
-        --page->first_unalloc;
-    }
-    ++page->num_unused;
-}
+void rexdd_sweep_page(rexdd_nodepage_p page);
+
 
 
 /****************************************************************************

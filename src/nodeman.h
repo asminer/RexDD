@@ -78,22 +78,6 @@ void rexdd_free_nodeman(rexdd_nodeman_p M);
 //
 
 /*
- *  Initialize a node manager.
- *
- *  TBD - what settings here?
- *      maybe max number of levels?
- *      maybe max number of nodes?
- *
- *  return 0 on success...
- */
-int rexdd_create_nodeman(rexdd_nodeman_p M);
-
-/*
- *  Destroy and free memory used by a node manager.
- */
-int rexdd_destroy_nodeman(rexdd_nodeman_p M);
-
-/*
  *  TBD - compaction?
  *      need a renumbering array
  */

@@ -1,7 +1,7 @@
 
 all: storage
 
-CFLAGS="-Wall"
+CFLAGS=-g -Wall
 
 storage: storage.o nodepage.o error.o
 	$(CC) $^ -o $@

@@ -16,9 +16,7 @@
  */
 void rexdd_init_nodeman(rexdd_nodeman_p M, unsigned maxpages)
 {
-    if (0==M) {
-        rexdd_error(__FILE__, __LINE__, "Null node manager");
-    }
+    rexdd_sanity1(M, "Null node manager");
 
     if ((0==maxpages) || (maxpages > 0x01 << 25)) {
         maxpages = 0x01 << 25;
@@ -31,9 +29,7 @@ void rexdd_init_nodeman(rexdd_nodeman_p M, unsigned maxpages)
     }
 
     M->pages = malloc(M->pages_size * sizeof(rexdd_nodepage_t));
-    if (0==M->pages) {
-        rexdd_error(__FILE__, __LINE__, "malloc fail in nodeman");
-    }
+    rexdd_check1(M->pages, "malloc fail in nodeman");
 
     M->not_full_pages = 0;
     M->empty_pages = 0;
@@ -54,11 +50,9 @@ void rexdd_init_nodeman(rexdd_nodeman_p M, unsigned maxpages)
  */
 void rexdd_free_nodeman(rexdd_nodeman_p M)
 {
-    if (0==M) {
-        rexdd_error(__FILE__, __LINE__, "Null node manager");
-    }
+    rexdd_sanity1(M, "Null node manager");
     if (0==M->pages) {
-        rexdd_error(__FILE__, __LINE__, "Freed empty node manager");
+        return;
     }
     unsigned i;
     for (i=0; i<M->pages_size; i++) {
@@ -66,6 +60,8 @@ void rexdd_free_nodeman(rexdd_nodeman_p M)
             rexdd_free_nodepage(M->pages+i);
         }
     }
+    free(M->pages);
+
     //
     // Set everything to sane values
     //
