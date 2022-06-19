@@ -30,9 +30,9 @@ typedef struct {
     /*  total number of free slots */
     uint_fast32_t num_unused;
 
-    /*  pointer (index) for various lists of pages */
+    /*  pointer (index) for various lists of pages.
+     *  Used by node manager structs.  */
     uint_fast32_t next;
-    // ^ not sure about this one yet
 
 } rexdd_nodepage_t;
 
