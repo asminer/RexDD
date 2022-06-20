@@ -51,6 +51,7 @@ void rexdd_free_nodepage(rexdd_nodepage_p page)
 {
     rexdd_sanity1(page, "Null page");
     free(page->chunk);
+    page->chunk = 0;
 }
 
 

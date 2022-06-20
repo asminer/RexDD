@@ -167,3 +167,96 @@ rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p u)
     return 1+ (pnum << 24 | slot);
 }
 
+
+/****************************************************************************
+ *
+ *  Sweep a node manager.
+ *  For each node in the manager, check if it is marked or not.
+ *  If marked, the mark bit is cleared.
+ *  If unmarked, the node is recycled.
+ *      @param  M       Node manager
+ *
+ */
+void rexdd_sweep_nodeman(rexdd_nodeman_p M)
+{
+    rexdd_sanity1(M, "Null node manager");
+    rexdd_sanity1(M->pages, "Empty node manager");
+
+    static const uint_fast32_t free_size[] = {
+        0x01 << 4,      // up to 16 nodes free
+        0x01 << 8,      // up to 256 nodes free
+        0x01 << 12,     // up to 4069 nodes free
+        0x01 << 16,     // up to 65536 nodes free
+        0x01 << 20,     // up to 1048576 nodes free
+        0x01 << 24      // up to to 16777216 nodes free
+    };
+
+    /*
+     * Lists of partially full pages.
+     * List i will contain pages with up to free_size[i] nodes free.
+     */
+    uint_fast32_t front[6], back[6];
+    unsigned i;
+    for (i=0; i<6; i++) {
+        front[i] = 0;
+        back[i] = 0;
+    }
+
+    //
+    // Go through all pages in reverse order, and build up the lists.
+    //
+    M->empty_pages = 0;
+
+    uint_fast32_t p;
+    for (p=M->pages_size; p; ) {
+        p--;
+        /* Sweep this page */
+        if (M->pages[p].chunk) {
+            rexdd_sweep_page(M->pages+p);
+            if (0==M->pages[p].first_unalloc) {
+                // This page is now empty.  Free it.
+                rexdd_free_nodepage(M->pages+p);
+            }
+        }
+        if (0==M->pages[p].chunk) {
+            /*
+             * Add to empty page list.
+             */
+            M->pages[p].next = M->empty_pages;
+            M->empty_pages = p+1;
+            continue;
+        }
+
+        if (0==M->pages[p].num_unused) {
+            /*
+             * Full page.  Doesn't go in any list.
+             */
+            continue;
+        }
+
+        /*
+         * Partially full page.  Determine which list to add it to.
+         */
+        for (i=0; i<5; i++) {
+            if (M->pages[p].num_unused < free_size[i]) break;
+        }
+
+        if (0==back[i]) {
+            back[i] = p+1;
+        }
+        M->pages[p].next = front[i];
+        front[i] = p+1;
+    }
+
+    //
+    // Append the lists together
+    //
+    M->not_full_pages = front[5];
+    for (i=5; i; ) {
+        i--;
+        if (back[i]) {
+            M->pages[back[i]-1].next = M->not_full_pages;
+        }
+        M->not_full_pages = front[i];
+    }
+}
