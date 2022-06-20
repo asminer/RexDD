@@ -182,22 +182,13 @@ void rexdd_sweep_nodeman(rexdd_nodeman_p M)
     rexdd_sanity1(M, "Null node manager");
     rexdd_sanity1(M->pages, "Empty node manager");
 
-    static const uint_fast32_t free_size[] = {
-        0x01 << 4,      // up to 16 nodes free
-        0x01 << 8,      // up to 256 nodes free
-        0x01 << 12,     // up to 4069 nodes free
-        0x01 << 16,     // up to 65536 nodes free
-        0x01 << 20,     // up to 1048576 nodes free
-        0x01 << 24      // up to to 16777216 nodes free
-    };
-
     /*
      * Lists of partially full pages.
-     * List i will contain pages with up to free_size[i] nodes free.
+     * List i will contain pages with up to 2^i free nodes.
      */
-    uint_fast32_t front[6], back[6];
+    uint_fast32_t front[32], back[32];
     unsigned i;
-    for (i=0; i<6; i++) {
+    for (i=0; i<32; i++) {
         front[i] = 0;
         back[i] = 0;
     }
@@ -237,8 +228,8 @@ void rexdd_sweep_nodeman(rexdd_nodeman_p M)
         /*
          * Partially full page.  Determine which list to add it to.
          */
-        for (i=0; i<5; i++) {
-            if (M->pages[p].num_unused < free_size[i]) break;
+        for (i=31; i; i--) {
+            if (M->pages[p].num_unused & (0x01 << i)) break;
         }
 
         if (0==back[i]) {
@@ -251,8 +242,8 @@ void rexdd_sweep_nodeman(rexdd_nodeman_p M)
     //
     // Append the lists together
     //
-    M->not_full_pages = front[5];
-    for (i=5; i; ) {
+    M->not_full_pages = front[31];
+    for (i=31; i; ) {
         i--;
         if (front[i]) {
             // non-empty list; connect it to the running list.
