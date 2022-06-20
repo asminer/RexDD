@@ -55,23 +55,6 @@ typedef struct {
 typedef rexdd_packed_node_t* rexdd_packed_node_p;
 
 
-static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
-static const uint64_t   NEXT_MASK   = MARK_MASK - 1;  // bits 0..48
-static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
-#define TOP14_MASK  0xfffc000000000000
-
-#define LOW36_MASK  0x0000000fffffffff
-
-#define LOW22_MASK  0x003fffff
-#define LORU_MASK   0x07c00000
-#define HIRU_MASK   0xf8000000
-
-#define LOW29_MASK  0x1fffffff
-#define BIT29_MASK  0x20000000
-#define BIT30_MASK  0x40000000
-#define BIT31_MASK  0x80000000
-
-
 /****************************************************************************
  *
  * Get the next pointer from a packed node.
@@ -82,6 +65,7 @@ static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
 static inline uint_fast64_t
 rexdd_get_packed_next(const rexdd_packed_node_p N)
 {
+    static const uint64_t   NEXT_MASK   = (0x01ul << 49) - 1;  // bits 0..48
     return N->first64 & NEXT_MASK;
 }
 
@@ -95,6 +79,7 @@ rexdd_get_packed_next(const rexdd_packed_node_p N)
 static inline void
 rexdd_set_packed_next(rexdd_packed_node_p N, uint64_t nxt)
 {
+    static const uint64_t   NEXT_MASK   = (0x01ul << 49) - 1;  // bits 0..48
     N->first64 = (N->first64 & ~NEXT_MASK) | (nxt & NEXT_MASK);
 }
 
@@ -108,6 +93,7 @@ rexdd_set_packed_next(rexdd_packed_node_p N, uint64_t nxt)
 static inline bool
 rexdd_is_packed_marked(const rexdd_packed_node_p N)
 {
+    static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
     return N->first64 & MARK_MASK;
 }
 
@@ -120,6 +106,7 @@ rexdd_is_packed_marked(const rexdd_packed_node_p N)
 static inline void
 rexdd_mark_packed(rexdd_packed_node_p N)
 {
+    static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
     N->first64 |= MARK_MASK;
 }
 
@@ -132,6 +119,7 @@ rexdd_mark_packed(rexdd_packed_node_p N)
 static inline void
 rexdd_unmark_packed(rexdd_packed_node_p N)
 {
+    static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
     N->first64 &= ~MARK_MASK;
 }
 
@@ -146,6 +134,17 @@ rexdd_unmark_packed(rexdd_packed_node_p N)
 static inline void
 rexdd_unpacked_to_packed(const rexdd_unpacked_node_p uN, rexdd_packed_node_p pN)
 {
+    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
+    static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1; // bits 0..35
+
+    static const uint32_t   LOW22_MASK  = (0x01 << 22) - 1; // bits 0..21
+    static const uint32_t   LORU_MASK   = ((0x01 << 5) - 1) << 22;    // bits 22..26
+    static const uint32_t   HIRU_MASK   = ((0x01 << 5) - 1) << 27;    // bits 27..31
+    static const uint32_t   LOW29_MASK  = (0x01ul << 29) - 1; // bits 0..29
+    static const uint32_t   BIT29_MASK  = 0x01ul << 29;
+    static const uint32_t   BIT30_MASK  = 0x01ul << 30;
+    static const uint32_t   BIT31_MASK  = 0x01ul << 31;
+
     pN->first64 =
         ( (uN->edge[0].target << 14) & TOP14_MASK);
 
@@ -182,6 +181,17 @@ rexdd_unpacked_to_packed(const rexdd_unpacked_node_p uN, rexdd_packed_node_p pN)
 static inline void
 rexdd_packed_to_unpacked(const rexdd_packed_node_p pN, rexdd_unpacked_node_p uN)
 {
+    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
+    static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1; // bits 0..35
+
+    static const uint32_t   LOW22_MASK  = (0x01 << 22) - 1; // bits 0..21
+    static const uint32_t   LORU_MASK   = ((0x01 << 5) - 1) << 22;    // bits 22..26
+    static const uint32_t   HIRU_MASK   = ((0x01 << 5) - 1) << 27;    // bits 27..31
+    static const uint32_t   LOW29_MASK  = (0x01ul << 29) - 1; // bits 0..29
+    static const uint32_t   BIT29_MASK  = 0x01ul << 29;
+    static const uint32_t   BIT30_MASK  = 0x01ul << 30;
+    static const uint32_t   BIT31_MASK  = 0x01ul << 31;
+
     uN->edge[0].label.rule = (pN->third32 & LORU_MASK) >> 22;
     uN->edge[0].label.swapped = pN->fourth32 & BIT29_MASK;
     uN->edge[0].label.complemented = 0;
@@ -229,6 +239,8 @@ static inline bool
 rexdd_are_packed_duplicates(const rexdd_packed_node_p P,
         const rexdd_packed_node_p Q)
 {
+    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
+
     return  (P->second64 == Q->second64) &&
             (P->third32 == Q->third32) &&
             (P->fourth32 == Q->fourth32) &&
@@ -244,14 +256,11 @@ rexdd_are_packed_duplicates(const rexdd_packed_node_p P,
 static inline uint_fast64_t
 rexdd_hash_packed(const rexdd_packed_node_p P)
 {
-    /*
-     *  TBD! TBD! TBD!
-     *
-     *  This is literally the worst possible hash function!
-     *  It's just a placeholder!
-     *
-     */
-    return 0;
+    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
+
+    uint_fast64_t h = (((uint_fast64_t) P->third32) << 32) | P->fourth32;
+    h = h ^ P->second64;
+    return h ^ (P->first64 & TOP14_MASK);
 }
 
 
