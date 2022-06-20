@@ -234,5 +234,23 @@ rexdd_are_packed_duplicates(const rexdd_packed_node_p P,
 }
 
 
+/****************************************************************************
+ *
+ *  Hash a packed node.
+ *  static inlined for speed.
+ */
+static inline uint_fast64_t
+rexdd_hash_packed(const rexdd_packed_node_p P)
+{
+    /*
+     *  TBD! TBD! TBD!
+     *
+     *  This is literally the worst possible hash function!
+     *  It's just a placeholder!
+     *
+     */
+    return 0;
+}
+
 
 #endif

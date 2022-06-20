@@ -78,13 +78,13 @@ void rexdd_free_nodeman(rexdd_nodeman_p M)
  *
  *  Get a node handle, and fill it with an unpacked node.
  *      @param  M           Node manager
- *      @param  n           Unpacked node
+ *      @param  u           Unpacked node
  *
  *      @return A node handle that now stores n.
  *
  */
 rexdd_node_handle_t
-rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p n)
+rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p u)
 {
     rexdd_sanity1(M, "Null node manager");
     rexdd_sanity1(M->pages, "Empty node manager");
@@ -99,12 +99,8 @@ rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p n)
     //
     if (M->previous_handle) {
         const rexdd_node_handle_t h = M->previous_handle-1;
-
-        slot = h & 0x00ffffff;
-        pnum = h >> 24;
-
-        rexdd_sanity2(pnum < M->max_pages, "Bad page %llu in handle", pnum);
-        rexdd_unpacked_to_packed(u, M->pages[pnum].chunk+slot);
+        M->previous_handle = 0;
+        rexdd_unpacked_to_packed(u, rexdd_get_packed_for_handle(M, h));
         return h;
     }
 

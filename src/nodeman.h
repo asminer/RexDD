@@ -92,6 +92,18 @@ rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p n);
 
 /****************************************************************************
  *
+ *  Sweep a node manager.
+ *  For each node in the manager, check if it is marked or not.
+ *  If marked, the mark bit is cleared.
+ *  If unmarked, the node is recycled.
+ *      @param  M       Node manager
+ *
+ */
+void rexdd_sweep_nodeman(rexdd_nodeman_p M);
+
+
+/****************************************************************************
+ *
  *  Recycle the node handle (and node) just returned by
  *  rexdd_nodeman_get_handle().  We can only have one recycled handle at a time.
  *
@@ -99,8 +111,8 @@ rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p n);
  *      @param  h           Node handle to recycle
  *
  */
-static inline
-void rexdd_nodeman_reuse(rexdd_nodeman_p M, rexdd_node_handle_t h)
+static inline void
+rexdd_nodeman_reuse(rexdd_nodeman_p M, rexdd_node_handle_t h)
 {
     rexdd_sanity1(M, "Null node manager");
     rexdd_sanity1(0==M->previous_handle, "Too many reused node manager handles");
@@ -111,6 +123,33 @@ void rexdd_nodeman_reuse(rexdd_nodeman_p M, rexdd_node_handle_t h)
 
 /****************************************************************************
  *
+ *  Find the packed node (pointer) corresponding to a node handle.
+ *
+ *      @param  M           Node manager
+ *      @param  h           Node handle
+ *
+ */
+static inline rexdd_packed_node_p
+rexdd_get_packed_for_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
+{
+    rexdd_sanity1(M, "Null node manager");
+    rexdd_sanity1(M->pages, "Empty node manager");
+    rexdd_sanity1(h, "Null node handle");
+
+    --h;
+
+    /*
+     * low 24 bits of h is the slot number in the page;
+     * the high bits are the page number.
+     */
+
+    rexdd_sanity2((h>>24) < M->max_pages, "Bad page %lu in handle", (h>>24));
+
+    return M->pages[h >> 24].chunk + (h & 0x00ffffff);
+}
+
+/****************************************************************************
+ *
  *  Fill in an unpacked node from a node handle.
  *
  *      @param  M           Node manager
@@ -118,69 +157,105 @@ void rexdd_nodeman_reuse(rexdd_nodeman_p M, rexdd_node_handle_t h)
  *      @param  u           Unpacked node to fill
  *
  */
-static inline
-void rexdd_unpack_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
+static inline void
+rexdd_unpack_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
         rexdd_unpacked_node_p u)
 {
-    rexdd_sanity1(M, "Null node manager");
-    rexdd_sanity1(M->pages, "Empty node manager");
-    rexdd_sanity1(h, "Null handle in unpack");
+    rexdd_packed_to_unpacked( rexdd_get_packed_for_handle(M, h), u );
+}
 
-    --h;
-    const uint_fast32_t slot = h & 0x00ffffff;
-    const uint_fast32_t pnum = h >> 24;
 
-    rexdd_sanity2(pnum < M->max_pages, "Bad page %lu in handle", pnum);
-    rexdd_packed_to_unpacked(M->pages[pnum].chunk+slot, u);
+/****************************************************************************
+ *
+ *  Get the next handle in a chain.
+ *
+ *      @param  M       Node manager
+ *      @param  h       Node handle
+ *
+ *      @return         The next handle for the given node.
+ */
+static inline rexdd_node_handle_t
+rexdd_get_next_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h)
+{
+    return rexdd_get_packed_next( rexdd_get_packed_for_handle(M, h) );
+}
+
+
+/****************************************************************************
+ *
+ *  Set the next handle in a chain.
+ *
+ *      @param  M       Node manager
+ *      @param  h       Node handle
+ *      @param  next    Next handle
+ *
+ */
+static inline void
+rexdd_set_next_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
+        rexdd_node_handle_t next)
+{
+    rexdd_set_packed_next( rexdd_get_packed_for_handle(M, h), next);
+}
+
+
+/****************************************************************************
+ *
+ *  Mark a handle, for use by mark and sweep garbage collection.
+ *  This does NOT mark the children.
+ *
+ *      @param  M       Node manager
+ *      @param  h       Node handle
+ *
+ *      @return     true, iff the handle was already marked.
+ *
+ */
+static inline bool
+rexdd_mark_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
+{
+    rexdd_packed_node_p node = rexdd_get_packed_for_handle(M, h);
+    if (rexdd_is_packed_marked(node)) {
+        return true;
+    }
+    rexdd_mark_packed(node);
+    return false;
+}
+
+
+/****************************************************************************
+ *
+ *  Compute a hash for use by mark and sweep garbage collection.
+ *
+ *      @param  M       Node manager
+ *      @param  h       Node handle
+ *
+ *      @return     A 64-bit hash
+ *
+ */
+static inline uint_fast64_t
+rexdd_hash_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
+{
+    return rexdd_hash_packed(rexdd_get_packed_for_handle(M, h));
 }
 
 //
 // OLD BELOW HERE
 //
 
-
-
 /*
- *  Get the next handle in a chain.
- *      (probably as a macro or static inline function (allowed since C99))
- */
-rexdd_node_handle GET_NEXT_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h);
+ * List of old functions, and their replacements.
 
 
-/*
- *  Set the next handle in a chain.
- *      (probably as a macro)
- */
-rexdd_node_handle SET_NEXT_HANDLE(rexdd_nodeman_p M, rexdd_node_handle h,
-        rexdd_node_handle nxt);
+    GET_NEXT_HANDLE     ->      rexdd_get_next_handle().
+    SET_NEXT_HANDLE     ->      rexdd_set_next_handle().
 
-/*
- *  Is a node marked?
- *      (probably as a macro)
- */
-uint64_t  IS_HANDLE_MARKED(const rexdd_nodeman_p M, rexdd_node_handle h);
+    IS_HANDLE_MARKED
+    MARK_HANDLE         ->      rexdd_mark_handle()
 
-/*
- *  Mark a node.
- *      (probably as a macro)
- */
-void    MARK_HANDLE(rexdd_nodeman_p M, rexdd_node_handle h);
+    HASH_HANDLE         ->      rexdd_hash_handle()
 
-/*
- *  Unmark a node.
- *      (probably as a macro)
- */
-void    UNMARK_HANDLE(rexdd_nodeman_p M, rexdd_node_handle h);
+*/
 
 
-/*
- *  Compute a raw hash value for a node.
- *      (inline)
- */
-static inline uint64_t HASH_HANDLE(const rexdd_nodeman_p M, rexdd_node_handle h)
-{
-    // TBD
-    return 0;
-}
+
 
 #endif
