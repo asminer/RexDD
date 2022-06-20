@@ -242,6 +242,20 @@ rexdd_hash_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
     return rexdd_hash_packed(rexdd_get_packed_for_handle(M, h));
 }
 
+
+/****************************************************************************
+ *
+ *  Dump a node manager, in human-readable format, for debugging purposes.
+ *      @param  fout        Where to dump
+ *      @param  M           Node manager to dump
+ *      @param  show_used   If true, display the used nodes
+ *      @param  show_unused If true, display the unused nodes
+ *
+ */
+void rexdd_dump_nodeman(FILE* fout, const rexdd_nodeman_p M,
+        bool show_used, bool show_unused);
+
+
 //
 // OLD BELOW HERE
 //

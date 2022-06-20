@@ -4,13 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SHOW_PAGE
+#define DUMP
 
-#ifdef SHOW_PAGE
-const unsigned TESTS=100;
-#else
-const unsigned TESTS=1000000;
-#endif
+const unsigned TESTS=300*1024*1024;
 
 const uint64_t LOW49= (0x01ul << 49)-1;
 const uint64_t LOW50= (0x01ul << 50)-1;
@@ -52,9 +48,9 @@ static inline uint64_t random64()
     return x | random();
 }
 
-static inline bool randombit()
+static inline uint16_t randomshort()
 {
-    return random() & 0x01;
+    return random() & 0x00ffff;
 }
 
 void fill_random(rexdd_unpacked_node_p P)
@@ -122,35 +118,45 @@ int main()
     printf("rexdd_unpacked_node_t: %lu bytes\n", sizeof(rexdd_unpacked_node_t));
     printf("rexdd_packed_node_t: %lu bytes\n", sizeof(rexdd_packed_node_t));
 
-    rexdd_nodepage_t page;
-    rexdd_init_nodepage(&page);
+    rexdd_nodeman_t M;
+    rexdd_init_nodeman(&M, 0);
 
     srandom(12345678);
     rexdd_unpacked_node_t P, Q, R;
 
     printf("Storing random nodes (with next)...\n");
 
-    uint_fast32_t h = rexdd_page_free_slot(&page);
-
     unsigned i;
+    for (i=0; i<TESTS; ++i) {
+        fill_random(&P);
+        copy_and_mask(&Q, &P);
+    }
+
     bool mark, b;
     uint64_t n1, n2, n3;
+    rexdd_node_handle_t h;
     for (i=0; i<TESTS; i++) {
         fill_random(&P);
         copy_and_mask(&Q, &P);
 
-        rexdd_unpacked_to_packed(&Q, page.chunk+h);
+        h = rexdd_nodeman_get_handle(&M, &P);
 
         // random next
         n1 = random64();
-        rexdd_set_packed_next(page.chunk+h, n1);
+        rexdd_set_next_handle(&M, h, n1);
 
         // random mark/unmark
-        if ((mark = randombit())) {
-            rexdd_mark_packed(page.chunk+h);
+        const unsigned pnum = h >> 24;
+        if (pnum<16) {
+            mark = (randomshort() >> (16-pnum));
+        } else {
+            mark = (randomshort() >> (pnum-16));
+        }
+        if (mark) {
+            rexdd_mark_handle(&M, h);
         }
 
-        rexdd_packed_to_unpacked(page.chunk+h, &R);
+        rexdd_unpack_handle(&M, h, &R);
 
         if (!equal(&Q, &R)) {
             printf("Node storage test %u failed\n", i);
@@ -161,7 +167,7 @@ int main()
         }
 
         n2 = n1 & LOW49;
-        n3 = rexdd_get_packed_next(page.chunk+h);
+        n3 = rexdd_get_next_handle(&M, h);
         if (n3 != n2) {
             printf("Next test %u failed\n", i);
             printf("  Next as set: %llx\n", n1);
@@ -170,24 +176,26 @@ int main()
             break;
         }
 
-        b = rexdd_is_packed_marked(page.chunk+h);
+        b = rexdd_is_packed_marked(rexdd_get_packed_for_handle(&M, h));
         if (b != mark) {
             printf("Mark bit mismatch on test %u\n", i);
             printf("    We think the bit is %x\n", mark);
             printf("    Packed thinks it is %x\n", b);
             break;
         }
-
     }
     printf("%u tests passed\n", TESTS);
 
-#ifdef SHOW_PAGE
-    printf("Page details:\n");
-    rexdd_dump_page(stdout, &page, 0x42, true, true);
+    printf("Sweeping...\n");
+    rexdd_sweep_nodeman(&M);
+    printf("Sweeping done\n");
+
+#ifdef DUMP
+    rexdd_dump_nodeman(stdout, &M, false, false);
 #endif
 
 
-    rexdd_free_nodepage(&page);
+    rexdd_free_nodeman(&M);
 
     return 0;
 }

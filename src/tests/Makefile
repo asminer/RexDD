@@ -1,9 +1,9 @@
 
 all: storage
 
-CFLAGS=-g -Wall
+CFLAGS=-Wall -O3
 
-storage: storage.o nodepage.o error.o
+storage: storage.o nodeman.o nodepage.o error.o
 	$(CC) $^ -o $@
 
 nodepage.o: ../nodepage.c ../nodepage.h
