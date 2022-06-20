@@ -39,8 +39,8 @@ void rexdd_create_forest(rexdd_forest_p F, const rexdd_forest_settings_p s)
     
     // Initialize its members
     F->S = *s;
-    if (rexdd_create_nodeman(&(F->M)) != 0) 
-        rexdd_error(__FILE__, __LINE__, "Initialize the node manager error!");
+    rexdd_init_nodeman(&(F->M),0);
+    
     if (rexdd_create_UT(&(F->UT), &(F->M)) != 0) 
         rexdd_error(__FILE__, __LINE__, "Initialize the unique table error!");
 
@@ -55,9 +55,9 @@ void rexdd_destroy_forest(rexdd_forest_p F)
 {
 
     rexdd_default_forest_settings(0, &(F->S));
-    rexdd_destroy_nodeman(&(F->M));
+    rexdd_free_nodeman(&(F->M));
     rexdd_destroy_UT(&(F->UT));
-    
+      
     // remove rexdd_function_s TBD
     rexdd_done_function(F->roots);
 
