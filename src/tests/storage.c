@@ -1,10 +1,10 @@
 
-#include "../nodepage.h"
+#include "../nodeman.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-// #define SHOW_PAGE
+#define SHOW_PAGE
 
 #ifdef SHOW_PAGE
 const unsigned TESTS=100;
@@ -61,6 +61,7 @@ void fill_random(rexdd_unpacked_node_p P)
 {
     if (0==P) return;
 
+    P->level = random();
     if (0==P->level) {
         P->level++; // level can't be zero
     }
@@ -182,10 +183,7 @@ int main()
 
 #ifdef SHOW_PAGE
     printf("Page details:\n");
-    for (i=0; i<TESTS; i+=3) {
-        rexdd_recycle_page_slot(&page, i);
-    }
-    rexdd_dump_page(stdout, &page, true, true);
+    rexdd_dump_page(stdout, &page, 0x42, true, true);
 #endif
 
 

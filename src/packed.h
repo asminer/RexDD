@@ -54,8 +54,10 @@ typedef struct {
 
 typedef rexdd_packed_node_t* rexdd_packed_node_p;
 
-#define NEXT_MASK   0x0001ffffffffffff
-#define MARK_MASK   0x0002000000000000
+
+static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
+static const uint64_t   NEXT_MASK   = MARK_MASK - 1;  // bits 0..48
+static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
 #define TOP14_MASK  0xfffc000000000000
 
 #define LOW36_MASK  0x0000000fffffffff

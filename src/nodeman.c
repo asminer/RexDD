@@ -254,9 +254,11 @@ void rexdd_sweep_nodeman(rexdd_nodeman_p M)
     M->not_full_pages = front[5];
     for (i=5; i; ) {
         i--;
-        if (back[i]) {
+        if (front[i]) {
+            // non-empty list; connect it to the running list.
+            rexdd_sanity1(back[i], "null tail pointer");
             M->pages[back[i]-1].next = M->not_full_pages;
+            M->not_full_pages = front[i];
         }
-        M->not_full_pages = front[i];
     }
 }

@@ -96,12 +96,13 @@ void rexdd_sweep_page(rexdd_nodepage_p page);
  *  Dump an entire page, in human-readable format, for debugging purposes.
  *      @param  fout        Where to dump
  *      @param  page        Page struct to dump
+ *      @param  pageno      Page number
  *      @param  show_used   If true, display the used nodes
  *      @param  show_unused If true, display the unused nodes
  *
  */
 void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
-        bool show_used, bool show_unused);
+        uint_fast32_t pageno, bool show_used, bool show_unused);
 
 
 #endif

@@ -147,12 +147,23 @@ void rexdd_sweep_page(rexdd_nodepage_p page)
 //
 static inline void rexdd_show_edge(FILE* fout, rexdd_edge_t e)
 {
-    fprintf(fout, "<%s,%c,%c,%llu>",
+    fprintf(fout, "<%s,%c,%c,",
             rexdd_rule_name[e.label.rule],
             e.label.complemented ? 'c' : '_',
-            e.label.swapped ? 's' : '_',
-            e.target
+            e.label.swapped ? 's' : '_'
     );
+
+    static const uint64_t bit50 = 0x01ul << 49;
+    static const uint64_t low24 = (0x01ul << 24) -1;
+    if (e.target & bit50) {
+        // Terminal.
+        fprintf(fout, "T%x>", (uint32_t) (e.target & ~bit50) );
+    } else {
+        // Non-terminal
+        fprintf(fout, "N%0x:%0x>",
+                (uint32_t) (e.target >> 24),
+                (uint32_t) (e.target & low24));
+    }
 }
 
 /****************************************************************************
@@ -160,24 +171,26 @@ static inline void rexdd_show_edge(FILE* fout, rexdd_edge_t e)
  *  Dump an entire page, in human-readable format, for debugging purposes.
  *      @param  fout        Where to dump
  *      @param  page        Page struct to dump
+ *      @param  pageno      Page number
  *      @param  show_used   If true, display the used nodes
  *      @param  show_unused If true, display the unused nodes
  *
  */
 void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
-        bool show_used, bool show_unused)
+        uint_fast32_t pageno, bool show_used, bool show_unused)
 {
     rexdd_sanity1(page, "Null page");
+    fprintf(fout, "Page %0x\n", pageno);
     if (0==page->chunk) {
         fprintf(fout, "    Unallocated page\n");
         return;
     }
     if (page->free_list) {
-        fprintf(fout, "    Free list: %llu\n", (uint64_t)page->free_list-1);
+        fprintf(fout, "    Free list: %x\n", (uint32_t)page->free_list-1);
     } else {
         fprintf(fout, "    Free list: null\n");
     }
-    fprintf(fout, "    #unused: %llu", (uint64_t)page->num_unused);
+    fprintf(fout, "    #unused: %u\n", (uint32_t)page->num_unused);
     uint_fast32_t i;
     rexdd_unpacked_node_t node;
     for (i=0; i<page->first_unalloc; i++) {
@@ -185,8 +198,8 @@ void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
             /* In use */
             if (show_used) {
                 rexdd_packed_to_unpacked(page->chunk+i, &node);
-                fprintf(fout, "    Slot %-8u: lvl %u, ",
-                    i, (unsigned) node.level);
+                fprintf(fout, "    Slot %x:%06x In use. level %u, ",
+                    pageno, i, (unsigned) node.level);
                 rexdd_show_edge(fout, node.edge[0]);
                 fputs(", ", fout);
                 rexdd_show_edge(fout, node.edge[1]);
@@ -195,12 +208,12 @@ void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
         } else {
             /* Freed */
             if (show_unused) {
-                fprintf(fout, "    Slot %-8u: free; next %u\n", i,
-                        page->chunk[i].third32);
+                fprintf(fout, "    Slot %x:%06x Freed.  next %0x",
+                    pageno, i, page->chunk[i].third32);
             }
         }
     }
-    fprintf(fout, "    Slot %-8u onward: unused\n", page->first_unalloc);
+    fprintf(fout, "    Slot %x:%06x onward: unused\n", pageno, page->first_unalloc);
 }
 
 
