@@ -203,6 +203,11 @@ rexdd_set_next_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
  *  Mark a handle, for use by mark and sweep garbage collection.
  *  This does NOT mark the children.
  *
+ *  TBD - probably should replace this with the proper version,
+ *      that can handle any destination (terminal or nonterminal)
+ *      and will mark the children nodes.
+ *
+ *
  *      @param  M       Node manager
  *      @param  h       Node handle
  *
