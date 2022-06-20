@@ -1,6 +1,8 @@
 #ifndef PACKED_H
 #define PACKED_H
 
+#include "unpacked.h"
+
 /****************************************************************************
  *
  *  Packed node, as 192 bits (3 x 64 bits).
@@ -259,7 +261,7 @@ rexdd_hash_packed(const rexdd_packed_node_p P)
     static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
 
     uint_fast64_t h = (((uint_fast64_t) P->third32) << 32) | P->fourth32;
-    h = h ^ P->second64;
+    h ^= P->second64;
     return h ^ (P->first64 & TOP14_MASK);
 }
 
