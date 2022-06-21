@@ -81,57 +81,84 @@ void rexdd_reduce_edge(
         rexdd_error(__FILE__, __LINE__, "Target node level unmatched");
     }
 
-
-    /* 
-     * Node handle things [confused] TBD
-        Note: node handle may includes the information of storage location (which page and chunk)?
-     */
-
-    rexdd_node_handle handle = rexdd_new_handle(&(F->M));
-    if (rexdd_pack_handle(&(F->M), handle, &(p)) !=0){
-        rexdd_error(__FILE__, __LINE__, "Fill in a packed node fail");
+    if (n == 0) {
+        // out edge to terminal... TBD
     }
 
+    /*
+     * Check if it is in this forest unique table. if so, return it
+     */
+        /* 
+        * Node handle things
+            Note: node handle may includes the information of storage location (which page and chunk)?
+        */
+
+        /* check if there is a handle for this unpacked node and get the handle
+                Not sure if this step can be done inside rexdd_nodeman_get_handle :)
+        */
+    rexdd_packed_node_p pN = malloc(sizeof(rexdd_packed_node_t));
+    rexdd_unpacked_to_packed(&p, pN);
+    rexdd_node_handle_t handle = 0;
+
+    bool is_handle = 0;
+    for (int h=1; h<=(0x01<<49); h++) {
+        is_handle = rexdd_are_packed_duplicates(pN, rexdd_get_packed_for_handle(&(F->M),h));
+        if (is_handle) {
+            handle = (rexdd_node_handle_t)h;
+            free(pN);
+            break;
+        }
+    }
+    if (is_handle != 1){
+        handle = rexdd_nodeman_get_handle(&(F->M), &p);
+    }
 
     /*
      * Hash node
      */
-    uint64_t H = HASH_HANDLE(&(F->M), handle); // HASH_HANDLE may use node itself instead of handle?
-    /*
-     * Check if it is in this forest. if so, return it; or do the following steps
-     */
-    // TBD
+    uint_fast64_t H = rexdd_hash_handle(&(F->M), handle); 
+
+    rexdd_packed_node_p curr_packed;
+    for (curr_packed = rexdd_get_packed_for_handle(&((&(F->UT))->M), H); curr_packed; curr_packed = rexdd_get_packed_next(curr_packed) ) {
+    //                                                          ^ not sure query in the unique table
+        
+        if (curr_packed->fourth32 & (0x01ul << 29) - 1 != n)    continue;                   // check level
+        if (((curr_packed->first64 & ~((0x01ul << 50)-1)) >> 14)
+                |
+            (curr_packed->second64 & (0x01ul << 36) - 1) != p.edge[0].target)   continue;   // check loch target
+        if (((curr_packed->second64 & ~((0x01ul << 36) - 1)) >> 14)
+                |
+            (curr_packed->third32 & (0x01 << 22) - 1) != p.edge[1].target)  continue;       // check hich target
+        
+        // Not sure if we need to check its low and high label ...TBD
+        
+        out->label = l;
+        out->target = handle;
+    }
+    
 
     /* ======REDUCE======= */
     /*
         {Merge rexdd_edge_label_t and reduced node}
             {reduce node by the patterns}
     */
-
-    uint_fast64_t terminal;     // TBD the terminal node handle?
-    if (p.level == 0){
-        out->target = terminal;
-        out->label = l;
-    }
  
-    rexdd_packed_node_p pN;
-    rexdd_unpacked_node_p uN = &p;
-    rexdd_unpacked_to_packed(uN, pN);
-    // 
+    // Not sure about its children reduce
+
     if (l.swapped == 1) {
-        // swap the target node (its loch loru and hich hiru)TBD
+        // swap the target node (its loch loru and hich hiru)...TBD
 
     }
 
     rexdd_edge_t *reduced;
-    if ((pN->first64 & 0xf000000000000000 == 1)|| (pN->second64 & 0xf000000000000000 == 1)) {
+    if ((pN->first64 & 0x8000000000000000 == 1)|| (pN->second64 & 0x8000000000000000 == 1)) {
         // loch or hich are nonterm
         // pattern (a)
-        if ((((pN->third32 & LORU_MASK) >> 22 == N)||((pN->third32 & LORU_MASK) >> 22 == X))
-                && (((pN->third32 & HIRU_MASK) >> 27 == N)||((pN->third32 & HIRU_MASK) >> 27 == X))){
-            reduced->target =   ((pN->first64 & TOP14_MASK) >> 14)
+        if ((((pN->third32 & ((0x01 << 5) - 1) << 22) >> 22 == N)||((pN->third32 & ((0x01 << 5) - 1) << 22) >> 22 == X))
+                && (((pN->third32 & ((0x01 << 5) - 1) << 27) >> 27 == N)||((pN->third32 & ((0x01 << 5) - 1) << 27) >> 27 == X))){
+            reduced->target =   ((pN->first64 & ~((0x01ul << 50)-1)) >> 14)
                             |
-                            (pN->second64 & LOW36_MASK);
+                            (pN->second64 & ~((0x01ul << 50)-1));
             // ... TBD
 
         }
