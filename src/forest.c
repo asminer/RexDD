@@ -83,6 +83,9 @@ void rexdd_reduce_edge(
 
     if (n == 0) {
         // out edge to terminal... TBD
+        /*
+            set the 50th bits of the children of out edge to 0 (terminal)?
+        */
     }
 
     /*
@@ -101,17 +104,19 @@ void rexdd_reduce_edge(
     rexdd_node_handle_t handle = 0;
 
     bool is_handle = 0;
-    for (int h=1; h<=(0x01<<49); h++) {
+    for (int h=1; h<=(0x01<<48); h++) {
         is_handle = rexdd_are_packed_duplicates(pN, rexdd_get_packed_for_handle(&(F->M),h));
         if (is_handle) {
             handle = (rexdd_node_handle_t)h;
-            free(pN);
             break;
         }
     }
     if (is_handle != 1){
         handle = rexdd_nodeman_get_handle(&(F->M), &p);
     }
+
+    free(pN);
+    pN = NULL;
 
     /*
      * Hash node
@@ -134,6 +139,7 @@ void rexdd_reduce_edge(
         
         out->label = l;
         out->target = handle;
+        return ;
     }
     
 
@@ -145,32 +151,231 @@ void rexdd_reduce_edge(
  
     // Not sure about its children reduce
 
+    rexdd_unpacked_node_p new_p = malloc(sizeof(rexdd_unpacked_node_t));
+    *new_p = p;
     if (l.swapped == 1) {
         // swap the target node (its loch loru and hich hiru)...TBD
-
+        rexdd_edge_t temp = new_p->edge[0];
+        new_p->edge[0] = new_p->edge[1];
+        new_p->edge[1] = temp;
     }
 
+    // check if it has a terminal or nonterminal pattern
     rexdd_edge_t *reduced;
-    if ((pN->first64 & 0x8000000000000000 == 1)|| (pN->second64 & 0x8000000000000000 == 1)) {
-        // loch or hich are nonterm
-        // pattern (a)
-        if ((((pN->third32 & ((0x01 << 5) - 1) << 22) >> 22 == N)||((pN->third32 & ((0x01 << 5) - 1) << 22) >> 22 == X))
-                && (((pN->third32 & ((0x01 << 5) - 1) << 27) >> 27 == N)||((pN->third32 & ((0x01 << 5) - 1) << 27) >> 27 == X))){
-            reduced->target =   ((pN->first64 & ~((0x01ul << 50)-1)) >> 14)
-                            |
-                            (pN->second64 & ~((0x01ul << 50)-1));
-            // ... TBD
-
+    reduced->target = new_p->edge[0].target;
+    reduced->label.rule = N;
+    reduced->label.swapped = 0;
+    reduced->label.complemented = 0;
+    // Terminal patterns
+    if ((new_p->edge[0].target & (0x01ul << 49) == 0) && (new_p->edge[1].target & (0x01ul << 49) == 0)) {
+        reduced->target = new_p->edge[0].target;
+        // pattern (a) & (c)
+        if (new_p->edge[0].label.rule == X ) {
+            if (new_p->edge[0].label.complemented == 0 && new_p->edge[0].label.complemented == new_p->edge[1].label.complemented) {
+                if (new_p->edge[1].label.rule == X) {
+                    reduced->label.rule = X;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 0;
+                } else if (new_p->edge[1].label.rule == HN || new_p->edge[1].label.rule == AHN) {
+                    reduced->label.rule = ELZ;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 1;
+                } else {
+                    reduced = NULL;
+                }
+            } else if (new_p->edge[0].label.complemented == 0 && new_p->edge[0].label.complemented != new_p->edge[1].label.complemented) {
+                if (new_p->edge[1].label.rule == LZ || new_p->edge[1].label.rule == ELZ) {
+                    reduced->label.rule = ELZ;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 1;
+                } else {
+                    reduced = NULL;
+                }
+            } else if (new_p->edge[0].label.complemented == 1 && new_p->edge[0].label.complemented == new_p->edge[1].label.complemented) {
+                if (new_p->edge[1].label.rule == X) {
+                    reduced->label.rule = X;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 1;
+                } else if (new_p->edge[1].label.rule == HZ || new_p->edge[1].label.rule == AHZ) {
+                    reduced->label.rule = ELN;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 0;
+                } else {
+                    reduced = NULL;
+                }
+            } else if (new_p->edge[0].label.complemented == 1 && new_p->edge[0].label.complemented != new_p->edge[1].label.complemented) {
+                if (new_p->edge[1].label.rule == LN || new_p->edge[1].label.rule == ELN) {
+                    reduced->label.rule = ELN;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 0;
+                } else {
+                    reduced = NULL;
+                }
+            } 
+            
         }
-        // pattern (b)-(g) TBD
-    } else {
-        // loch and hich are term
-        // pattern (a)-(g) TBD
+        // pattern (b)
+        else if (new_p->edge[0].label.rule == N && new_p->edge[1].label.rule == N) {
+            if (new_p->edge[0].label.complemented != new_p->edge[1].label.complemented) {
+                if (new_p->edge[0].label.complemented == 0) {
+                    reduced->label.rule = LZ;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 1;
+                } else {
+                    reduced->label.rule = LN;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 0;
+                }
+            } else {
+                reduced = NULL;
+            }
+        }
+        // pattern (d)
+        else if (new_p->edge[1].label.rule == X) {
+            if (new_p->edge[0].label.complemented == 0 && new_p->edge[0].label.complemented == new_p->edge[1].label.complemented) {
+                if (new_p->edge[0].label.rule == LN || new_p->edge[0].label.rule == ALN) {
+                    reduced->label.rule = EHZ;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 1;
+                } else {
+                    reduced = NULL;
+                }
+            } else if (new_p->edge[0].label.complemented == 0 && new_p->edge[0].label.complemented != new_p->edge[1].label.complemented) {
+                if (new_p->edge[1].label.rule == HZ || new_p->edge[1].label.rule == EHZ) {
+                    reduced->label.rule = EHZ;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 1;
+                } else {
+                    reduced = NULL;
+                }
+            } else if (new_p->edge[0].label.complemented == 1 && new_p->edge[0].label.complemented == new_p->edge[1].label.complemented) {
+                if (new_p->edge[1].label.rule == LZ || new_p->edge[1].label.rule == ALZ) {
+                    reduced->label.rule = EHN;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 0;
+                } else {
+                    reduced = NULL;
+                }
+            } else if (new_p->edge[0].label.complemented == 1 && new_p->edge[0].label.complemented != new_p->edge[1].label.complemented) {
+                if (new_p->edge[1].label.rule == HN || new_p->edge[1].label.rule == EHN) {
+                    reduced->label.rule = EHN;
+                    reduced->label.swapped = 0;
+                    reduced->label.complemented = 0;
+                } else {
+                    reduced = NULL;
+                }
+            } 
+
+        } else {
+            reduced = NULL;
+        }
+    } 
+    // Nonterminal patterns 1)
+    else if ((new_p->edge[0].target & (0x01ul << 49) == 0) && (new_p->edge[1].target & (0x01ul << 49) != 0)) {
+        reduced->target = new_p->edge[1].target;
+        reduced->label.swapped = new_p->edge[1].label.swapped;
+        reduced->label.complemented = new_p->edge[1].label.complemented;
+        // pattern (b) & (c)
+        if (new_p->edge[0].label.rule == X) {
+            if (new_p->edge[0].label.complemented == 0) {
+                if (new_p->edge[1].label.rule == N) {
+                    reduced->label.rule = LZ;
+                } else if (new_p->edge[1].label.rule == LZ || new_p->edge[1].label.rule == ELZ) {
+                    reduced->label.rule = ELZ;
+                } else {
+                    reduced =NULL;
+                }
+            } else {
+                if (new_p->edge[1].label.rule == N) {
+                    reduced->label.rule = LN;
+                } else if (new_p->edge[1].label.rule == LN || new_p->edge[1].label.rule == ELN) {
+                    reduced->label.rule = ELN;
+                } else {
+                    reduced =NULL;
+                }
+            }
+        } else {
+            reduced = NULL;
+        }
+    } 
+    // Nonterminal parttern 2)
+    else if ((new_p->edge[0].target & (0x01ul << 49) != 0) && (new_p->edge[1].target & (0x01ul << 49) == 0)) {
+        reduced->target = new_p->edge[0].target;
+        reduced->label.swapped = new_p->edge[0].label.swapped;
+        reduced->label.complemented = new_p->edge[0].label.complemented;
+        // pattern (e) & (f)
+        if (new_p->edge[1].label.rule == X) {
+            if (new_p->edge[1].label.complemented == 0) {
+                if (new_p->edge[0].label.rule == N) {
+                    reduced->label.rule = HZ;
+                } else if (new_p->edge[0].label.rule == HZ || new_p->edge[0].label.rule == EHZ) {
+                    reduced->label.rule = EHZ;
+                } else {
+                    reduced =NULL;
+                }
+            } else {
+                if (new_p->edge[0].label.rule == N) {
+                    reduced->label.rule = HN;
+                } else if (new_p->edge[0].label.rule == HN || new_p->edge[0].label.rule == EHN) {
+                    reduced->label.rule = EHN;
+                } else {
+                    reduced =NULL;
+                }
+            }
+        } else {
+            reduced = NULL;
+        }
+    }
+    // Nonterminal pattern 3)
+    else if ((new_p->edge[0].target & (0x01ul << 49) != 0) && (new_p->edge[1].target == new_p->edge[0].target)) {
+        //                                                                            ^ maybe the lower 50 bits?
+        reduced->target = new_p->edge[0].target;
+        reduced->label.swapped = new_p->edge[0].label.swapped;
+        reduced->label.complemented = new_p->edge[0].label.complemented;
+        // pattern (a) & (g)
+        if (new_p->edge[0].label.rule == N) {
+            if (new_p->edge[1].label.rule == N || new_p->edge[1].label.rule == X) {
+                reduced->label.rule = X;
+            } else {
+                reduced = NULL;
+            }
+        } else if (new_p->edge[0].label.rule == X) {
+            if (new_p->edge[1].label.rule == N || new_p->edge[1].label.rule == X) {
+                reduced->label.rule = X;
+            } else if (new_p->edge[1].label.rule == HZ || new_p->edge[1].label.rule == AHZ) {
+                reduced->label.rule = AHZ;
+            } else if (new_p->edge[1].label.rule == HN || new_p->edge[1].label.rule == AHN) {
+                reduced->label.rule = AHN;
+            } else {
+                reduced = NULL;
+            }
+        }
+        // pattern (d)
+        else if (new_p->edge[0].label.rule == LZ || new_p->edge[0].label.rule == ALZ) {
+            if (new_p->edge[1].label.rule == X) {
+                reduced->label.rule = ALZ;
+            } else {
+                reduced = NULL;
+            }
+        } else if (new_p->edge[1].label.rule == LN || new_p->edge[1].label.rule == ALN) {
+            if (new_p->edge[1].label.rule == X) {
+                reduced->label.rule = ALN;
+            } else {
+                reduced = NULL;
+            }
+        } else {
+            reduced = NULL;
+        }
+    }
+    // Normalize the four equivalent forms
+    else {
+        // TBD
     }
 
     // Normalize out (figure 6: the decision table to choose canonical node)
 
-    // Merge l and reduced into out TBD
+    // Check if l and reduced can be merged
+        // Merge l and reduced into out TBD
 
     /* ======END REDUCE====== */
     
