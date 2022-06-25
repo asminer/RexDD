@@ -25,6 +25,61 @@ typedef enum {
     AHN = 13
 } rexdd_rule_t;
 
+/*
+ *  The complement of reduction rules
+ */
+static inline rexdd_rule_t rexdd_rule_com_t (rexdd_rule_t R) {
+    switch (R)
+    {
+    case N:
+        return N;
+
+    case X:
+        return X;
+
+    case LZ:
+        return LN;
+
+    case LN:
+        return LZ;
+
+    case HZ:
+        return HN;
+
+    case HN:
+        return HZ;
+
+    case ELZ:
+        return ELN;
+
+    case ELN:
+        return ELZ;
+
+    case EHZ:
+        return EHN;
+
+    case EHN:
+        return EHZ;
+
+    case ALZ:
+        return ALN;
+
+    case ALN:
+        return ALZ;
+
+    case AHZ:
+        return AHN;
+
+    case AHN:
+        return AHZ;
+
+    default:
+        return N;
+    }
+
+}
+
+
 static const char* rexdd_rule_name[] = {
     "N",
     "X",
@@ -87,5 +142,13 @@ typedef struct {
 } rexdd_unpacked_node_t;
 
 typedef rexdd_unpacked_node_t* rexdd_unpacked_node_p;
+
+/*
+ *  The complement of rexdd edge
+ */
+static inline void rexdd_edge_com (rexdd_edge_t e) {
+    e.label.rule = rexdd_rule_com_t (e.label.rule);
+    e.label.complemented = ~e.label.complemented;
+}
 
 #endif
