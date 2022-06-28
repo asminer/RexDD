@@ -174,6 +174,7 @@ rexdd_unpack_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
  *      that can handle any destination (terminal or nonterminal)
  *      and will mark the children nodes.
  *
+ *  TBD - move the "proper" version to forest.h?
  *
  *      @param  M       Node manager
  *      @param  h       Node handle
