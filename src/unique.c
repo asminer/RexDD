@@ -1,6 +1,8 @@
 
 #include "unique.h"
 
+#include <stdlib.h> // for malloc
+
 // #define TEST_PRIMES
 
 /*
@@ -56,3 +58,113 @@ int main()
 }
 
 #endif
+
+
+/****************************************************************************
+ *
+ *  Initialize a unique table
+ *
+ */
+void rexdd_create_UT(rexdd_unique_table_p T, rexdd_nodeman_p M)
+{
+    rexdd_sanity1(T, "Null unique table");
+    rexdd_sanity1(M, "Null node manager");
+
+    T->M = M;
+    T->size = primes[0];
+    T->table = malloc(T->size * sizeof(rexdd_node_handle_t));
+
+    rexdd_check1(T->table, "malloc fail in unique table");
+
+    T->num_entries = 0;
+    T->prev_size_index = 0;
+    T->size_index = 0;
+}
+
+/****************************************************************************
+ *
+ *  Free memory for a unique table.
+ *  The underlying node manager is not touched.
+ */
+void rexdd_destroy_UT(rexdd_unique_table_p T)
+{
+    rexdd_sanity1(T, "Null unique table");
+    if (0==T->table) return;
+    free(T->table);
+
+    // Set everything to sane values
+    T->table = 0;
+    T->num_entries = 0;
+    T->size = 0;
+    T->size_index = 0;
+    T->prev_size_index = 0;
+}
+
+
+/****************************************************************************
+ *
+ *  Add a handle to the unique table.
+ *  If unique, returns the same handle;
+ *  otherwise, returns the handle of the duplicate and recycles
+ *      the given handle.
+ *  In either case, the returned node becomes the front entry
+ *  of the hash chain.
+ */
+rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t h)
+{
+    rexdd_sanity1(T, "Null unique table");
+    rexdd_sanity1(T->table, "Empty unique table");
+
+    /*
+     * Check if we should enlarge the table.  TBD
+     */
+
+    rexdd_packed_node_p node = rexdd_get_packed_for_handle(T->M, h);
+    uint_fast64_t hash = rexdd_hash_packed(node, T->size);
+
+    /*
+     *  Special, and hopefully common, case: empty chain.
+     *  Which means the node is new.
+     */
+    if (0==T->table[hash]) {
+        T->table[hash] = h;
+        T->num_entries++;
+        // node's next should already be 0
+        return h;
+    }
+
+    /*
+     *  Non-empty chain.  Check the chain for duplicates.
+     */
+    uint_fast64_t currhand = T->table[hash];
+    rexdd_packed_node_p prevnode = 0;
+    rexdd_packed_node_p currnode = 0;
+    while (currhand) {
+        currnode = rexdd_get_packed_for_handle(T->M, currhand);
+        if (!rexdd_are_packed_duplicates(node, currnode)) {
+            prevnode = currnode;
+            continue;
+        }
+        /*
+         *  We found a duplicate.  Move it to the front.
+         */
+        if (prevnode) {
+            rexdd_set_packed_next(prevnode, rexdd_get_packed_next(currnode));
+            rexdd_set_packed_next(currnode, T->table[hash]);
+            T->table[hash] = currhand;
+        }
+        /*
+         *  Recycle the given handle.
+         */
+        rexdd_nodeman_reuse(T->M, h);
+        return currhand;
+    }
+
+    /*
+     *  No duplicates in the chain.  Add the new node to the front.
+     */
+    rexdd_set_packed_next(node, T->table[hash]);
+    T->table[hash] = h;
+    return h;
+}
+
