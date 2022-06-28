@@ -127,8 +127,8 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t 
      *  Which means the node is new.
      */
     if (0==T->table[hash]) {
-        T->table[hash] = h;
         T->num_entries++;
+        T->table[hash] = h;
         // node's next should already be 0
         return h;
     }
@@ -142,6 +142,7 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t 
     while (currhand) {
         currnode = rexdd_get_packed_for_handle(T->M, currhand);
         if (!rexdd_are_packed_duplicates(node, currnode)) {
+            currhand = rexdd_get_packed_next(currnode);
             prevnode = currnode;
             continue;
         }
@@ -163,8 +164,61 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t 
     /*
      *  No duplicates in the chain.  Add the new node to the front.
      */
+    T->num_entries++;
     rexdd_set_packed_next(node, T->table[hash]);
     T->table[hash] = h;
     return h;
 }
+
+
+/****************************************************************************
+ *
+ *  Remove all unmarked nodes from the unique table.
+ *      @param  T   Unique table to modify
+ */
+void rexdd_sweep_UT(rexdd_unique_table_p T)
+{
+    rexdd_sanity1(T, "Null unique table");
+    rexdd_sanity1(T->table, "Empty unique table");
+
+    /*
+     *  For each chain, traverse and keep only the marked items.
+     */
+    uint_fast64_t i, h;
+    rexdd_packed_node_p prev;
+    rexdd_packed_node_p curr;
+    T->num_entries = 0;
+    for (i=0; i<T->size; i++) {
+        prev = 0;
+        h = T->table[i];
+        while (h) {
+            curr = rexdd_get_packed_for_handle(T->M, h);
+            if (rexdd_is_packed_marked(curr)) {
+                /* attach us to the chain */
+                T->num_entries++;
+                if (prev) {
+                    rexdd_set_packed_next(prev, h);
+                } else {
+                    T->table[i] = h;
+                }
+                prev = curr;
+            }
+            h = rexdd_get_packed_next(curr);
+        }
+        /*
+         *  Done traversing; null terminate the new chain
+         */
+        if (prev) {
+            rexdd_set_packed_next(prev, 0);
+        } else {
+            T->table[i] = 0;
+        }
+    } // for i
+
+    /*
+     * Check if we should shrink the table.  TBD
+     */
+
+}
+
 
