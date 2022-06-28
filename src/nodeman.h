@@ -167,41 +167,6 @@ rexdd_unpack_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
 
 /****************************************************************************
  *
- * TBD - move/cut to UT code
- *  Get the next handle in a chain.
- *
- *      @param  M       Node manager
- *      @param  h       Node handle
- *
- *      @return         The next handle for the given node.
- */
-static inline rexdd_node_handle_t
-rexdd_get_next_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h)
-{
-    return rexdd_get_packed_next( rexdd_get_packed_for_handle(M, h) );
-}
-
-
-/****************************************************************************
- *
- *  TBD _ move/cut to UT code
- *  Set the next handle in a chain.
- *
- *      @param  M       Node manager
- *      @param  h       Node handle
- *      @param  next    Next handle
- *
- */
-static inline void
-rexdd_set_next_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
-        rexdd_node_handle_t next)
-{
-    rexdd_set_packed_next( rexdd_get_packed_for_handle(M, h), next);
-}
-
-
-/****************************************************************************
- *
  *  Mark a handle, for use by mark and sweep garbage collection.
  *  This does NOT mark the children.
  *
@@ -239,26 +204,6 @@ rexdd_mark_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
  */
 void rexdd_dump_nodeman(FILE* fout, const rexdd_nodeman_p M,
         bool show_used, bool show_unused);
-
-
-//
-// OLD BELOW HERE
-//
-
-/*
- * List of old functions, and their replacements.
-
-
-    GET_NEXT_HANDLE     ->      rexdd_get_next_handle().
-    SET_NEXT_HANDLE     ->      rexdd_set_next_handle().
-
-    IS_HANDLE_MARKED
-    MARK_HANDLE         ->      rexdd_mark_handle()
-
-    HASH_HANDLE         ->      rexdd_hash_handle()
-
-*/
-
 
 
 
