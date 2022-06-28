@@ -167,6 +167,7 @@ rexdd_unpack_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
 
 /****************************************************************************
  *
+ * TBD - move/cut to UT code
  *  Get the next handle in a chain.
  *
  *      @param  M       Node manager
@@ -183,6 +184,7 @@ rexdd_get_next_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h)
 
 /****************************************************************************
  *
+ *  TBD _ move/cut to UT code
  *  Set the next handle in a chain.
  *
  *      @param  M       Node manager
@@ -223,23 +225,6 @@ rexdd_mark_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
     }
     rexdd_mark_packed(node);
     return false;
-}
-
-
-/****************************************************************************
- *
- *  Compute a hash for use by mark and sweep garbage collection.
- *
- *      @param  M       Node manager
- *      @param  h       Node handle
- *
- *      @return     A 64-bit hash
- *
- */
-static inline uint_fast64_t
-rexdd_hash_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
-{
-    return rexdd_hash_packed(rexdd_get_packed_for_handle(M, h));
 }
 
 

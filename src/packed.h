@@ -259,7 +259,7 @@ static inline uint_fast64_t
 rexdd_hash_packed(const rexdd_packed_node_p P, uint_fast64_t m)
 {
     uint64_t h;
-    if (0 == m & ~((0x01ul << 32) - 1) ) {
+    if (0 == (m & ~((0x01ul << 32) - 1)) ) {
         /*
          * m fits in 32 bits ->
          *      anything mod m fits in 32 bits ->
@@ -273,7 +273,7 @@ rexdd_hash_packed(const rexdd_packed_node_p P, uint_fast64_t m)
         return (( h << 14) | (P->first64 >> 50)) % m;
     }
 
-    if (0 == m & ~ ((0x01ul << 16) - 1) ) {
+    if (0 == (m & ~ ((0x01ul << 16) - 1)) ) {
         /*
          * m fits in 48 bits ->
          *      anything mod m fits in 48 bits ->

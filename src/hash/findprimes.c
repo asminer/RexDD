@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-const unsigned long firstP = 65537;
+const unsigned long firstP = 1000;
 const unsigned long stopP  = 0x01ul << 50;
 
 const unsigned long switchrate[] = { 1024*1024, 256*1024*1024, 0 };

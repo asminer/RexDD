@@ -148,7 +148,7 @@ typedef rexdd_unpacked_node_t* rexdd_unpacked_node_p;
  */
 static inline void rexdd_edge_com (rexdd_edge_t e) {
     e.label.rule = rexdd_rule_com_t (e.label.rule);
-    e.label.complemented = ~e.label.complemented;
+    e.label.complemented = !e.label.complemented;
 }
 
 #endif
