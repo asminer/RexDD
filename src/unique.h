@@ -34,12 +34,12 @@ void rexdd_destroy_UT(rexdd_unique_table_p T);
  *  If unique, returns the same handle;
  *  otherwise, returns the handle of the duplicate.
  */
-rexdd_node_handle rexdd_UT_insert(rexdd_unique_table_p T, rexdd_node_handle h);
+rexdd_node_handle_t rexdd_UT_insert(rexdd_unique_table_p T, rexdd_node_handle_t h);
 
 /*
  *  Remove a single handle from the unique table.
  */
-void rexdd_UT_remove(rexdd_unique_table_p T, rexdd_node_handle h);
+void rexdd_UT_remove(rexdd_unique_table_p T, rexdd_node_handle_t h);
 
 
 /*

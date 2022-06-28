@@ -90,6 +90,17 @@ void rexdd_destroy_forest(
 
 
 /**
+ * @brief Normalize the four equivalent forms
+ *      @param  P       Desired target node, unpacked
+ *      @param  out     Normalized edge will be written here
+ * 
+ */
+void rexdd_normalize_edge(
+        rexdd_unpacked_node_t   P,
+        rexdd_edge_t            *out);
+
+
+/**
  *  Reduce an edge.
  *      @param  F       Forest for the edge.
  *      @param  n       Level number
