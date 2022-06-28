@@ -252,17 +252,64 @@ rexdd_are_packed_duplicates(const rexdd_packed_node_p P,
 
 /****************************************************************************
  *
- *  Hash a packed node.
+ *  Hash a packed node, modulo m.
  *  static inlined for speed.
  */
 static inline uint_fast64_t
-rexdd_hash_packed(const rexdd_packed_node_p P)
+rexdd_hash_packed(const rexdd_packed_node_p P, uint_fast64_t m)
 {
-    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
+    uint64_t h;
+    if (0 == m & ~((0x01ul << 32) - 1) ) {
+        /*
+         * m fits in 32 bits ->
+         *      anything mod m fits in 32 bits ->
+         *      can multiply by 32-bit chunks
+         */
+        h = P->second64 % m;
 
-    uint_fast64_t h = (((uint_fast64_t) P->third32) << 32) | P->fourth32;
-    h ^= P->second64;
-    return h ^ (P->first64 & TOP14_MASK);
+        h = ( (h << 32) | P->third32 ) % m;
+        h = ( (h << 32) | P->fourth32 ) % m;
+
+        return (( h << 14) | (P->first64 >> 50)) % m;
+    }
+
+    if (0 == m & ~ ((0x01ul << 16) - 1) ) {
+        /*
+         * m fits in 48 bits ->
+         *      anything mod m fits in 48 bits ->
+         *      can multiply by 16-bit chunks
+         */
+        h = P->second64 % m;
+
+        h = ( ( h << 16) | ( P->third32 >> 16) ) % m;
+        h = ( ( h << 16) | ( P->third32 & 0xffff) ) % m;
+
+        h = ( ( h << 16) | ( P->fourth32 >> 16) ) % m;
+        h = ( ( h << 16) | ( P->fourth32 & 0xffff) ) % m;
+
+        return (( h << 14) | (P->first64 >> 50)) % m;
+    }
+
+    /*
+     * m fits in 56 bits (or we don't care about overflows any more) ->
+     *      anything mod m fits in 56 bits ->
+     *      can multiply by 8-bit chunks
+     */
+
+    h = P->second64 % m;
+
+    h = ( ( h << 8 ) | ( P->third32 >> 24) ) % m;
+    h = ( ( h << 8 ) | (( P->third32 >> 16) & 0xff) ) % m;
+    h = ( ( h << 8 ) | (( P->third32 >>  8) & 0xff) ) % m;
+    h = ( ( h << 8 ) | ( P->third32 & 0xff) ) % m;
+
+    h = ( ( h << 8 ) | ( P->fourth32 >> 24) ) % m;
+    h = ( ( h << 8 ) | (( P->fourth32 >> 16) & 0xff) ) % m;
+    h = ( ( h << 8 ) | (( P->fourth32 >>  8) & 0xff) ) % m;
+    h = ( ( h << 8 ) | ( P->fourth32 & 0xff) ) % m;
+
+    h = ( ( h << 8 ) | ( P->first64 >> 56) ) % m;
+    return ( ( h << 6 ) | (( P->first64 >> 50) & 0x3f ) ) % m;
 }
 
 
