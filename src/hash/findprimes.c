@@ -6,10 +6,17 @@
 const unsigned long firstP = 65537;
 const unsigned long stopP  = 0x01ul << 50;
 
-const unsigned long switchrate = 1000000;
+const unsigned long switchrate[] = { 1024*1024, 256*1024*1024, 0 };
 
-const unsigned slownum = 7;
-const unsigned slowden = 5;
+const unsigned numer[] = { 2, 7, 63 };
+const unsigned denom[] = { 1, 5, 50 };
+
+/*
+ * slot 0: double
+ * slot 1: times square root of 2 (approx)
+ * slot 2: times cube root of 2 (approx)
+ */
+
 
 const unsigned small_primes[] = {
     2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67,
@@ -113,23 +120,6 @@ char is_prime(unsigned long p)
     return 1;
 }
 
-unsigned long twoNmodp(unsigned n, unsigned long p)
-{
-    // Safe for p < 2^63
-    unsigned long x = 1;
-    for (; n; --n)
-    {
-        x = (2 * x) % p;
-    }
-    return x;
-}
-
-char isMC(unsigned long a, unsigned long p)
-{
-    const unsigned long q = p / a;
-    const unsigned long r = p % a;
-    return (r < q);
-}
 
 void commaprint(FILE* out, unsigned width, unsigned long a)
 {
@@ -155,22 +145,14 @@ void commaprint(FILE* out, unsigned width, unsigned long a)
     }
 }
 
-void backspace(FILE* out, unsigned width)
+unsigned bits(unsigned long p)
 {
-    while (width--) fputc('\b', out);
-}
-
-char read_until(const char* accept)
-{
-    unsigned i;
-    int c;
-    for (;;) {
-        c = fgetc(stdin);
-        if (EOF==c) return 0;
-        for (i=0; accept[i]; i++) {
-            if (accept[i] == c) return c;
-        }
+    unsigned count = 0;
+    while (p) {
+        count++;
+        p /= 2;
     }
+    return count;
 }
 
 int main()
@@ -178,39 +160,24 @@ int main()
     fprintf(stderr, "List of primes:\n");
     unsigned count = 0;
     unsigned long p;
-    char needbs = 0;
-    unsigned char pcount = 1;
-
-    fprintf(stderr, "\n");
+    unsigned rslot = 0;
 
     for (p=firstP; p<stopP; p++) {
         if (!is_prime(p)) {
             continue;
         }
 
-        unsigned long a46 = twoNmodp(46, p);
-        unsigned long a78 = twoNmodp(78, p);
+        commaprint(stdout, 25, p);
+        printf("   (%2u bits; growth %u)  for slot %u\n", bits(p), rslot, ++count);
+        fflush(stdout);
 
-        if ( (p < 0x01ul << 32) || (isMC(a46, p) && isMC(a78, p))) {
-            if (needbs) fprintf(stderr, "\n");
-            commaprint(stdout, 25, p);
-            printf("   is good for slot %5u\n", ++count);
-            fflush(stdout);
-
-            if (p <= switchrate) {
-                p *= 2;
-            } else {
-                p *= slownum;
-                p /= slowden;
-            }
-            needbs = 0;
-        } else {
-            if (0==--pcount) {
-                if (needbs) backspace(stderr, 25);
-                commaprint(stderr, 25, p);
-                needbs = 1;
-            }
+        if (switchrate[rslot] && (p > switchrate[rslot])) {
+            ++rslot;
         }
+
+        p *= numer[rslot];
+        p /= denom[rslot];
+
     }
     return 0;
 }
