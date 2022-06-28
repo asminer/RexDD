@@ -3,6 +3,13 @@
 #include <stdio.h>
 #include <string.h>
 
+const unsigned long firstP = 65537;
+const unsigned long stopP  = 0x01ul << 50;
+
+const unsigned long switchrate = 1000000;
+
+const unsigned slownum = 7;
+const unsigned slowden = 5;
 
 const unsigned small_primes[] = {
     2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67,
@@ -117,7 +124,14 @@ unsigned long twoNmodp(unsigned n, unsigned long p)
     return x;
 }
 
-void commaprint(unsigned width, unsigned long a)
+char isMC(unsigned long a, unsigned long p)
+{
+    const unsigned long q = p / a;
+    const unsigned long r = p % a;
+    return (r < q);
+}
+
+void commaprint(FILE* out, unsigned width, unsigned long a)
 {
     char buffer[22];
     snprintf(buffer, 22, "%lu", a);
@@ -126,76 +140,77 @@ void commaprint(unsigned width, unsigned long a)
 
     unsigned i;
     for (i=digs + (digs-1)/3; i < width; i++) {
-        fputc(' ', stdout);
+        fputc(' ', out);
     }
     unsigned comma = digs % 3;
     if (0==comma) comma += 3;
     for (i=0; buffer[i]; i++) {
         if (0==comma) {
-            fputc(',', stdout);
+            fputc(',', out);
             comma = 2;
         } else {
             --comma;
         }
-        fputc(buffer[i], stdout);
+        fputc(buffer[i], out);
     }
 }
 
-void backspace(unsigned width)
+void backspace(FILE* out, unsigned width)
 {
-    while (width--) fputc('\b', stdout);
+    while (width--) fputc('\b', out);
+}
+
+char read_until(const char* accept)
+{
+    unsigned i;
+    int c;
+    for (;;) {
+        c = fgetc(stdin);
+        if (EOF==c) return 0;
+        for (i=0; accept[i]; i++) {
+            if (accept[i] == c) return c;
+        }
+    }
 }
 
 int main()
 {
-    unsigned long p1, p2, p;
-    printf("Enter starting p: ");
-    scanf("%lu", &p1);
-    printf("\nEnter stopping p: ");
-    scanf("%lu", &p2);
-    printf("\n");
+    fprintf(stderr, "List of primes:\n");
+    unsigned count = 0;
+    unsigned long p;
+    char needbs = 0;
+    unsigned char pcount = 1;
 
-    const unsigned long dp = (p1 <= p2) ? 1 : -1;
+    fprintf(stderr, "\n");
 
-    printf("%20s  %20s  %20s  %20s  %20s  %20s  %20s\n", "p", "a46", "q46", "r46", "a78", "q78", "r78");
-    printf("%20s  %20s  %20s  %20s  %20s  %20s  %20s\n", "--------------------", "--------------------", "--------------------", "--------------------", "--------------------", "--------------------", "--------------------");
-
-    commaprint(20, p1);
-    fflush(stdout);
-    for (p=p1; (p1 <= p2) ? (p<= p2) : (p>=p2); p += dp) {
-        if (p%10 == 0) {
-            backspace(20);
-            commaprint(20, p);
-            fflush(stdout);
-        }
-
+    for (p=firstP; p<stopP; p++) {
         if (!is_prime(p)) {
             continue;
         }
 
         unsigned long a46 = twoNmodp(46, p);
-        unsigned long q46 = p / a46;
-        unsigned long r46 = p % a46;
-
         unsigned long a78 = twoNmodp(78, p);
-        unsigned long q78 = p / a78;
-        unsigned long r78 = p % a78;
 
-        if ((r46 < q46) && (r78 < q78)) {
-            backspace(20);
-            commaprint(20, p);
-            commaprint(22, a46);
-            commaprint(22, q46);
-            commaprint(22, r46);
-            commaprint(22, a78);
-            commaprint(22, q78);
-            commaprint(22, r78);
-            fputc('\n', stdout);
+        if ( (p < 0x01ul << 32) || (isMC(a46, p) && isMC(a78, p))) {
+            if (needbs) fprintf(stderr, "\n");
+            commaprint(stdout, 25, p);
+            printf("   is good for slot %5u\n", ++count);
             fflush(stdout);
+
+            if (p <= switchrate) {
+                p *= 2;
+            } else {
+                p *= slownum;
+                p /= slowden;
+            }
+            needbs = 0;
+        } else {
+            if (0==--pcount) {
+                if (needbs) backspace(stderr, 25);
+                commaprint(stderr, 25, p);
+                needbs = 1;
+            }
         }
     }
-
-    printf("\n");
-
     return 0;
 }
