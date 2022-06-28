@@ -7,9 +7,7 @@
 
 #include "nodeman.h"
 
-/*
- * TBD - design this struct
- */
+
 /****************************************************************************
  *
  *  Unique (hash) table of packed nodes.
