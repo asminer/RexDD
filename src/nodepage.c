@@ -1,5 +1,6 @@
 #include "nodepage.h"
 #include "error.h"
+#include "unpacked.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -142,29 +143,6 @@ void rexdd_sweep_page(rexdd_nodepage_p page)
 
 }
 
-//
-// Helper: show an edge
-//
-static inline void rexdd_show_edge(FILE* fout, rexdd_edge_t e)
-{
-    fprintf(fout, "<%s,%c,%c,",
-            rexdd_rule_name[e.label.rule],
-            e.label.complemented ? 'c' : '_',
-            e.label.swapped ? 's' : '_'
-    );
-
-    static const uint64_t bit50 = 0x01ul << 49;
-    static const uint64_t low24 = (0x01ul << 24) -1;
-    if (e.target & bit50) {
-        // Terminal.
-        fprintf(fout, "T%x>", (uint32_t) (e.target & ~bit50) );
-    } else {
-        // Non-terminal
-        fprintf(fout, "N%0x:%0x>",
-                (uint32_t) (e.target >> 24),
-                (uint32_t) (e.target & low24));
-    }
-}
 
 /****************************************************************************
  *
@@ -200,9 +178,9 @@ void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
                 rexdd_packed_to_unpacked(page->chunk+i, &node);
                 fprintf(fout, "        Slot %x:%06x In use. level %u, ",
                     pageno, i, (unsigned) node.level);
-                rexdd_show_edge(fout, node.edge[0]);
+                rexdd_fprint_edge(fout, node.edge[0]);
                 fputs(", ", fout);
-                rexdd_show_edge(fout, node.edge[1]);
+                rexdd_fprint_edge(fout, node.edge[1]);
                 fputc('\n', fout);
             }
         } else {

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 /*
  *  Reduction rules (TBD):
@@ -80,6 +81,7 @@ static inline rexdd_rule_t rexdd_rule_com_t (rexdd_rule_t R) {
 }
 
 
+// TBD - should this be private, in unpacked.c?
 static const char* rexdd_rule_name[] = {
     "N",
     "X",
@@ -150,5 +152,28 @@ static inline void rexdd_edge_com (rexdd_edge_t e) {
     e.label.rule = rexdd_rule_com_t (e.label.rule);
     e.label.complemented = !e.label.complemented;
 }
+
+/****************************************************************************
+ *
+ *  Write an edge, in human-readable format, to a char buffer.
+ *
+ *  @param  buffer      Character buffer to write into.  Can be null.
+ *  @param  len         Length of the buffer, so we don't write past the end.
+ *                      Can be 0, e.g., if buffer is null.
+ *  @param  e           Edge to 'display'
+ *
+ */
+void rexdd_snprint_edge(char* buffer, unsigned len, rexdd_edge_t e);
+
+/****************************************************************************
+ *
+ *  Write an edge, in human-readable format, to a FILE.
+ *
+ *  @param  fout        File to write.
+ *  @param  e           Edge to 'display'
+ *
+ */
+void rexdd_fprint_edge(FILE* fout, rexdd_edge_t e);
+
 
 #endif
