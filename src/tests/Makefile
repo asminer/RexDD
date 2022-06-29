@@ -3,7 +3,7 @@ all: storage
 
 CFLAGS=-Wall -O3
 
-storage: storage.o nodeman.o nodepage.o error.o
+storage: storage.o nodeman.o nodepage.o error.o unpacked.o
 	$(CC) $^ -o $@
 
 nodepage.o: ../nodepage.c ../nodepage.h
@@ -11,6 +11,9 @@ nodepage.o: ../nodepage.c ../nodepage.h
 
 nodeman.o: ../nodeman.c ../nodeman.h
 	$(CC) $(CFLAGS) -c ../nodeman.c
+
+unpacked.o: ../unpacked.h ../unpacked.c
+	$(CC) $(CFLAGS) -c ../unpacked.c
 
 error.o: ../error.c ../error.h
 	$(CC) $(CFLAGS) -c ../error.c

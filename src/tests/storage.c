@@ -135,15 +135,17 @@ int main()
     bool mark, b;
     uint64_t n1, n2, n3;
     rexdd_node_handle_t h;
+    rexdd_packed_node_p node;
     for (i=0; i<TESTS; i++) {
         fill_random(&P);
         copy_and_mask(&Q, &P);
 
         h = rexdd_nodeman_get_handle(&M, &P);
+        node = rexdd_get_packed_for_handle(&M, h);
 
         // random next
         n1 = random64();
-        rexdd_set_next_handle(&M, h, n1);
+        rexdd_set_packed_next(node, n1);
 
         // random mark/unmark
         const unsigned pnum = h >> 24;
@@ -153,10 +155,10 @@ int main()
             mark = (randomshort() >> (pnum-16));
         }
         if (mark) {
-            rexdd_mark_handle(&M, h);
+            rexdd_mark_packed(node);
         }
 
-        rexdd_unpack_handle(&M, h, &R);
+        rexdd_packed_to_unpacked(node, &R);
 
         if (!equal(&Q, &R)) {
             printf("Node storage test %u failed\n", i);
@@ -167,7 +169,7 @@ int main()
         }
 
         n2 = n1 & LOW49;
-        n3 = rexdd_get_next_handle(&M, h);
+        n3 = rexdd_get_packed_next(node);
         if (n3 != n2) {
             printf("Next test %u failed\n", i);
             printf("  Next as set: %llx\n", n1);
@@ -176,7 +178,7 @@ int main()
             break;
         }
 
-        b = rexdd_is_packed_marked(rexdd_get_packed_for_handle(&M, h));
+        b = rexdd_is_packed_marked(node);
         if (b != mark) {
             printf("Mark bit mismatch on test %u\n", i);
             printf("    We think the bit is %x\n", mark);
