@@ -1,10 +1,16 @@
 
-all: storage
+all: storage check_ut
 
 CFLAGS=-Wall -O3
 
 storage: storage.o nodeman.o nodepage.o error.o unpacked.o
 	$(CC) $^ -o $@
+
+check_ut: check_ut.o unique.o nodeman.o nodepage.o error.o unpacked.o
+	$(CC) $^ -o $@
+
+unique.o: ../unique.c ../unique.h
+	$(CC) $(CFLAGS) -c ../unique.c
 
 nodepage.o: ../nodepage.c ../nodepage.h
 	$(CC) $(CFLAGS) -c ../nodepage.c

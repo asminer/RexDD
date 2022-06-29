@@ -246,8 +246,9 @@ void rexdd_dump_UT(FILE* fout, const rexdd_unique_table_t *T, bool show_nodes)
     char nodebuf[256];
     char tmp[80];
     for (i=0; i<T->size; i++) {
-        fprintf(fout, "%8llx |", i);
+        fprintf(fout, "%8llx |--", i);
         h = T->table[i];
+        col = 0;
         while (h) {
             cur_p = rexdd_get_packed_for_handle(T->M, h);
 
@@ -262,18 +263,17 @@ void rexdd_dump_UT(FILE* fout, const rexdd_unique_table_t *T, bool show_nodes)
                 rexdd_snprint_edge(tmp, 80, cur_u.edge[1]);
                 strlcat(nodebuf, tmp, 256);
                 strlcat(nodebuf, "}", 256);
-            } else {
-                snprintf(nodebuf, 256, "%llx", h);
-            }
 
-            // Decide to line break or not
-
-            col += 4 + strlen(nodebuf);
-            if (col > 65) {
-                fprintf(fout, "\n         | -> %s", nodebuf);
-                col = 0;
+                fprintf(fout, "-> %s \n         |  ", nodebuf);
             } else {
-                fprintf(fout, " -> %s", nodebuf);
+                snprintf(nodebuf, 256, "-> %llx", h);
+                col += strlen(nodebuf);
+                if (col > 60) {
+                    fprintf(fout, "\n         |  %s", nodebuf);
+                    col = 0;
+                } else {
+                    fprintf(fout, "%s", nodebuf);
+                }
             }
 
             // Next in the chain
