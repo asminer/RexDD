@@ -13,7 +13,7 @@ const uint64_t LOW50= (0x01ul << 50)-1;
 const uint64_t LOW29= (0x01ul << 29)-1;
 const uint64_t LOW5 = (0x01ul <<  5)-1;
 
-bool equal(const rexdd_unpacked_node_p P, const rexdd_unpacked_node_p Q)
+bool equal(const rexdd_unpacked_node_t *P, const rexdd_unpacked_node_t *Q)
 {
     if (0==P) return false;
     if (0==Q) return false;
@@ -53,7 +53,7 @@ static inline uint16_t randomshort()
     return random() & 0x00ffff;
 }
 
-void fill_random(rexdd_unpacked_node_p P)
+void fill_random(rexdd_unpacked_node_t *P)
 {
     if (0==P) return;
 
@@ -79,7 +79,7 @@ void fill_random(rexdd_unpacked_node_p P)
     P->edge[1].label.swapped = a & 0x01;
 }
 
-void copy_and_mask(rexdd_unpacked_node_p dest, const rexdd_unpacked_node_p src)
+void copy_and_mask(rexdd_unpacked_node_t *dest, const rexdd_unpacked_node_t *src)
 {
     dest->level = src->level & LOW29;
     dest->edge[0].target = src->edge[0].target & LOW50;
@@ -95,7 +95,7 @@ void copy_and_mask(rexdd_unpacked_node_p dest, const rexdd_unpacked_node_p src)
     dest->edge[1].label.swapped = src->edge[1].label.swapped;
 }
 
-void print_unpacked(const char* name, const rexdd_unpacked_node_p P)
+void print_unpacked(const char* name, const rexdd_unpacked_node_t *P)
 {
     fputs(name, stdout);
     printf("\n  level: %x", P->level);
@@ -135,7 +135,7 @@ int main()
     bool mark, b;
     uint64_t n1, n2, n3;
     rexdd_node_handle_t h;
-    rexdd_packed_node_p node;
+    rexdd_packed_node_t *node;
     for (i=0; i<TESTS; i++) {
         fill_random(&P);
         copy_and_mask(&Q, &P);
