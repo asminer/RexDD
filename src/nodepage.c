@@ -11,7 +11,7 @@
  *  Fill a nodepage struct with zeroes.
  *
  */
-void rexdd_zero_nodepage(rexdd_nodepage_p page, uint_fast32_t next)
+void rexdd_zero_nodepage(rexdd_nodepage_t *page, uint_fast32_t next)
 {
     rexdd_sanity1(page, "Null page");
 
@@ -28,7 +28,7 @@ void rexdd_zero_nodepage(rexdd_nodepage_p page, uint_fast32_t next)
  *  Initialize a page of nodes.
  *
  */
-void rexdd_init_nodepage(rexdd_nodepage_p page)
+void rexdd_init_nodepage(rexdd_nodepage_t *page)
 {
     rexdd_sanity1(page, "Null page");
 
@@ -48,7 +48,7 @@ void rexdd_init_nodepage(rexdd_nodepage_p page)
  *  Destroy a page of nodes.
  *
  */
-void rexdd_free_nodepage(rexdd_nodepage_p page)
+void rexdd_free_nodepage(rexdd_nodepage_t *page)
 {
     rexdd_sanity1(page, "Null page");
     free(page->chunk);
@@ -65,7 +65,7 @@ void rexdd_free_nodepage(rexdd_nodepage_p page)
  *
  */
 uint_fast32_t
-rexdd_page_free_slot(rexdd_nodepage_p page)
+rexdd_page_free_slot(rexdd_nodepage_t *page)
 {
     rexdd_sanity1(page, "Null page");
     rexdd_sanity1(page->chunk, "Slot request from unallocated page");
@@ -109,7 +109,7 @@ rexdd_page_free_slot(rexdd_nodepage_p page)
  *      @param  page    Page we care about
  *
  */
-void rexdd_sweep_page(rexdd_nodepage_p page)
+void rexdd_sweep_page(rexdd_nodepage_t *page)
 {
     rexdd_sanity1(page, "Null page");
     if (0==page->chunk) return;
@@ -154,7 +154,7 @@ void rexdd_sweep_page(rexdd_nodepage_p page)
  *      @param  show_unused If true, display the unused nodes
  *
  */
-void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
+void rexdd_dump_page(FILE* fout, const rexdd_nodepage_t *page,
         uint_fast32_t pageno, bool show_used, bool show_unused)
 {
     rexdd_sanity1(page, "Null page");

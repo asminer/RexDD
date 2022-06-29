@@ -27,5 +27,5 @@ General conventions:
   Type naming conventions:
     struct tags have names ending in _s (when they are used).
     typedef'd types (structs, etc) have names ending in _t.
-    typedef'd pointers have names ending in _p.
 
+    no typedefs for pointers because const does the unexpected.

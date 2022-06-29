@@ -143,8 +143,6 @@ typedef struct {
     rexdd_edge_t  edge[2];
 } rexdd_unpacked_node_t;
 
-typedef rexdd_unpacked_node_t* rexdd_unpacked_node_p;
-
 /*
  *  The complement of rexdd edge
  */

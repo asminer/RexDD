@@ -2,6 +2,7 @@
 #include "unique.h"
 
 #include <stdlib.h> // for malloc
+#include <string.h>
 
 // #define TEST_PRIMES
 
@@ -65,7 +66,7 @@ int main()
  *  Initialize a unique table
  *
  */
-void rexdd_create_UT(rexdd_unique_table_p T, rexdd_nodeman_p M)
+void rexdd_create_UT(rexdd_unique_table_t *T, rexdd_nodeman_t *M)
 {
     rexdd_sanity1(T, "Null unique table");
     rexdd_sanity1(M, "Null node manager");
@@ -86,7 +87,7 @@ void rexdd_create_UT(rexdd_unique_table_p T, rexdd_nodeman_p M)
  *  Free memory for a unique table.
  *  The underlying node manager is not touched.
  */
-void rexdd_destroy_UT(rexdd_unique_table_p T)
+void rexdd_destroy_UT(rexdd_unique_table_t *T)
 {
     rexdd_sanity1(T, "Null unique table");
     if (0==T->table) return;
@@ -110,7 +111,7 @@ void rexdd_destroy_UT(rexdd_unique_table_p T)
  *  In either case, the returned node becomes the front entry
  *  of the hash chain.
  */
-rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t h)
+rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t h)
 {
     rexdd_sanity1(T, "Null unique table");
     rexdd_sanity1(T->table, "Empty unique table");
@@ -119,7 +120,7 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t 
      * Check if we should enlarge the table.  TBD
      */
 
-    rexdd_packed_node_p node = rexdd_get_packed_for_handle(T->M, h);
+    rexdd_packed_node_t *node = rexdd_get_packed_for_handle(T->M, h);
     uint_fast64_t hash = rexdd_hash_packed(node, T->size);
 
     /*
@@ -137,8 +138,8 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t 
      *  Non-empty chain.  Check the chain for duplicates.
      */
     uint_fast64_t currhand = T->table[hash];
-    rexdd_packed_node_p prevnode = 0;
-    rexdd_packed_node_p currnode = 0;
+    rexdd_packed_node_t *prevnode = 0;
+    rexdd_packed_node_t *currnode = 0;
     while (currhand) {
         currnode = rexdd_get_packed_for_handle(T->M, currhand);
         if (!rexdd_are_packed_duplicates(node, currnode)) {
@@ -176,7 +177,7 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t 
  *  Remove all unmarked nodes from the unique table.
  *      @param  T   Unique table to modify
  */
-void rexdd_sweep_UT(rexdd_unique_table_p T)
+void rexdd_sweep_UT(rexdd_unique_table_t *T)
 {
     rexdd_sanity1(T, "Null unique table");
     rexdd_sanity1(T->table, "Empty unique table");
@@ -185,8 +186,8 @@ void rexdd_sweep_UT(rexdd_unique_table_p T)
      *  For each chain, traverse and keep only the marked items.
      */
     uint_fast64_t i, h;
-    rexdd_packed_node_p prev;
-    rexdd_packed_node_p curr;
+    rexdd_packed_node_t *prev;
+    rexdd_packed_node_t *curr;
     T->num_entries = 0;
     for (i=0; i<T->size; i++) {
         prev = 0;
@@ -219,6 +220,68 @@ void rexdd_sweep_UT(rexdd_unique_table_p T)
      * Check if we should shrink the table.  TBD
      */
 
+}
+
+/****************************************************************************
+ *
+ *  Dump a unique table, in human-readable format, for debugging purposes.
+ *      @param  fout        Where to dump
+ *      @param  T           Unique table to dump
+ *      @param  show_nodes  If true, display the nodes;
+ *                          otherwise just shows handles.
+ *
+ */
+void rexdd_dump_UT(FILE* fout, const rexdd_unique_table_t *T, bool show_nodes)
+{
+    if (0==T) {
+        fprintf(fout, "Null unique table\n");
+        return;
+    }
+    uint_fast64_t i, h;
+    fprintf(fout, "---------+\n");
+    unsigned col = 0;
+    const rexdd_packed_node_t *cur_p;
+    rexdd_unpacked_node_t cur_u;
+
+    char nodebuf[256];
+    char tmp[80];
+    for (i=0; i<T->size; i++) {
+        fprintf(fout, "%8llx |", i);
+        h = T->table[i];
+        while (h) {
+            cur_p = rexdd_get_packed_for_handle(T->M, h);
+
+            // Build char buffer of node to display
+
+            if (show_nodes) {
+                rexdd_packed_to_unpacked(cur_p, &cur_u);
+                snprintf(nodebuf, 256, "{ Level %u, ", cur_u.level);
+                rexdd_snprint_edge(tmp, 80, cur_u.edge[0]);
+                strlcat(nodebuf, tmp, 256);
+                strlcat(nodebuf, ", ", 256);
+                rexdd_snprint_edge(tmp, 80, cur_u.edge[1]);
+                strlcat(nodebuf, tmp, 256);
+                strlcat(nodebuf, "}", 256);
+            } else {
+                snprintf(nodebuf, 256, "%llx", h);
+            }
+
+            // Decide to line break or not
+
+            col += 4 + strlen(nodebuf);
+            if (col > 65) {
+                fprintf(fout, "\n         | -> %s", nodebuf);
+                col = 0;
+            } else {
+                fprintf(fout, " -> %s", nodebuf);
+            }
+
+            // Next in the chain
+
+            h = rexdd_get_packed_next(cur_p);
+        }
+        fprintf(fout, "\n---------+\n");
+    }
 }
 
 

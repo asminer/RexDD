@@ -21,7 +21,7 @@
  *
  */
 typedef struct {
-    rexdd_nodeman_p M;      /* node manager that stores the packed nodes. */
+    rexdd_nodeman_t *M;      /* node manager that stores the packed nodes. */
     rexdd_node_handle_t* table;
     uint_fast64_t size;
     uint_fast64_t num_entries;
@@ -37,7 +37,7 @@ typedef rexdd_unique_table_t* rexdd_unique_table_p;
  *  Initialize a unique table
  *
  */
-void rexdd_create_UT(rexdd_unique_table_p T, rexdd_nodeman_p M);
+void rexdd_create_UT(rexdd_unique_table_t *T, rexdd_nodeman_t *M);
 
 
 /****************************************************************************
@@ -45,7 +45,7 @@ void rexdd_create_UT(rexdd_unique_table_p T, rexdd_nodeman_p M);
  *  Free memory for a unique table.
  *  The underlying node manager is not touched.
  */
-void rexdd_destroy_UT(rexdd_unique_table_p T);
+void rexdd_destroy_UT(rexdd_unique_table_t *T);
 
 
 /****************************************************************************
@@ -57,7 +57,7 @@ void rexdd_destroy_UT(rexdd_unique_table_p T);
  *  In either case, the returned node becomes the front entry
  *  of the hash chain.
  */
-rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t h);
+rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t h);
 
 
 /****************************************************************************
@@ -65,7 +65,7 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_p T, rexdd_node_handle_t 
  *  Remove all unmarked nodes from the unique table.
  *      @param  T   Unique table to modify
  */
-void rexdd_sweep_UT(rexdd_unique_table_p T);
+void rexdd_sweep_UT(rexdd_unique_table_t *T);
 
 
 /****************************************************************************
@@ -77,7 +77,7 @@ void rexdd_sweep_UT(rexdd_unique_table_p T);
  *                          otherwise just shows handles.
  *
  */
-void rexdd_dump_UT(FILE* fout, const rexdd_nodeman_p M, bool show_nodes);
+void rexdd_dump_UT(FILE* fout, const rexdd_unique_table_t *T, bool show_nodes);
 
 
 #endif

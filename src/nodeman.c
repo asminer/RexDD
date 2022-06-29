@@ -14,7 +14,7 @@
  *                          2^25, will set the limit to 2^25.
  *
  */
-void rexdd_init_nodeman(rexdd_nodeman_p M, unsigned maxpages)
+void rexdd_init_nodeman(rexdd_nodeman_t *M, unsigned maxpages)
 {
     rexdd_sanity1(M, "Null node manager");
 
@@ -49,7 +49,7 @@ void rexdd_init_nodeman(rexdd_nodeman_p M, unsigned maxpages)
  *  All memory is deallocated.
  *
  */
-void rexdd_free_nodeman(rexdd_nodeman_p M)
+void rexdd_free_nodeman(rexdd_nodeman_t *M)
 {
     rexdd_sanity1(M, "Null node manager");
     if (0==M->pages) {
@@ -84,7 +84,7 @@ void rexdd_free_nodeman(rexdd_nodeman_p M)
  *
  */
 rexdd_node_handle_t
-rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p u)
+rexdd_nodeman_get_handle(rexdd_nodeman_t *M, const rexdd_unpacked_node_t *u)
 {
     rexdd_sanity1(M, "Null node manager");
     rexdd_sanity1(M->pages, "Empty node manager");
@@ -177,7 +177,7 @@ rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p u)
  *      @param  M       Node manager
  *
  */
-void rexdd_sweep_nodeman(rexdd_nodeman_p M)
+void rexdd_sweep_nodeman(rexdd_nodeman_t *M)
 {
     rexdd_sanity1(M, "Null node manager");
     rexdd_sanity1(M->pages, "Empty node manager");
@@ -264,7 +264,7 @@ void rexdd_sweep_nodeman(rexdd_nodeman_p M)
  *      @param  show_unused If true, display the unused nodes
  *
  */
-void rexdd_dump_nodeman(FILE* fout, const rexdd_nodeman_p M,
+void rexdd_dump_nodeman(FILE* fout, const rexdd_nodeman_t *M,
         bool show_used, bool show_unused)
 {
     rexdd_sanity1(M, "Null node manager");

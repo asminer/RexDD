@@ -54,8 +54,6 @@ typedef struct {
     uint32_t fourth32;
 } rexdd_packed_node_t;
 
-typedef rexdd_packed_node_t* rexdd_packed_node_p;
-
 
 /****************************************************************************
  *
@@ -65,7 +63,7 @@ typedef rexdd_packed_node_t* rexdd_packed_node_p;
  *      @return     N's next pointer.
  */
 static inline uint_fast64_t
-rexdd_get_packed_next(const rexdd_packed_node_p N)
+rexdd_get_packed_next(const rexdd_packed_node_t *N)
 {
     static const uint64_t   NEXT_MASK   = (0x01ul << 49) - 1;  // bits 0..48
     return N->first64 & NEXT_MASK;
@@ -79,7 +77,7 @@ rexdd_get_packed_next(const rexdd_packed_node_p N)
  *      @param      nxt what to assign to N.next
  */
 static inline void
-rexdd_set_packed_next(rexdd_packed_node_p N, uint64_t nxt)
+rexdd_set_packed_next(rexdd_packed_node_t *N, uint64_t nxt)
 {
     static const uint64_t   NEXT_MASK   = (0x01ul << 49) - 1;  // bits 0..48
     N->first64 = (N->first64 & ~NEXT_MASK) | (nxt & NEXT_MASK);
@@ -93,7 +91,7 @@ rexdd_set_packed_next(rexdd_packed_node_p N, uint64_t nxt)
  *      @return     true, iff N is marked.
  */
 static inline bool
-rexdd_is_packed_marked(const rexdd_packed_node_p N)
+rexdd_is_packed_marked(const rexdd_packed_node_t *N)
 {
     static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
     return N->first64 & MARK_MASK;
@@ -106,7 +104,7 @@ rexdd_is_packed_marked(const rexdd_packed_node_p N)
  *      @param      N   packed node to mark.
  */
 static inline void
-rexdd_mark_packed(rexdd_packed_node_p N)
+rexdd_mark_packed(rexdd_packed_node_t *N)
 {
     static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
     N->first64 |= MARK_MASK;
@@ -119,7 +117,7 @@ rexdd_mark_packed(rexdd_packed_node_p N)
  *      @param      N   packed node to mark.
  */
 static inline void
-rexdd_unmark_packed(rexdd_packed_node_p N)
+rexdd_unmark_packed(rexdd_packed_node_t *N)
 {
     static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
     N->first64 &= ~MARK_MASK;
@@ -134,7 +132,7 @@ rexdd_unmark_packed(rexdd_packed_node_p N)
  *      @param      pN  Packed node to fill.
  */
 static inline void
-rexdd_unpacked_to_packed(const rexdd_unpacked_node_p uN, rexdd_packed_node_p pN)
+rexdd_unpacked_to_packed(const rexdd_unpacked_node_t *uN, rexdd_packed_node_t *pN)
 {
     static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
     static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1; // bits 0..35
@@ -181,7 +179,7 @@ rexdd_unpacked_to_packed(const rexdd_unpacked_node_p uN, rexdd_packed_node_p pN)
  *      @param      uN  Unpacked node to fill.
  */
 static inline void
-rexdd_packed_to_unpacked(const rexdd_packed_node_p pN, rexdd_unpacked_node_p uN)
+rexdd_packed_to_unpacked(const rexdd_packed_node_t *pN, rexdd_unpacked_node_t *uN)
 {
     static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
     static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1; // bits 0..35
@@ -222,7 +220,7 @@ rexdd_packed_to_unpacked(const rexdd_packed_node_p pN, rexdd_unpacked_node_p uN)
  *      @param      next_free   Next "pointer" in free list.
  */
 static inline void
-rexdd_recycle_packed(rexdd_packed_node_p N, uint_fast32_t next_free)
+rexdd_recycle_packed(rexdd_packed_node_t *N, uint_fast32_t next_free)
 {
     N->first64 = 0;
     N->second64 = 0;
@@ -238,8 +236,8 @@ rexdd_recycle_packed(rexdd_packed_node_p N, uint_fast32_t next_free)
  *  static inlined for speed.
  */
 static inline bool
-rexdd_are_packed_duplicates(const rexdd_packed_node_p P,
-        const rexdd_packed_node_p Q)
+rexdd_are_packed_duplicates(const rexdd_packed_node_t *P,
+        const rexdd_packed_node_t *Q)
 {
     static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
 
@@ -256,7 +254,7 @@ rexdd_are_packed_duplicates(const rexdd_packed_node_p P,
  *  static inlined for speed.
  */
 static inline uint_fast64_t
-rexdd_hash_packed(const rexdd_packed_node_p P, uint_fast64_t m)
+rexdd_hash_packed(const rexdd_packed_node_t *P, uint_fast64_t m)
 {
     uint64_t h;
     if (0 == (m & ~((0x01ul << 32) - 1)) ) {

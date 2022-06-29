@@ -19,7 +19,7 @@
  */
 typedef struct {
     /*  Array for node storage. */
-    rexdd_packed_node_p chunk;
+    rexdd_packed_node_t *chunk;
 
     /*  first unallocated slot */
     uint_fast32_t first_unalloc;
@@ -36,8 +36,6 @@ typedef struct {
 
 } rexdd_nodepage_t;
 
-typedef rexdd_nodepage_t* rexdd_nodepage_p;
-
 
 /****************************************************************************
  *
@@ -46,7 +44,7 @@ typedef rexdd_nodepage_t* rexdd_nodepage_p;
  *      @param  next    Next pointer.
  *
  */
-void rexdd_zero_nodepage(rexdd_nodepage_p page, uint_fast32_t next);
+void rexdd_zero_nodepage(rexdd_nodepage_t *page, uint_fast32_t next);
 
 /****************************************************************************
  *
@@ -54,7 +52,7 @@ void rexdd_zero_nodepage(rexdd_nodepage_p page, uint_fast32_t next);
  *  The chunk is allocated, and every slot is set to "unused".
  *
  */
-void rexdd_init_nodepage(rexdd_nodepage_p page);
+void rexdd_init_nodepage(rexdd_nodepage_t *page);
 
 
 /****************************************************************************
@@ -63,7 +61,7 @@ void rexdd_init_nodepage(rexdd_nodepage_p page);
  *  The chunk is deallocated.
  *
  */
-void rexdd_free_nodepage(rexdd_nodepage_p page);
+void rexdd_free_nodepage(rexdd_nodepage_t *page);
 
 
 /****************************************************************************
@@ -75,7 +73,7 @@ void rexdd_free_nodepage(rexdd_nodepage_p page);
  *
  */
 uint_fast32_t
-rexdd_page_free_slot(rexdd_nodepage_p page);
+rexdd_page_free_slot(rexdd_nodepage_t *page);
 
 
 /****************************************************************************
@@ -87,7 +85,7 @@ rexdd_page_free_slot(rexdd_nodepage_p page);
  *      @param  page    Page we care about
  *
  */
-void rexdd_sweep_page(rexdd_nodepage_p page);
+void rexdd_sweep_page(rexdd_nodepage_t *page);
 
 
 
@@ -101,7 +99,7 @@ void rexdd_sweep_page(rexdd_nodepage_p page);
  *      @param  show_unused If true, display the unused nodes
  *
  */
-void rexdd_dump_page(FILE* fout, const rexdd_nodepage_p page,
+void rexdd_dump_page(FILE* fout, const rexdd_nodepage_t *page,
         uint_fast32_t pageno, bool show_used, bool show_unused);
 
 

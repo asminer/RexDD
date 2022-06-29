@@ -33,7 +33,7 @@ typedef uint_fast64_t  rexdd_node_handle_t;
  */
 typedef struct {
     /* (Expanding) Array of pages */
-    rexdd_nodepage_p pages;
+    rexdd_nodepage_t *pages;
 
     /* array size */
     uint_fast32_t pages_size;
@@ -52,8 +52,6 @@ typedef struct {
 
 } rexdd_nodeman_t;
 
-typedef rexdd_nodeman_t* rexdd_nodeman_p;
-
 
 /****************************************************************************
  *
@@ -65,7 +63,7 @@ typedef rexdd_nodeman_t* rexdd_nodeman_p;
  *                          2^25, will set the limit to 2^25.
  *
  */
-void rexdd_init_nodeman(rexdd_nodeman_p M, unsigned maxpages);
+void rexdd_init_nodeman(rexdd_nodeman_t *M, unsigned maxpages);
 
 
 /****************************************************************************
@@ -74,7 +72,7 @@ void rexdd_init_nodeman(rexdd_nodeman_p M, unsigned maxpages);
  *  All memory is deallocated.
  *
  */
-void rexdd_free_nodeman(rexdd_nodeman_p M);
+void rexdd_free_nodeman(rexdd_nodeman_t *M);
 
 
 /****************************************************************************
@@ -87,7 +85,7 @@ void rexdd_free_nodeman(rexdd_nodeman_p M);
  *
  */
 rexdd_node_handle_t
-rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p n);
+rexdd_nodeman_get_handle(rexdd_nodeman_t *M, const rexdd_unpacked_node_t *n);
 
 
 /****************************************************************************
@@ -99,7 +97,7 @@ rexdd_nodeman_get_handle(rexdd_nodeman_p M, const rexdd_unpacked_node_p n);
  *      @param  M       Node manager
  *
  */
-void rexdd_sweep_nodeman(rexdd_nodeman_p M);
+void rexdd_sweep_nodeman(rexdd_nodeman_t *M);
 
 
 /****************************************************************************
@@ -112,7 +110,7 @@ void rexdd_sweep_nodeman(rexdd_nodeman_p M);
  *
  */
 static inline void
-rexdd_nodeman_reuse(rexdd_nodeman_p M, rexdd_node_handle_t h)
+rexdd_nodeman_reuse(rexdd_nodeman_t *M, rexdd_node_handle_t h)
 {
     rexdd_sanity1(M, "Null node manager");
     rexdd_sanity1(0==M->previous_handle, "Too many reused node manager handles");
@@ -129,8 +127,8 @@ rexdd_nodeman_reuse(rexdd_nodeman_p M, rexdd_node_handle_t h)
  *      @param  h           Node handle
  *
  */
-static inline rexdd_packed_node_p
-rexdd_get_packed_for_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
+static inline rexdd_packed_node_t*
+rexdd_get_packed_for_handle(rexdd_nodeman_t *M, rexdd_node_handle_t h)
 {
     rexdd_sanity1(M, "Null node manager");
     rexdd_sanity1(M->pages, "Empty node manager");
@@ -158,8 +156,8 @@ rexdd_get_packed_for_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
  *
  */
 static inline void
-rexdd_unpack_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
-        rexdd_unpacked_node_p u)
+rexdd_unpack_handle(rexdd_nodeman_t *M, rexdd_node_handle_t h,
+        rexdd_unpacked_node_t *u)
 {
     rexdd_packed_to_unpacked( rexdd_get_packed_for_handle(M, h), u );
 }
@@ -183,9 +181,9 @@ rexdd_unpack_handle(const rexdd_nodeman_p M, rexdd_node_handle_t h,
  *
  */
 static inline bool
-rexdd_mark_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
+rexdd_mark_handle(rexdd_nodeman_t *M, rexdd_node_handle_t h)
 {
-    rexdd_packed_node_p node = rexdd_get_packed_for_handle(M, h);
+    rexdd_packed_node_t *node = rexdd_get_packed_for_handle(M, h);
     if (rexdd_is_packed_marked(node)) {
         return true;
     }
@@ -203,7 +201,7 @@ rexdd_mark_handle(rexdd_nodeman_p M, rexdd_node_handle_t h)
  *      @param  show_unused If true, display the unused nodes
  *
  */
-void rexdd_dump_nodeman(FILE* fout, const rexdd_nodeman_p M,
+void rexdd_dump_nodeman(FILE* fout, const rexdd_nodeman_t *M,
         bool show_used, bool show_unused);
 
 
