@@ -151,6 +151,15 @@ static inline void rexdd_edge_com (rexdd_edge_t e) {
     e.label.complemented = !e.label.complemented;
 }
 
+/*
+ *  Swap the edges for the target node
+ */
+static inline void rexdd_node_sw (rexdd_unpacked_node_t *p){
+    rexdd_edge_t temp = p->edge[0];
+    p->edge[0] = p->edge[1];
+    p->edge[1] = temp;
+}
+
 /****************************************************************************
  *
  *  Write an edge, in human-readable format, to a char buffer.

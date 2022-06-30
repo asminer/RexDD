@@ -75,7 +75,7 @@ void rexdd_normalize_edge(
     if (P->edge[0].target < P->edge[1].target) {
         // (a, s_a) < (b, s_b)
         if (P->edge[0].label.complemented == 1){
-            out->label.complemented = 1;
+            out->label.complemented = !out->label.complemented;
             rexdd_edge_com (P->edge[0]);
             rexdd_edge_com (P->edge[1]);
         } else {
@@ -85,7 +85,7 @@ void rexdd_normalize_edge(
         if (P->edge[0].label.swapped < P->edge[1].label.swapped) {
             // (a, s_a) < (b, s_b)
             if (P->edge[0].label.complemented == 1){
-                out->label.complemented = 1;
+                out->label.complemented = !out->label.complemented;
                 rexdd_edge_com (P->edge[0]);
                 rexdd_edge_com (P->edge[1]);
             } else {
@@ -93,13 +93,60 @@ void rexdd_normalize_edge(
             }
         } else if (P->edge[0].label.swapped > P->edge[1].label.swapped) {
             // (a, s_a) > (b, s_b)
+            if (P->edge[1].label.complemented == 1){
+                out->label.complemented = !out->label.complemented;
+                out->label.swapped = !out->label.swapped;
+                rexdd_edge_com (P->edge[0]);
+                rexdd_edge_com (P->edge[1]);
+                rexdd_node_sw (P);
+            } else {
+                out->label.swapped = !out->label.swapped;
+                rexdd_node_sw (P);
+            }
         } else {
             // (a, s_a) = (b, s_b)
-
+            if (P->edge[0].label.complemented == 0 && P->edge[1].label.complemented == 0) {
+                if (P->edge[0].label.rule <= P->edge[1].label.rule) {
+                    out = out;
+                } else {
+                    out->label.swapped = !out->label.swapped;
+                    rexdd_node_sw (P);
+                }
+            } else if (P->edge[0].label.complemented == 1 && P->edge[1].label.complemented == 1) {
+                if (rexdd_rule_com_t(P->edge[0].label.rule) <= rexdd_rule_com_t(P->edge[1].label.rule)) {
+                    out->label.complemented = !out->label.complemented;
+                    rexdd_edge_com (P->edge[0]);
+                    rexdd_edge_com (P->edge[1]);
+                } else {
+                    out->label.complemented = !out->label.complemented;
+                    out->label.swapped = !out->label.swapped;
+                    rexdd_edge_com (P->edge[0]);
+                    rexdd_edge_com (P->edge[1]);
+                    rexdd_node_sw (P);
+                }
+            } else if (P->edge[0].label.complemented == 0 && P->edge[1].label.complemented == 1) {
+                if (P->edge[0].label.rule <= rexdd_rule_com_t(P->edge[1].label.rule)) {
+                    out = out;
+                } else {
+                    out->label.complemented = !out->label.complemented;
+                    out->label.swapped = !out->label.swapped;
+                    rexdd_edge_com (P->edge[0]);
+                    rexdd_edge_com (P->edge[1]);
+                    rexdd_node_sw (P);
+                }
+            } else {
+                if (rexdd_rule_com_t(P->edge[0].label.rule) <= P->edge[1].label.rule) {
+                    out->label.complemented = !out->label.complemented;
+                    rexdd_edge_com (P->edge[0]);
+                    rexdd_edge_com (P->edge[1]);
+                } else {
+                    out->label.swapped = !out->label.swapped;
+                    rexdd_node_sw (P);
+                }
+            }
         }
 
     }
-    // ...TBD
 }
 
 
@@ -117,22 +164,24 @@ void rexdd_reduce_edge(
     }
 
     /* ======REDUCE======= */
-    /*
-        {Merge rexdd_edge_label_t and reduced node}
-            {reduce node by the patterns}
-    */
  
     // new node at the same level
     rexdd_unpacked_node_t *new_p = malloc(sizeof(rexdd_unpacked_node_t));
     *new_p = p;
+    
+    new_p->edge[0];
+    rexdd_unpacked_node_t *loch, *hich;
+    rexdd_unpack_handle (&(F->M), new_p->edge[0].target, loch);
+    rexdd_unpack_handle (&(F->M), new_p->edge[1].target, hich);
+    rexdd_reduce_edge(F, n-1, new_p->edge[0].label, *loch, &(new_p->edge[0]));
+    rexdd_reduce_edge(F, n-1, new_p->edge[1].label, *hich, &(new_p->edge[1]));
+
     if (l.swapped == 1) {
-        rexdd_edge_t temp = new_p->edge[0];
-        new_p->edge[0] = new_p->edge[1];
-        new_p->edge[1] = temp;
+        rexdd_node_sw (new_p);
     }
 
     // check if it has a terminal or nonterminal pattern
-    rexdd_edge_t *reduced;
+    rexdd_edge_t *reduced = malloc(sizeof(rexdd_edge_t));
     rexdd_node_handle_t handle = rexdd_nodeman_get_handle(&(F->M), new_p);
     reduced->target = handle;
     reduced->label.rule = N;
@@ -344,8 +393,7 @@ void rexdd_reduce_edge(
 
     // Normalize the four equivalent forms
     if (reduced->target == handle) {
-        // TBD
-        // normalize(N,0,0,new_P)
+        // normalize for the reduced edge
         rexdd_normalize_edge(new_p, reduced);
     }
 
@@ -355,6 +403,15 @@ void rexdd_reduce_edge(
         // Merge l and reduced into out TBD
 
     /* ======END REDUCE====== */
+
+
+    /* ======MERGE====== */
+
+    /*
+        {Merge rexdd_edge_label_t and reduced node}
+    */
+
+    /* ======END MERGE====== */
 
     /*
      * Check if it is in this forest unique table. if so, return it

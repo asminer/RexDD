@@ -96,7 +96,7 @@ void rexdd_destroy_forest(
  * 
  */
 void rexdd_normalize_edge(
-        rexdd_unpacked_node_t   P,
+        rexdd_unpacked_node_t   *P,
         rexdd_edge_t            *out);
 
 
