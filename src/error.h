@@ -21,6 +21,7 @@ void rexdd_error(const char* file, unsigned line, const char* format, ...);
 /*************************************************************************
  *
  *  Error check shorthand macros.
+ *  These are always on.
  *
  */
 
@@ -30,11 +31,16 @@ void rexdd_error(const char* file, unsigned line, const char* format, ...);
 /*************************************************************************
  *
  *  Sanity check macros.
- *  Can be turned on for debugging, and off for speed.
+ *  Turned on for debugging only
  *
  */
 
+#ifdef NDEBUG
+#define rexdd_sanity1(T, F)
+#define rexdd_sanity2(T, F, P)
+#else
 #define rexdd_sanity1(T, F)         rexdd_check1(T, F)
 #define rexdd_sanity2(T, F, P)      rexdd_check2(T, F, P)
+#endif
 
 #endif
