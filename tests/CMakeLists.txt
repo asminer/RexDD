@@ -1,12 +1,17 @@
 
-set(EXES
+#
+# Tests that are run with no arguments
+#
+set(NOARG_TESTS
   packing
 )
 
-add_executable(packing packing.c)
-target_link_libraries(packing PUBLIC RexDD)
-target_include_directories(packing PUBLIC
+foreach(testexe ${NOARG_TESTS})
+  add_executable(${testexe} ${testexe}.c)
+  target_link_libraries(${testexe} PUBLIC RexDD)
+  target_include_directories(${testexe} PUBLIC
     "${PROJECT_BINARY_DIR}/src"
     "${PROJECT_SOURCE_DIR}/src"
-)
-add_test(NAME packing COMMAND packing)
+  )
+  add_test(NAME ${testexe} COMMAND ${testexe})
+endforeach()

@@ -12,15 +12,18 @@ or swapped to invert the next variable.
 
 # Required for building
 
-cmake version 3.10 or later
+cmake version 3.11 or later
 
-# Building
+# Building on Unix-like systems
 
-(TBD - write this)
-
-Run
+1. Run
 ```cmake . --preset=debug```
-or
+and/or
 ```cmake . --preset=release```
+to set up debugging/release build directories.
 
+2. cd into build-debug or build-release
 
+3. Run ```make```
+
+4. To run regression tests, run ```ctest```
