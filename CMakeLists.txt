@@ -8,6 +8,8 @@ else()
   add_compile_options(-Wall -Wextra -Wshadow -Wunused)
 endif()
 
+enable_testing()
+
 add_subdirectory(src)
 add_subdirectory(tests)
 

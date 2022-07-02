@@ -3,8 +3,6 @@ set(EXES
   packing
 )
 
-enable_testing()
-
 add_executable(packing packing.c)
 target_link_libraries(packing PUBLIC RexDD)
 target_include_directories(packing PUBLIC
