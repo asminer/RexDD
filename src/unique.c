@@ -273,6 +273,38 @@ void rexdd_sweep_UT(rexdd_unique_table_t *T)
 
 /****************************************************************************
  *
+ *  Build chain length histogram, for debugging / performance measurement.
+ *      @param  T           Unique table to dump
+ *      @param  hist        Histogram, where hist[i] is the number of
+ *                          chains of length i.
+ *      @param  hsize       Size of histogram; any outliers will be ignored.
+ *
+ */
+void rexdd_histogram_UT(const rexdd_unique_table_t *T,
+        uint_fast64_t* hist, unsigned hsize)
+{
+    uint_fast64_t h, i;
+    for (i=0; i<hsize; i++) hist[i] = 0;
+    if (0==T) {
+        return;
+    }
+    uint_fast64_t tlen = 0;
+    for (i=0; i<T->size; i++) {
+        unsigned clen = 0;
+        for (h = T->table[i];
+            h;
+            h = rexdd_get_packed_next(rexdd_get_packed_for_handle(T->M, h)))
+        {
+            ++clen;
+        }
+        if (clen < hsize) ++hist[clen];
+        tlen += clen;
+    }
+    rexdd_sanity1(tlen == T->num_entries, "UT entry count is wrong");
+}
+
+/****************************************************************************
+ *
  *  Dump a unique table, in human-readable format, for debugging purposes.
  *      @param  fout        Where to dump
  *      @param  T           Unique table to dump

@@ -3,7 +3,10 @@
 
 #include <stdlib.h>
 
-const unsigned insertions = 1000000;
+#define HSIZE 1000
+
+const unsigned insertions = 10000;
+// const unsigned insertions = 1000000;
 const unsigned utmax = 0x01 << 21;
 
 /*
@@ -73,6 +76,20 @@ int main()
     unsigned total = count + UT.num_entries;
 
     printf("%u total\n", total);
+
+    printf("Histogram of (final) chain lengths:\n");
+
+    uint_fast64_t histogram[HSIZE];
+
+    rexdd_histogram_UT(&UT, histogram, HSIZE);
+
+    uint_fast64_t harea = 0;
+    for (i=0; i<HSIZE; i++) {
+        if (0==histogram[i]) continue;
+        printf("%5u: %llu\n", i, histogram[i]);
+        harea += i*histogram[i];
+    }
+    printf("Unaccounted for chain items: %llu\n", UT.num_entries - harea);
 
     rexdd_free_nodeman(&M);
     return 0;
