@@ -4,6 +4,7 @@
 #
 set(EXES
   packing
+  check_ut
 )
 
 foreach(testexe ${EXES})
@@ -21,3 +22,4 @@ endforeach()
 #
 
 add_test(NAME packing COMMAND packing)
+add_test(NAME check_ut COMMAND check_ut)

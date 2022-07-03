@@ -115,7 +115,7 @@ rexdd_nodeman_reuse(rexdd_nodeman_t *M, rexdd_node_handle_t h)
     rexdd_sanity1(M, "Null node manager");
     rexdd_sanity1(0==M->previous_handle, "Too many reused node manager handles");
 
-    M->previous_handle = h;
+    M->previous_handle = h+1;
 }
 
 

@@ -6,6 +6,8 @@
 
 // #define TEST_PRIMES
 
+// #define VERBOSE
+
 /*
  *  Null-terminated sequence of primes to use as hash table sizes.
  *  About this list:
@@ -123,6 +125,12 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
     rexdd_packed_node_t *node = rexdd_get_packed_for_handle(T->M, h);
     uint_fast64_t hash = rexdd_hash_packed(node, T->size);
 
+#ifdef VERBOSE
+    fprintf(stderr, "UT insert\n");
+    fprintf(stderr, "    handle: %llu\n", h);
+    fprintf(stderr, "      hash: %llu\n", hash);
+#endif
+
     /*
      *  Special, and hopefully common, case: empty chain.
      *  Which means the node is new.
@@ -131,15 +139,31 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
         T->num_entries++;
         T->table[hash] = h;
         // node's next should already be 0
+#ifdef VERBOSE
+        fprintf(stderr, "UT insert: empty chain, returning %llu\n", h);
+#endif
         return h;
     }
 
     /*
      *  Non-empty chain.  Check the chain for duplicates.
      */
+#ifdef VERBOSE
+    uint_fast64_t i;
+    fprintf(stderr, "    start chain: ");
+    for (i = T->table[hash];
+        i;
+        i = rexdd_get_packed_next(rexdd_get_packed_for_handle(T->M, i)))
+    {
+        fprintf(stderr, "%llu, ", i);
+    }
+    fprintf(stderr, ".\n");
+#endif
     uint_fast64_t currhand = T->table[hash];
     rexdd_packed_node_t *prevnode = 0;
     rexdd_packed_node_t *currnode = 0;
+
+
     while (currhand) {
         currnode = rexdd_get_packed_for_handle(T->M, currhand);
         if (!rexdd_are_packed_duplicates(node, currnode)) {
@@ -159,6 +183,18 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
          *  Recycle the given handle.
          */
         rexdd_nodeman_reuse(T->M, h);
+
+#ifdef VERBOSE
+        fprintf(stderr, "    found chain: ");
+        for (i = T->table[hash];
+            i;
+            i = rexdd_get_packed_next(rexdd_get_packed_for_handle(T->M, i)))
+        {
+            fprintf(stderr, "%llu, ", i);
+        }
+        fprintf(stderr, ".\n");
+        fprintf(stderr, "UT insert: duplicate, returning %llu\n", currhand);
+#endif
         return currhand;
     }
 
@@ -168,6 +204,19 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
     T->num_entries++;
     rexdd_set_packed_next(node, T->table[hash]);
     T->table[hash] = h;
+
+#ifdef VERBOSE
+    fprintf(stderr, "    added chain: ");
+    for (i = T->table[hash];
+        i;
+        i = rexdd_get_packed_next(rexdd_get_packed_for_handle(T->M, i)))
+    {
+        fprintf(stderr, "%llu, ", i);
+    }
+    fprintf(stderr, ".\n");
+    fprintf(stderr, "UT insert: new item, returning %llu\n", h);
+#endif
+
     return h;
 }
 
