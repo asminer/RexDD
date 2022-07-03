@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#define SHOW_HISTOGRAM
+
 #define HSIZE 1000
 
 const unsigned insertions = 10000;
@@ -47,7 +49,7 @@ int main()
     rexdd_unpacked_node_t n;
 
     rexdd_init_nodeman(&M, 2);
-    rexdd_create_UT(&UT, &M);
+    rexdd_init_UT(&UT, &M);
 
     unsigned i, count = 0;
     for (i=0; i<insertions; i++) {
@@ -77,6 +79,7 @@ int main()
 
     printf("%u total\n", total);
 
+#ifdef SHOW_HISTOGRAM
     printf("Histogram of (final) chain lengths:\n");
 
     uint_fast64_t histogram[HSIZE];
@@ -90,7 +93,9 @@ int main()
         harea += i*histogram[i];
     }
     printf("Unaccounted for chain items: %llu\n", UT.num_entries - harea);
+#endif
 
+    rexdd_free_UT(&UT);
     rexdd_free_nodeman(&M);
     return 0;
 }

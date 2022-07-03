@@ -37,7 +37,7 @@ typedef rexdd_unique_table_t* rexdd_unique_table_p;
  *  Initialize a unique table
  *
  */
-void rexdd_create_UT(rexdd_unique_table_t *T, rexdd_nodeman_t *M);
+void rexdd_init_UT(rexdd_unique_table_t *T, rexdd_nodeman_t *M);
 
 
 /****************************************************************************
@@ -45,7 +45,7 @@ void rexdd_create_UT(rexdd_unique_table_t *T, rexdd_nodeman_t *M);
  *  Free memory for a unique table.
  *  The underlying node manager is not touched.
  */
-void rexdd_destroy_UT(rexdd_unique_table_t *T);
+void rexdd_free_UT(rexdd_unique_table_t *T);
 
 
 /****************************************************************************
