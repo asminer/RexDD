@@ -25,6 +25,7 @@ typedef struct {
     rexdd_node_handle_t* table;
     uint_fast64_t size;
     uint_fast64_t num_entries;
+    uint_fast64_t enlarge;  // #entries required to enlarge
     unsigned size_index;
     unsigned prev_size_index;
 } rexdd_unique_table_t;

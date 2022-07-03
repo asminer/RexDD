@@ -6,7 +6,7 @@
 
 // #define TEST_PRIMES
 
-// #define VERBOSE
+// #define TRACE_ON
 
 /*
  *  Null-terminated sequence of primes to use as hash table sizes.
@@ -62,6 +62,17 @@ int main()
 
 #endif
 
+/****************************************************************************
+ *
+ * Helper: zero an array
+ *
+ */
+static inline void zero_array(rexdd_node_handle_t *A, uint_fast64_t n)
+{
+    while (n) {
+        A[--n] = 0;
+    }
+}
 
 /****************************************************************************
  *
@@ -76,12 +87,15 @@ void rexdd_init_UT(rexdd_unique_table_t *T, rexdd_nodeman_t *M)
     T->M = M;
     T->size = primes[0];
     T->table = malloc(T->size * sizeof(rexdd_node_handle_t));
+    rexdd_check1(T->table, "Malloc fail in rexdd_init_UT");
+    zero_array(T->table, T->size);
 
     rexdd_check1(T->table, "malloc fail in unique table");
 
     T->num_entries = 0;
     T->prev_size_index = 0;
     T->size_index = 0;
+    T->enlarge = primes[0];
 }
 
 /****************************************************************************
@@ -101,8 +115,64 @@ void rexdd_free_UT(rexdd_unique_table_t *T)
     T->size = 0;
     T->size_index = 0;
     T->prev_size_index = 0;
+    T->enlarge = 0x01ul << 60;
 }
 
+
+/****************************************************************************
+ *
+ * Helper: collect hash table chains into a single list; return front
+ *
+ */
+static uint_fast64_t rexdd_table_to_list(rexdd_unique_table_t *T)
+{
+    if (0==T) return 0;
+
+    uint_fast64_t front = 0;
+    rexdd_packed_node_t *packed = 0;
+    uint_fast64_t i, chain;
+    for (i=0; i<T->size; i++) {
+        while (T->table[i]) {
+            chain = T->table[i];
+            packed = rexdd_get_packed_for_handle(T->M, chain);
+            T->table[i] = rexdd_get_packed_next(packed);
+            rexdd_set_packed_next(packed, front);
+            front = chain;
+        }
+    } // for i
+    T->num_entries = 0;
+    return front;
+}
+
+/****************************************************************************
+ *
+ * Helper: re-hash a list
+ *
+ */
+static void rexdd_rehash_list(uint_fast64_t list, rexdd_unique_table_t *T)
+{
+    rexdd_sanity1(T, "Null unique table");
+
+    rexdd_packed_node_t *packed = 0;
+    uint_fast64_t next, hash;
+    while (list) {
+        packed = rexdd_get_packed_for_handle(T->M, list);
+
+        // Save next pointer, before we overwrite it
+        next = rexdd_get_packed_next(packed);
+
+        // Compute new hash
+        hash = rexdd_hash_packed(packed, T->size);
+
+        // Add to the front of the new list
+        rexdd_set_packed_next(packed, T->table[hash]);
+        T->table[hash] = list;
+
+        // Advance
+        list = next;
+        T->num_entries++;
+    }
+}
 
 /****************************************************************************
  *
@@ -121,11 +191,27 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
     /*
      * Check if we should enlarge the table.  TBD
      */
+    if (T->num_entries > T->enlarge) {
+        uint_fast64_t list = rexdd_table_to_list(T);
 
+        // enlarge
+        T->size_index++;
+        T->size = primes[T->size_index];
+        T->table = realloc(T->table, T->size * sizeof(rexdd_node_handle_t));
+        rexdd_check1(T->table, "Realloc fail in rexdd_insert_UT");
+        zero_array(T->table, T->size);
+        T->enlarge = primes[T->size_index+1] ? T->size : (0x01ul << 60);
+
+        rexdd_rehash_list(list, T);
+    }
+
+    /*
+     * Determine hash for the node
+     */
     rexdd_packed_node_t *node = rexdd_get_packed_for_handle(T->M, h);
     uint_fast64_t hash = rexdd_hash_packed(node, T->size);
 
-#ifdef VERBOSE
+#ifdef TRACE_ON
     fprintf(stderr, "UT insert\n");
     fprintf(stderr, "    handle: %llu\n", h);
     fprintf(stderr, "      hash: %llu\n", hash);
@@ -139,7 +225,7 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
         T->num_entries++;
         T->table[hash] = h;
         // node's next should already be 0
-#ifdef VERBOSE
+#ifdef TRACE_ON
         fprintf(stderr, "UT insert: empty chain, returning %llu\n", h);
 #endif
         return h;
@@ -148,7 +234,7 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
     /*
      *  Non-empty chain.  Check the chain for duplicates.
      */
-#ifdef VERBOSE
+#ifdef TRACE_ON
     uint_fast64_t i;
     fprintf(stderr, "    start chain: ");
     for (i = T->table[hash];
@@ -184,7 +270,7 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
          */
         rexdd_nodeman_reuse(T->M, h);
 
-#ifdef VERBOSE
+#ifdef TRACE_ON
         fprintf(stderr, "    found chain: ");
         for (i = T->table[hash];
             i;
@@ -205,7 +291,7 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
     rexdd_set_packed_next(node, T->table[hash]);
     T->table[hash] = h;
 
-#ifdef VERBOSE
+#ifdef TRACE_ON
     fprintf(stderr, "    added chain: ");
     for (i = T->table[hash];
         i;

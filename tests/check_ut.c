@@ -2,13 +2,13 @@
 #include "unique.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #define SHOW_HISTOGRAM
 
 #define HSIZE 1000
 
-const unsigned insertions = 10000;
-// const unsigned insertions = 1000000;
+const unsigned insertions = 10000000;
 const unsigned utmax = 0x01 << 21;
 
 /*
@@ -40,6 +40,35 @@ void fill_node(unsigned seed, rexdd_unpacked_node_t *node)
     node->level = 1+ (seed & 0xf);
 }
 
+void commaprint(int width, uint_fast64_t a)
+{
+    char buffer[22];
+    snprintf(buffer, 22, "%llu", a);
+    buffer[21] = 0;
+    unsigned digs = strlen(buffer);
+
+    int i;
+    for (i=digs + (digs-1)/3; i < width; i++) {
+        fputc(' ', stdout);
+    }
+    unsigned comma = digs % 3;
+    if (0==comma) comma += 3;
+    for (i=0; buffer[i]; i++) {
+        if (0==comma) {
+            fputc(',', stdout);
+            comma = 2;
+        } else {
+            --comma;
+        }
+        fputc(buffer[i], stdout);
+    }
+
+    for (i=digs + (digs-1)/3; i < -width; i++) {
+        fputc(' ', stdout);
+    }
+}
+
+
 int main()
 {
     srandom(12345678);
@@ -66,9 +95,17 @@ int main()
             return 1;
         }
     }
-    printf("%u duplicates detected\n", count);
+    commaprint(13, UT.size);
+    printf(" UT size\n");
 
-    printf("%llu entries in UT\n", UT.num_entries);
+    commaprint(13, 0x01 << 21);
+    printf(" max possible entries\n\n");
+
+    commaprint(13, UT.num_entries);
+    printf(" entries in UT\n");
+
+    commaprint(13, count);
+    printf(" duplicates detected\n");
 
     if (UT.num_entries > utmax) {
         printf("   hmm, expected %u entries at most?\n", utmax);
@@ -77,7 +114,8 @@ int main()
 
     unsigned total = count + UT.num_entries;
 
-    printf("%u total\n", total);
+    commaprint(13, total);
+    printf(" total\n");
 
 #ifdef SHOW_HISTOGRAM
     printf("Histogram of (final) chain lengths:\n");
@@ -86,13 +124,12 @@ int main()
 
     rexdd_histogram_UT(&UT, histogram, HSIZE);
 
-    uint_fast64_t harea = 0;
     for (i=0; i<HSIZE; i++) {
         if (0==histogram[i]) continue;
-        printf("%5u: %llu\n", i, histogram[i]);
-        harea += i*histogram[i];
+        printf("%5u: ", i);
+        commaprint(13, histogram[i]);
+        printf("\n");
     }
-    printf("Unaccounted for chain items: %llu\n", UT.num_entries - harea);
 #endif
 
     rexdd_free_UT(&UT);
