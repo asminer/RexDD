@@ -3,7 +3,7 @@
 # Test executables
 #
 set(EXES
-  packing
+  check_pack
   check_ut
 )
 
@@ -21,5 +21,5 @@ endforeach()
 # Not automated, in case tests take arguments / input files.
 #
 
-add_test(NAME packing COMMAND packing)
+add_test(NAME check_pack COMMAND check_pack)
 add_test(NAME check_ut COMMAND check_ut)
