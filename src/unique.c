@@ -374,7 +374,9 @@ void rexdd_histogram_UT(const rexdd_unique_table_t *T,
     if (0==T) {
         return;
     }
+#ifndef NDEBUG
     uint_fast64_t tlen = 0;
+#endif
     for (i=0; i<T->size; i++) {
         unsigned clen = 0;
         for (h = T->table[i];
@@ -384,7 +386,9 @@ void rexdd_histogram_UT(const rexdd_unique_table_t *T,
             ++clen;
         }
         if (clen < hsize) ++hist[clen];
+#ifndef NDEBUG
         tlen += clen;
+#endif
     }
     rexdd_sanity1(tlen == T->num_entries, "UT entry count is wrong");
 }
