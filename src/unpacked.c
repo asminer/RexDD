@@ -5,6 +5,43 @@
 #include <stdio.h>
 
 
+// TBD - should this be private, in unpacked.c?
+static const char* rexdd_rule_name[] = {
+    "N",
+    "X",
+    "L0",
+    "L1",
+    "H0",
+    "H1",
+    "EL0",
+    "EL1",
+    "EH0",
+    "EH1",
+    "AL0",
+    "AL1",
+    "AH0",
+    "AH1",
+    "?",
+    "?",
+//
+    "IN",
+    "IX",
+    "IL0",
+    "IL1",
+    "IH0",
+    "IH1",
+    "IEL0",
+    "IEL1",
+    "IEH0",
+    "IEH1",
+    "IAL0",
+    "IAL1",
+    "IAH0",
+    "IAH1",
+    "I?",
+    "I?",
+};
+
 /****************************************************************************
  *
  *  Write an edge, in human-readable format, to a char buffer.

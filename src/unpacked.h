@@ -10,20 +10,20 @@
  *      N, X, LZ, LN, HZ, HN, ELZ, ELN, EHZ, EHN, ALZ, ALN, AHZ, AHN
 */
 typedef enum {
-    N = 0,
-    X = 1,
-    LZ = 2,
-    LN = 3,
-    HZ = 4,
-    HN = 5,
-    ELZ = 6,
-    ELN = 7,
-    EHZ = 8,
-    EHN = 9,
-    ALZ = 10,
-    ALN = 11,
-    AHZ = 12,
-    AHN = 13
+    rexdd_rule_N = 0,
+    rexdd_rule_X = 1,
+    rexdd_rule_LZ = 2,
+    rexdd_rule_LN = 3,
+    rexdd_rule_HZ = 4,
+    rexdd_rule_HN = 5,
+    rexdd_rule_ELZ = 6,
+    rexdd_rule_ELN = 7,
+    rexdd_rule_EHZ = 8,
+    rexdd_rule_EHN = 9,
+    rexdd_rule_ALZ = 10,
+    rexdd_rule_ALN = 11,
+    rexdd_rule_AHZ = 12,
+    rexdd_rule_AHN = 13
 } rexdd_rule_t;
 
 /*
@@ -32,91 +32,54 @@ typedef enum {
 static inline rexdd_rule_t rexdd_rule_com_t (rexdd_rule_t R) {
     switch (R)
     {
-    case N:
-        return N;
+    case rexdd_rule_N:
+        return rexdd_rule_N;
 
-    case X:
-        return X;
+    case rexdd_rule_X:
+        return rexdd_rule_X;
 
-    case LZ:
-        return LN;
+    case rexdd_rule_LZ:
+        return rexdd_rule_LN;
 
-    case LN:
-        return LZ;
+    case rexdd_rule_LN:
+        return rexdd_rule_LZ;
 
-    case HZ:
-        return HN;
+    case rexdd_rule_HZ:
+        return rexdd_rule_HN;
 
-    case HN:
-        return HZ;
+    case rexdd_rule_HN:
+        return rexdd_rule_HZ;
 
-    case ELZ:
-        return ELN;
+    case rexdd_rule_ELZ:
+        return rexdd_rule_ELN;
 
-    case ELN:
-        return ELZ;
+    case rexdd_rule_ELN:
+        return rexdd_rule_ELZ;
 
-    case EHZ:
-        return EHN;
+    case rexdd_rule_EHZ:
+        return rexdd_rule_EHN;
 
-    case EHN:
-        return EHZ;
+    case rexdd_rule_EHN:
+        return rexdd_rule_EHZ;
 
-    case ALZ:
-        return ALN;
+    case rexdd_rule_ALZ:
+        return rexdd_rule_ALN;
 
-    case ALN:
-        return ALZ;
+    case rexdd_rule_ALN:
+        return rexdd_rule_ALZ;
 
-    case AHZ:
-        return AHN;
+    case rexdd_rule_AHZ:
+        return rexdd_rule_AHN;
 
-    case AHN:
-        return AHZ;
+    case rexdd_rule_AHN:
+        return rexdd_rule_AHZ;
 
     default:
-        return N;
+        return rexdd_rule_N;
     }
 
 }
 
-
-// TBD - should this be private, in unpacked.c?
-static const char* rexdd_rule_name[] = {
-    "N",
-    "X",
-    "L0",
-    "L1",
-    "H0",
-    "H1",
-    "EL0",
-    "EL1",
-    "EH0",
-    "EH1",
-    "AL0",
-    "AL1",
-    "AH0",
-    "AH1",
-    "?",
-    "?",
-//
-    "IN",
-    "IX",
-    "IL0",
-    "IL1",
-    "IH0",
-    "IH1",
-    "IEL0",
-    "IEL1",
-    "IEH0",
-    "IEH1",
-    "IAL0",
-    "IAL1",
-    "IAH0",
-    "IAH1",
-    "I?",
-    "I?",
-};
 
 /*
  * Edge label info

@@ -159,17 +159,17 @@ void rexdd_dump_page(FILE* fout, const rexdd_nodepage_t *page,
 {
     rexdd_sanity1(page, "Null page");
     if (0==page->chunk) {
-        fprintf(fout, "    Page %0x: unallocated\n", pageno);
+        fprintf(fout, "    Page %x: unallocated\n", (unsigned) pageno);
         return;
     }
-    fprintf(fout, "    Page %0x: allocated\n", pageno);
+    fprintf(fout, "    Page %x: allocated\n", (unsigned) pageno);
     if (page->free_list) {
-        fprintf(fout, "        Free list: %x\n", (uint32_t)page->free_list-1);
+        fprintf(fout, "        Free list: %x\n", (unsigned)page->free_list-1);
     } else {
         fprintf(fout, "        Free list: null\n");
     }
-    fprintf(fout, "        #unused: %u\n", (uint32_t)page->num_unused);
-    uint_fast32_t i;
+    fprintf(fout, "        #unused: %u\n", (unsigned)page->num_unused);
+    unsigned i;
     rexdd_unpacked_node_t node;
     for (i=0; i<page->first_unalloc; i++) {
         if (page->chunk[i].fourth32) {
@@ -177,7 +177,7 @@ void rexdd_dump_page(FILE* fout, const rexdd_nodepage_t *page,
             if (show_used) {
                 rexdd_packed_to_unpacked(page->chunk+i, &node);
                 fprintf(fout, "        Slot %x:%06x In use. level %u, ",
-                    pageno, i, (unsigned) node.level);
+                    (unsigned) pageno, i, (unsigned) node.level);
                 rexdd_fprint_edge(fout, node.edge[0]);
                 fputs(", ", fout);
                 rexdd_fprint_edge(fout, node.edge[1]);
@@ -186,7 +186,7 @@ void rexdd_dump_page(FILE* fout, const rexdd_nodepage_t *page,
         } else {
             /* Freed */
             if (show_unused) {
-                fprintf(fout, "        Slot %x:%06x Freed.  next ", pageno, i);
+                fprintf(fout, "        Slot %x:%06x Freed.  next ", (unsigned) pageno, i);
                 if (page->chunk[i].third32) {
                     fprintf(fout, "%06x\n", page->chunk[i].third32-1);
                 } else {
@@ -196,7 +196,7 @@ void rexdd_dump_page(FILE* fout, const rexdd_nodepage_t *page,
         }
     }
     if (page->first_unalloc <= 0xffffff) {
-        fprintf(fout, "        Slot %x:%06x onward: unused\n", pageno, page->first_unalloc);
+        fprintf(fout, "        Slot %x:%06x onward: unused\n", (unsigned) pageno, (unsigned) page->first_unalloc);
     }
 }
 

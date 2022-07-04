@@ -269,7 +269,7 @@ void rexdd_dump_nodeman(FILE* fout, const rexdd_nodeman_t *M,
 {
     rexdd_sanity1(M, "Null node manager");
     fprintf(fout, "Node manager\n");
-    fprintf(fout, "    %u pages total\n", M->pages_size);
+    fprintf(fout, "    %lu pages total\n", (unsigned long)M->pages_size);
     uint_fast32_t p;
     for (p=0; p<M->pages_size; p++) {
         rexdd_dump_page(fout, M->pages+p, p, show_used, show_unused);
@@ -279,7 +279,7 @@ void rexdd_dump_nodeman(FILE* fout, const rexdd_nodeman_t *M,
     unsigned count = 0;
     for (p=M->not_full_pages; p; p=M->pages[p-1].next) {
         if (0 == count) fputs("\n\t", fout);
-        fprintf(fout, "%x (#unused %u) -> ", p-1, M->pages[p-1].num_unused);
+        fprintf(fout, "%lx (#unused %lu) -> ", (unsigned long) p-1, (unsigned long) M->pages[p-1].num_unused);
         count = (count+1) % 4;
     }
     fputs("null\n", fout);
@@ -288,7 +288,7 @@ void rexdd_dump_nodeman(FILE* fout, const rexdd_nodeman_t *M,
     count = 0;
     for (p=M->empty_pages; p; p=M->pages[p-1].next) {
         if (0 == count) fputs("\n\t", fout);
-        fprintf(fout, "%x -> ", p-1);
+        fprintf(fout, "%lx -> ", (unsigned long) p-1);
         count = (count+1) % 8;
     }
     fputs("null\n", fout);

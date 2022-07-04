@@ -129,9 +129,9 @@ void check_next(unsigned i, uint64_t nxt, const rexdd_packed_node_t *p)
     if (n3 == n2) return;
 
     printf("Next test %u failed\n", i);
-    printf("    Next as set: %llx\n", nxt);
-    printf("    Masked     : %llx\n", n2);
-    printf("    Retrieved  : %llx\n", n3);
+    printf("    Next as set: %lx\n", nxt);
+    printf("    Masked     : %lx\n", n2);
+    printf("    Retrieved  : %lx\n", n3);
 
     exit(1);
 }
