@@ -97,7 +97,7 @@ void copy_and_mask(rexdd_unpacked_node_t *dest, const rexdd_unpacked_node_t *src
 void print_unpacked(const char* name, const rexdd_unpacked_node_t *P)
 {
     fputs(name, stdout);
-    printf("\n    level: %x", P->level);
+    printf("\n    level: %x", (unsigned) P->level);
     printf("\n    edge 0:");
     rexdd_fprint_edge(stdout, P->edge[0]);
     printf("\n    edge 1:");

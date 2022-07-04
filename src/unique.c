@@ -412,7 +412,7 @@ void rexdd_dump_UT(FILE* fout, const rexdd_unique_table_t *T, bool show_nodes)
 
     char nodebuf[256];
     for (i=0; i<T->size; i++) {
-        fprintf(fout, "%8llx |--", i);
+        fprintf(fout, "%8lx |--", (unsigned long) i);
         h = T->table[i];
         col = 0;
         while (h) {
@@ -422,13 +422,13 @@ void rexdd_dump_UT(FILE* fout, const rexdd_unique_table_t *T, bool show_nodes)
 
             if (show_nodes) {
                 rexdd_packed_to_unpacked(cur_p, &cur_u);
-                fprintf(fout, "-> { Level %u, ", cur_u.level);
+                fprintf(fout, "-> { Level %u, ", (unsigned) cur_u.level);
                 rexdd_fprint_edge(fout, cur_u.edge[0]);
                 fputs(", ", fout);
                 rexdd_fprint_edge(fout, cur_u.edge[1]);
                 fprintf(fout, "}\n         |  ");
             } else {
-                snprintf(nodebuf, 256, "-> %llx", h);
+                snprintf(nodebuf, 256, "-> %lx", (unsigned long) h);
                 col += strlen(nodebuf);
                 if (col > 60) {
                     fprintf(fout, "\n         |  %s", nodebuf);
