@@ -77,7 +77,7 @@ typedef struct rexdd_forest_s*  rexdd_forest_p;
  *      @param  F       Forest to initialize.
  *      @param  s       Pointer to forest settings to use.
  */
-void rexdd_create_forest(
+void rexdd_init_forest(
         rexdd_forest_p F,
         const rexdd_forest_settings_p s);
 
@@ -85,7 +85,7 @@ void rexdd_create_forest(
  *  Free all memory used by a forest.
  *      @param  F           Pointer to forest struct
  */
-void rexdd_destroy_forest(
+void rexdd_free_forest(
         rexdd_forest_p F);
 
 
@@ -93,7 +93,7 @@ void rexdd_destroy_forest(
  * @brief Normalize the four equivalent forms
  *      @param  P       Desired target node, unpacked
  *      @param  out     Normalized edge will be written here
- * 
+ *
  */
 void rexdd_normalize_edge(
         rexdd_unpacked_node_t   *P,
@@ -120,11 +120,11 @@ void rexdd_reduce_edge(
  *      @param  F       Forest for the edge
  *      @param  new_p   The target node
  *      @param  reduced Reduced edge will be written here
- * 
+ *
  */
 void rexdd_check_pattern(
         rexdd_forest_t          *F,
-        rexdd_unpacked_node_t   *new_p, 
+        rexdd_unpacked_node_t   *new_p,
         rexdd_edge_t            *reduced);
 
 /**
@@ -132,7 +132,7 @@ void rexdd_check_pattern(
  *      @param  l       The incoming edge label
  *      @param  reduced The reduced edge
  *      @param  out     The merged edge will be written here if so
- * 
+ *
  */
 void rexdd_merge_edge(
         rexdd_edge_label_t      l,

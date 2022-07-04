@@ -28,7 +28,7 @@ void rexdd_default_forest_settings(uint_fast32_t L, rexdd_forest_settings_p s)
  *
  ********************************************************************/
 
-void rexdd_create_forest(rexdd_forest_p F, const rexdd_forest_settings_p s)
+void rexdd_init_forest(rexdd_forest_p F, const rexdd_forest_settings_p s)
 {
     if (F == NULL) {
         rexdd_error(__FILE__, __LINE__, "Null forest");
@@ -41,7 +41,7 @@ void rexdd_create_forest(rexdd_forest_p F, const rexdd_forest_settings_p s)
     F->S = *s;
     rexdd_init_nodeman(&(F->M),0);
 
-    rexdd_create_UT(&(F->UT), &(F->M));
+    rexdd_init_UT(&(F->UT), &(F->M));
     // TBD *roots...
     rexdd_init_function(F->roots);
 
@@ -49,12 +49,12 @@ void rexdd_create_forest(rexdd_forest_p F, const rexdd_forest_settings_p s)
 
 /* ================================================================= */
 
-void rexdd_destroy_forest(rexdd_forest_p F)
+void rexdd_free_forest(rexdd_forest_p F)
 {
 
     rexdd_default_forest_settings(0, &(F->S));
     rexdd_free_nodeman(&(F->M));
-    rexdd_destroy_UT(&(F->UT));
+    rexdd_free_UT(&(F->UT));
 
     // remove rexdd_function_s TBD
     rexdd_done_function(F->roots);

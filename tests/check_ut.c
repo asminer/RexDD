@@ -43,7 +43,7 @@ void fill_node(unsigned seed, rexdd_unpacked_node_t *node)
 void commaprint(int width, uint_fast64_t a)
 {
     char buffer[22];
-    snprintf(buffer, 22, "%lu", a);
+    snprintf(buffer, 22, "%lu", (unsigned long) a);
     buffer[21] = 0;
     unsigned digs = strlen(buffer);
 
@@ -90,8 +90,8 @@ int main()
         }
         if (UT.num_entries + count != i+1) {
             printf("  failed insertion on item %u?\n", i);
-            printf("      orig handle: %lu\n", h);
-            printf("        UT handle: %lu\n", g);
+            printf("      orig handle: %lu\n", (unsigned long) h);
+            printf("        UT handle: %lu\n", (unsigned long) g);
             return 1;
         }
     }
