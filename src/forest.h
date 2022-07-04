@@ -33,7 +33,6 @@ typedef struct {
     // TBD
 } rexdd_forest_settings_t;
 
-typedef rexdd_forest_settings_t* rexdd_forest_settings_p;
 
 
 
@@ -48,7 +47,7 @@ typedef rexdd_forest_settings_t* rexdd_forest_settings_p;
  */
 void rexdd_default_forest_settings(
         uint_fast32_t L,
-        rexdd_forest_settings_p s);
+        rexdd_forest_settings_t *s);
 
 
 
@@ -69,7 +68,7 @@ struct rexdd_forest_s {
 };
 
 typedef struct rexdd_forest_s   rexdd_forest_t;
-typedef struct rexdd_forest_s*  rexdd_forest_p;
+
 
 
 /**
@@ -78,22 +77,22 @@ typedef struct rexdd_forest_s*  rexdd_forest_p;
  *      @param  s       Pointer to forest settings to use.
  */
 void rexdd_init_forest(
-        rexdd_forest_p F,
-        const rexdd_forest_settings_p s);
+        rexdd_forest_t *F,
+        const rexdd_forest_settings_t *s);
 
 /**
  *  Free all memory used by a forest.
  *      @param  F           Pointer to forest struct
  */
 void rexdd_free_forest(
-        rexdd_forest_p F);
+        rexdd_forest_t *F);
 
 
 /**
  * @brief Normalize the four equivalent forms
  *      @param  P       Desired target node, unpacked
  *      @param  out     Normalized edge will be written here
- *
+ * 
  */
 void rexdd_normalize_edge(
         rexdd_unpacked_node_t   *P,
@@ -109,7 +108,7 @@ void rexdd_normalize_edge(
  *      @param  out     Reduced edge will be written here.
  */
 void rexdd_reduce_edge(
-        rexdd_forest_p          F,
+        rexdd_forest_t          *F,
         uint_fast32_t           n,
         rexdd_edge_label_t      l,
         rexdd_unpacked_node_t   p,
@@ -120,21 +119,40 @@ void rexdd_reduce_edge(
  *      @param  F       Forest for the edge
  *      @param  new_p   The target node
  *      @param  reduced Reduced edge will be written here
- *
+ * 
  */
 void rexdd_check_pattern(
         rexdd_forest_t          *F,
-        rexdd_unpacked_node_t   *new_p,
+        rexdd_unpacked_node_t   *new_p, 
         rexdd_edge_t            *reduced);
 
 /**
  *  Merge the reduced edge and the incoming edge of the target node
+ *      @param  F       Forest for the edge
+ *      @param  n       Node level
  *      @param  l       The incoming edge label
  *      @param  reduced The reduced edge
  *      @param  out     The merged edge will be written here if so
- *
+ * 
  */
 void rexdd_merge_edge(
+        rexdd_forest_t          *F,
+        uint32_t                n,
+        rexdd_edge_label_t      l,
+        rexdd_edge_t            *reduced,
+        rexdd_edge_t            *out);
+
+/**
+ *  Push up one node for the specific merge case
+ *      @param  F       Forest for the edge
+ *      @param  n       The leve of the target node
+ *      @param  l       The incoming edge label
+ *      @param  reduced The reduced edge
+ *      @param  out     The result edge will be written here
+ * 
+ */
+void rexdd_puo_edge(
+        uint32_t                n,
         rexdd_edge_label_t      l,
         rexdd_edge_t            *reduced,
         rexdd_edge_t            *out);
@@ -147,7 +165,7 @@ void rexdd_merge_edge(
 
 struct rexdd_function_s {
 
-    rexdd_forest_p owner;
+    rexdd_forest_t *owner;
 
     rexdd_edge_t root;
 
@@ -252,7 +270,7 @@ void rexdd_reset_as_variable(
  */
 void rexdd_init_as_variable(
         rexdd_function_p    fn,
-        rexdd_forest_p      For,
+        rexdd_forest_t      *For,
         uint32_t            v,
         bool                c);
 
