@@ -555,29 +555,33 @@ void rexdd_merge_edge(
  *
  ********************************************************************/
 
-void rexdd_reset_as_variable(
-        rexdd_function_t    *fn,
-        uint32_t            v,
-        bool                c)
-{
+/*=======================
+|| We ignore for now   ||
+=======================*/
 
-}
+// void rexdd_reset_as_variable(
+//         rexdd_function_t    *fn,
+//         uint32_t            v,
+//         bool                c)
+// {
 
-void rexdd_init_as_variable(
-        rexdd_function_t    *fn,
-        rexdd_forest_t      *For,
-        uint32_t            v,
-        bool                c)
-{
+// }
 
-}
+// void rexdd_init_as_variable(
+//         rexdd_function_t    *fn,
+//         rexdd_forest_t      *For,
+//         uint32_t            v,
+//         bool                c)
+// {
 
-void rexdd_ITE(
-        const rexdd_function_p f,
-        const rexdd_function_p g,
-        const rexdd_function_p h,
-              rexdd_function_p result)
-{
+// }
 
-}
+// void rexdd_ITE(
+//         const rexdd_function_p f,
+//         const rexdd_function_p g,
+//         const rexdd_function_p h,
+//               rexdd_function_p result)
+// {
+
+// }
 
