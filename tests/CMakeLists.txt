@@ -6,6 +6,7 @@ set(EXES
   check_pack
   check_np
   check_ut
+  check_forest
 )
 
 foreach(testexe ${EXES})
@@ -24,3 +25,4 @@ endforeach()
 
 add_test(NAME check_pack COMMAND check_pack)
 add_test(NAME check_ut COMMAND check_ut)
+add_test(NAME check_forest COMMAND check_forest)
