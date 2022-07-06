@@ -4,6 +4,7 @@
 #
 set(EXES
   check_pack
+  check_np
   check_ut
 )
 
