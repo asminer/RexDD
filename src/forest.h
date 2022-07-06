@@ -59,8 +59,8 @@ void rexdd_default_forest_settings(
 
 struct rexdd_forest_s {
     rexdd_forest_settings_t S;
-    rexdd_nodeman_t M;
-    rexdd_unique_table_t UT;
+    rexdd_nodeman_t *M;
+    rexdd_unique_table_t *UT;
 
     // ...
 
