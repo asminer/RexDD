@@ -183,9 +183,12 @@ void rexdd_reduce_edge(
     reduced->label.rule = rexdd_rule_N;
     reduced->label.swapped = l.swapped;
     reduced->label.complemented = l.complemented;
-    
-    rexdd_check_pattern(F, new_p, reduced);
 
+    // avoid push up all for the AL or AH cases in merge part
+    if (l.rule <= 9 ) {
+        rexdd_check_pattern(F, new_p, reduced);
+    }
+    
     // 
 
     // Normalize the four equivalent forms
@@ -196,25 +199,17 @@ void rexdd_reduce_edge(
         /*
         * Check if it is in this forest unique table. if so, return it
         */
-        rexdd_packed_node_t *pN = malloc(sizeof(rexdd_packed_node_t));
-        rexdd_unpacked_to_packed(new_p, pN);
 
-        /*
-        * Hash node
-        */
-        uint_fast64_t H = rexdd_hash_packed(pN, F->UT.size);
-        H = rexdd_insert_UT(&(F->UT), H);
+        uint_fast64_t H = rexdd_insert_UT(&(F->UT), handle);
         out = reduced;
+        out->label.rule = l.rule;
+        out->target = H;
 
-        free(pN);
     } else {
         rexdd_merge_edge(F, n, l, reduced, out);
 
-        /*
-        * Hash node
-        */
-        uint_fast64_t H = rexdd_hash_packed(rexdd_get_packed_for_handle(&(F->M), out->target), F->UT.size);
-        H = rexdd_insert_UT(&(F->UT), H);
+        uint_fast64_t H = rexdd_insert_UT(&(F->UT), out->target);
+        out->target = H;
     }
 
     free(new_p);
