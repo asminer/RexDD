@@ -202,10 +202,7 @@ void rexdd_reduce_edge(
         /*
         * Hash node
         */
-        uint_fast64_t m;
-        uint_fast64_t H = rexdd_hash_packed(pN, m);
-        //                                      ^ Here number m TBD
-
+        uint_fast64_t H = rexdd_hash_packed(pN, F->UT.size);
         H = rexdd_insert_UT(&(F->UT), H);
         out = reduced;
 
@@ -216,9 +213,7 @@ void rexdd_reduce_edge(
         /*
         * Hash node
         */
-        uint_fast64_t m;
-        uint_fast64_t H = rexdd_hash_packed(rexdd_get_packed_for_handle(&(F->M), out->target), m);
-        //                                                                                    ^ Here number m TBD
+        uint_fast64_t H = rexdd_hash_packed(rexdd_get_packed_for_handle(&(F->M), out->target), F->UT.size);
         H = rexdd_insert_UT(&(F->UT), H);
     }
 
