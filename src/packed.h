@@ -231,6 +231,19 @@ rexdd_recycle_packed(rexdd_packed_node_t *N, uint_fast32_t next_free)
 
 /****************************************************************************
  *
+ *  Check if a packed node is in use or not.
+ *  static inlined for speed.
+ *      @param      N           Packed node
+ */
+static inline bool
+rexdd_is_packed_in_use(const rexdd_packed_node_t *N)
+{
+    return N->fourth32;
+}
+
+
+/****************************************************************************
+ *
  *  Check if two packed nodes are duplicates.
  *  (This is faster than unpacking and comparing unpacked nodes.)
  *  static inlined for speed.

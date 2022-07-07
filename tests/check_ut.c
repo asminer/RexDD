@@ -71,6 +71,8 @@ void commaprint(int width, uint_fast64_t a)
 
 int main()
 {
+    printf("Unique table test\n\n");
+
     srandom(12345678);
 
     rexdd_nodeman_t M;

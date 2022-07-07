@@ -8,10 +8,12 @@
 void rexdd_default_error(const char* file, unsigned line,
         const char* format, va_list ap)
 {
-    fprintf(stderr, "\nFatal error in rexdd library (source file %s line %u):\n\t",
-        file, line);
+    fprintf(stderr, "\nFatal error in rexdd library!\n");
+    fprintf(stderr, "    source file: %s\n", file);
+    fprintf(stderr, "    line number: %u\n", line);
+    fprintf(stderr, "    description: ");
     vfprintf(stderr, format, ap);
-    fputc('\n', stderr);
+    fputs("\n\n", stderr);
     fflush(stderr);
     exit(1);
 }

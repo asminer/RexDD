@@ -148,6 +148,8 @@ void check_mark(unsigned i, bool marked, const rexdd_packed_node_t *p)
 
 int main()
 {
+    printf("Node packing test.\n\n");
+
     printf("rexdd_unpacked_node_t: %lu bytes\n", sizeof(rexdd_unpacked_node_t));
     printf("rexdd_packed_node_t: %lu bytes\n", sizeof(rexdd_packed_node_t));
 

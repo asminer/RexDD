@@ -12,7 +12,7 @@ or swapped to invert the next variable.
 
 # Required for building
 
-cmake version 3.11 or later
+cmake version 3.19 or later
 
 # Building on Unix-like systems
 

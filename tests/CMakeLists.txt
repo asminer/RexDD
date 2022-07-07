@@ -19,10 +19,16 @@ foreach(testexe ${EXES})
 endforeach()
 
 #
+# Allow quoted test names with spaces
+#
+cmake_policy(SET CMP0110 NEW)
+
+#
 # Add the tests to run.
 # Not automated, in case tests take arguments / input files.
 #
 
-add_test(NAME check_pack COMMAND check_pack)
-add_test(NAME check_ut COMMAND check_ut)
+add_test("Node packing test"   check_pack)
+add_test("Node page test"      check_np)
+add_test("Unique table test"   check_ut)
 add_test(NAME check_forest COMMAND check_forest)
