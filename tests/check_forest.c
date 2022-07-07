@@ -60,7 +60,6 @@ void commaprint(int width, uint_fast64_t a)
 
 int main()
 {
-    srandom(123456);
 
     rexdd_forest_t F;
     rexdd_forest_settings_t s;
@@ -78,6 +77,9 @@ int main()
     for (i=0; i < num_nodes; i++) {
         fill_node(random(), &n);
         rexdd_check_pattern(&F, &n, &e);
+
+        // uint64_t H = rexdd_insert_UT(F.UT, e.target);
+
         if (e.label.rule != rexdd_rule_N) count++;
 
     }
@@ -90,6 +92,8 @@ int main()
 
     commaprint(13, count);
     printf(" reduced edge\n");
+
+    rexdd_free_forest(&F);
 
 
 

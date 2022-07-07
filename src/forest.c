@@ -42,8 +42,8 @@ void rexdd_init_forest(rexdd_forest_t *F, const rexdd_forest_settings_t *s)
     rexdd_init_nodeman(F->M,0);
     F->UT = malloc(sizeof(rexdd_unique_table_t));
     rexdd_init_UT(F->UT, F->M);
-    // TBD *roots...
-    // rexdd_init_function(&(F->roots));
+    F->roots = malloc(sizeof(rexdd_function_t));
+    rexdd_init_function(F->roots);
 
 }
 
@@ -53,16 +53,11 @@ void rexdd_free_forest(rexdd_forest_t *F)
 {
 
     rexdd_default_forest_settings(0, &(F->S));
-    rexdd_free_nodeman(F->M);
     rexdd_free_UT(F->UT);
-      
+    rexdd_free_nodeman(F->M);  
+
     // remove rexdd_function_s TBD
     rexdd_done_function(F->roots);
-
-    if (F != NULL){
-        free(F);
-        F = NULL;
-    }
 }
 
 
