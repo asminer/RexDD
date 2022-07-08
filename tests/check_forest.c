@@ -136,43 +136,19 @@ int main()
             show_unpacked_node(n);
             printf("\nreduced edge: \n");
             show_edge(e);
+            printf("\n-------------------normalizing-------------------\n");
+            rexdd_normalize_edge(&n, &e);
+            show_unpacked_node(n);
+            printf("\nnormalized edge: \n");
+            show_edge(e);
             break;
         }
     }
     printf("\n========================================\n");
 
-    commaprint(13, F.UT->size);
-    printf(" UT size\n");
-
-    commaprint(13, F.UT->num_entries);
-    printf(" entries in UT\n");
-
-    commaprint(13, count);
-    printf(" reduced edge\n");
-
-    printf("Checking node page handles\n");
-
-    rexdd_unpacked_node_t new_p;
-    fill_node(random(), &new_p, 1);
-
-    show_unpacked_node(new_p);
-
-    rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F.M, &new_p);
-    rexdd_node_handle_t handle1 = rexdd_nodeman_get_handle(F.M, &new_p);
-
-    printf("The first handle is %llu\n", handle);
-    printf("The second handle is %llu\n", handle1);
-
-    rexdd_unpacked_node_t temp;
-    rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.UT->M, handle) ,&temp);
-    show_unpacked_node(temp);
-    rexdd_node_handle_t hash_handle = rexdd_insert_UT(F.UT, handle);
-    printf("The hashed handle is %llu\n", hash_handle);
-    rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.UT->M, hash_handle) ,&temp);
-    show_unpacked_node(temp);
-
-    printf("\nChecking nonterminals...\n");
-
+    // 1. check the function values
+    // 2. check if the return edge is correct
+    
 
     rexdd_free_forest(&F);
 
