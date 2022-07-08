@@ -64,14 +64,14 @@ static inline rexdd_rule_t rexdd_rule_com_t (rexdd_rule_t R)
  *
  *  Currently, 50 bits; any info above that is ignored.
  *  The high bit tells if it is terminal (1) or non-terminal (0).
- *  The low 49 bits give the terminal data or non-terminal index.
+ *  The low 49 bits give the terminal value or non-terminal handle.
  *
  */
 typedef uint64_t    rexdd_node_handle_t;
 
 /****************************************************************************
  *
- *  Helper: is a node index terminal?
+ *  Helper: is the node handle for a terminal node?
  *
  */
 static inline bool rexdd_is_terminal(rexdd_node_handle_t n)
@@ -81,22 +81,22 @@ static inline bool rexdd_is_terminal(rexdd_node_handle_t n)
 
 /****************************************************************************
  *
- *  Helper: get the terminal node data
+ *  Helper: get the terminal node value
  *
  */
-static inline rexdd_node_handle_t rexdd_terminal_data(rexdd_node_handle_t n)
+static inline rexdd_node_handle_t rexdd_terminal_value(rexdd_node_handle_t n)
 {
-    rexdd_sanity1(rexdd_is_terminal(n), "requesting terminal data for nonterminal");
+    rexdd_sanity1(rexdd_is_terminal(n), "requesting terminal value for nonterminal");
     return n & ((0x01ul << 49)-1);
 }
 
 /****************************************************************************
  *
  *  Helper: build a terminal node index
- *      (Sets bit 49)
+ *      (Sets bit 49, clears bits 50 and higher)
  *
  */
-static inline rexdd_node_handle_t rexdd_terminal_index(rexdd_node_handle_t n)
+static inline rexdd_node_handle_t rexdd_make_terminal(rexdd_node_handle_t n)
 {
     return ( n & ((0x01ul << 49)-1) ) | ( 0x01ul << 49 );
 }
@@ -106,19 +106,19 @@ static inline rexdd_node_handle_t rexdd_terminal_index(rexdd_node_handle_t n)
  *  Helper: get the non-terminal node data
  *
  */
-static inline rexdd_node_handle_t rexdd_nonterminal_data(rexdd_node_handle_t n)
+static inline rexdd_node_handle_t rexdd_nonterminal_handle(rexdd_node_handle_t n)
 {
-    rexdd_sanity1(!rexdd_is_terminal(n), "requesting nonterminal data for terminal");
+    rexdd_sanity1(!rexdd_is_terminal(n), "requesting nonterminal handle for terminal");
     return n & ((0x01ul << 49)-1);
 }
 
 /****************************************************************************
  *
  *  Helper: build a nonterminal node index
- *      (Clears bit 49)
+ *      (Clears bits 49 and higher)
  *
  */
-static inline rexdd_node_handle_t rexdd_nonterminal_index(rexdd_node_handle_t n)
+static inline rexdd_node_handle_t rexdd_make_nonterminal(rexdd_node_handle_t n)
 {
     return n & ((0x01ul << 49)-1);
 }

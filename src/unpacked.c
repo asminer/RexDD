@@ -65,11 +65,11 @@ void rexdd_snprint_edge(char* buffer, unsigned len, rexdd_edge_t e)
             label,
             e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
-            (unsigned long) rexdd_terminal_data(e.target)
+            (unsigned long) rexdd_terminal_value(e.target)
         );
     } else {
         // Non-terminal
-        rexdd_node_handle_t et = rexdd_nonterminal_data(e.target);
+        rexdd_node_handle_t et = rexdd_nonterminal_handle(e.target);
         snprintf(buffer, len, "<%s,%c,%c,N%x:%06x>",
             label,
             e.label.complemented ? 'c' : '_',
@@ -102,11 +102,11 @@ void rexdd_fprint_edge(FILE* fout, rexdd_edge_t e)
             label,
             e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
-            (unsigned long) rexdd_terminal_data(e.target)
+            (unsigned long) rexdd_terminal_value(e.target)
         );
     } else {
         // Non-terminal
-        rexdd_node_handle_t et = rexdd_nonterminal_data(e.target);
+        rexdd_node_handle_t et = rexdd_nonterminal_handle(e.target);
         fprintf(fout, "<%s,%c,%c,N%x:%06x>",
             label,
             e.label.complemented ? 'c' : '_',
