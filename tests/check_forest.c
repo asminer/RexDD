@@ -58,6 +58,25 @@ void commaprint(int width, uint_fast64_t a)
     }
 }
 
+void show_edge(rexdd_edge_t e)
+{
+    printf("edge's target is %llu\n", e.target);
+    printf("edge rule is %d\n", e.label.rule);
+    printf("edge complement bit is %d\n", e.label.complemented);
+    printf("edge swap bit is %d\n", e.label.swapped);
+}
+
+void show_unpacked_node(rexdd_unpacked_node_t n)
+{
+    printf("node level is %d\n", n.level);
+    printf("\nnode's low ");
+    show_edge(n.edge[0]);
+    printf("\nnode's high");
+    show_edge(n.edge[1]);
+    
+}
+
+
 int main()
 {
 
@@ -80,8 +99,12 @@ int main()
 
         // uint64_t H = rexdd_insert_UT(F.UT, e.target);
 
-        if (e.label.rule != rexdd_rule_N) count++;
-
+        if (e.label.rule != rexdd_rule_N) {
+            count++;
+            show_unpacked_node(n);
+            show_edge(e);
+            break;
+        }
     }
 
     commaprint(13, F.UT->size);
@@ -92,6 +115,30 @@ int main()
 
     commaprint(13, count);
     printf(" reduced edge\n");
+
+    printf("Checking node page handles\n");
+
+    rexdd_unpacked_node_t new_p;
+    fill_node(random(), &new_p);
+
+    show_unpacked_node(new_p);
+
+    rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F.M, &new_p);
+    rexdd_node_handle_t handle1 = rexdd_nodeman_get_handle(F.M, &new_p);
+
+    printf("The first handle is %llu\n", handle);
+    printf("The second handle is %llu\n", handle1);
+
+    rexdd_unpacked_node_t temp;
+    rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.UT->M, handle) ,&temp);
+    show_unpacked_node(temp);
+    rexdd_node_handle_t hash_handle = rexdd_insert_UT(F.UT, handle);
+    printf("The hashed handle is %llu\n", hash_handle);
+    rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.UT->M, hash_handle) ,&temp);
+    show_unpacked_node(temp);
+
+    printf("\nChecking nonterminals...\n");
+
 
     rexdd_free_forest(&F);
 
