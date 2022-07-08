@@ -140,78 +140,6 @@ void rexdd_normalize_edge(
     }
 }
 
-
-/* ================================================================= */
-
-void rexdd_reduce_edge(
-        rexdd_forest_t          *F,      // the forest (S, M, UT)
-        uint_fast32_t           n,      // node level
-        rexdd_edge_label_t      l,      // rexdd_rule_t, bool, bool
-        rexdd_unpacked_node_t   p,      // uint_fast32_t level, rexdd_edge_t edge[2]
-        rexdd_edge_t            *out)   // rexdd_edge_lable_t, uint_fast64_t
-{
-    if (n != p.level) {
-        rexdd_error(__FILE__, __LINE__, "Target node level unmatched");
-    }
- 
-    // new node at the same level
-    rexdd_unpacked_node_t *new_p = malloc(sizeof(rexdd_unpacked_node_t));
-    *new_p = p;
-    
-    // rexdd_unpacked_node_t *loch = malloc(sizeof(rexdd_unpacked_node_t));
-    // rexdd_unpacked_node_t *hich = malloc(sizeof(rexdd_unpacked_node_t));
-    // rexdd_unpack_handle (&(F->M), new_p->edge[0].target, loch);
-    // rexdd_unpack_handle (&(F->M), new_p->edge[1].target, hich);
-    // rexdd_reduce_edge(F, n-1, new_p->edge[0].label, *loch, &(new_p->edge[0]));
-    // rexdd_reduce_edge(F, n-1, new_p->edge[1].label, *hich, &(new_p->edge[1]));
-    // free(loch);
-    // free(hich);
-
-    if (l.swapped == 1) {
-        rexdd_node_sw (new_p);
-    }
-
-    // check if it has a terminal or nonterminal pattern
-    rexdd_edge_t *reduced = malloc(sizeof(rexdd_edge_t));
-    rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, new_p);
-    reduced->target = handle;
-    reduced->label.rule = rexdd_rule_N;
-    reduced->label.swapped = l.swapped;
-    reduced->label.complemented = l.complemented;
-
-    // avoid push up all for the AL or AH cases in merge part
-    if (l.rule <= 9 ) {
-        rexdd_check_pattern(F, new_p, reduced);
-    }
-    
-    // 
-
-    // Normalize the four equivalent forms
-    if (reduced->target == handle) {
-        // normalize for the reduced edge if it has no forbidden patterns
-        rexdd_normalize_edge(new_p, reduced);
-
-        /*
-        * Check if it is in this forest unique table. if so, return it
-        */
-
-        uint_fast64_t H = rexdd_insert_UT(F->UT, handle);
-        out = reduced;
-        out->label.rule = l.rule;
-        out->target = H;
-
-    } else {
-        rexdd_merge_edge(F, n, l, reduced, out);
-
-        uint_fast64_t H = rexdd_insert_UT(F->UT, out->target);
-        out->target = H;
-    }
-
-    free(new_p);
-    free(reduced);
-    
-}
-
 /* ================================================================= */
 
 void rexdd_check_pattern(
@@ -509,7 +437,7 @@ void rexdd_merge_edge(
                 out->label.rule = rexdd_rule_LN;
             }
         }else if (l.rule == rexdd_rule_HZ || l.rule == rexdd_rule_HN || l.rule == rexdd_rule_EHZ || l.rule == rexdd_rule_EHN) {
-            //TBD
+
             new_p->edge[1].label.rule = rexdd_rule_X;
             new_p->edge[1].label.swapped = 0;
             new_p->edge[1].target = reduced->target & ((0x01ul << 50) - 1); // not sure for the terminal node location
@@ -526,13 +454,89 @@ void rexdd_merge_edge(
         rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, new_p);
         out->target = handle;
         rexdd_normalize_edge (new_p, out);
-        rexdd_reduce_edge (F, n+1, l, *new_p, out);
+        
     } else {
         // push up all TBD
         out = reduced;
     }
 }
 
+/* ================================================================= */
+
+void rexdd_reduce_edge(
+        rexdd_forest_t          *F,      // the forest (S, M, UT)
+        uint_fast32_t           n,      // node level
+        rexdd_edge_label_t      l,      // rexdd_rule_t, bool, bool
+        rexdd_unpacked_node_t   p,      // uint_fast32_t level, rexdd_edge_t edge[2]
+        rexdd_edge_t            *out)   // rexdd_edge_lable_t, uint_fast64_t
+{
+    if (n != p.level) {
+        rexdd_error(__FILE__, __LINE__, "Target node level unmatched");
+    }
+ 
+    // new node at the same level
+    rexdd_unpacked_node_t *new_p = malloc(sizeof(rexdd_unpacked_node_t));
+    *new_p = p;
+    
+    // rexdd_unpacked_node_t *loch = malloc(sizeof(rexdd_unpacked_node_t));
+    // rexdd_unpacked_node_t *hich = malloc(sizeof(rexdd_unpacked_node_t));
+    // rexdd_unpack_handle (&(F->M), new_p->edge[0].target, loch);
+    // rexdd_unpack_handle (&(F->M), new_p->edge[1].target, hich);
+    // rexdd_reduce_edge(F, n-1, new_p->edge[0].label, *loch, &(new_p->edge[0]));
+    // rexdd_reduce_edge(F, n-1, new_p->edge[1].label, *hich, &(new_p->edge[1]));
+    // free(loch);
+    // free(hich);
+
+    if (l.swapped == 1) {
+        rexdd_node_sw (new_p);
+    }
+
+    // check if it has a terminal or nonterminal pattern
+    rexdd_edge_t *reduced = malloc(sizeof(rexdd_edge_t));
+    rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, new_p);
+    reduced->target = handle;
+    reduced->label.rule = rexdd_rule_N;
+    reduced->label.swapped = l.swapped;
+    reduced->label.complemented = l.complemented;
+
+    // avoid push up all for the AL or AH cases in merge part
+    if (l.rule <= 9 ) {
+        rexdd_check_pattern(F, new_p, reduced);
+    }
+    
+    // 
+
+    // Normalize the four equivalent forms
+    if (reduced->label.rule == rexdd_rule_N) {
+        // normalize for the reduced edge if it has no forbidden patterns
+        rexdd_normalize_edge(new_p, reduced);
+
+        /*
+        * Check if it is in this forest unique table. if so, return it
+        */
+
+        uint_fast64_t H = rexdd_insert_UT(F->UT, handle);
+        out = reduced;
+        out->label.rule = l.rule;
+        out->target = H;
+
+    } else {
+        rexdd_merge_edge(F, n, l, reduced, out);
+        if ((rexdd_get_packed_for_handle(F->M, out->target)->fourth32 & ((0x01ul << 29) - 1)) > n) {
+            rexdd_unpacked_node_t *temp = malloc(sizeof(rexdd_unique_table_t));
+            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, out->target) ,&temp);
+            rexdd_reduce_edge (F, n+1, l, *temp, out);
+            free(temp);
+        }
+
+        uint_fast64_t H = rexdd_insert_UT(F->UT, out->target);
+        out->target = H;
+    }
+
+    free(new_p);
+    free(reduced);
+    
+}
 
 /********************************************************************
  *
