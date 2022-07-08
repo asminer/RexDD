@@ -54,29 +54,28 @@ static const char* rexdd_rule_name[] = {
  */
 void rexdd_snprint_edge(char* buffer, unsigned len, rexdd_edge_t e)
 {
-    static const uint64_t bit50 = 0x01ul << 49;
     static const uint64_t low24 = (0x01ul << 24) - 1;
-    static const uint64_t low32 = (0x01ul << 32) - 1;
 
     const char* label = rexdd_rule_name[e.label.rule];
     if (0==label) label = "null";
 
-    if (e.target & bit50) {
+    if (rexdd_is_terminal(e.target)) {
         // Terminal.
-        snprintf(buffer, len, "<%s,%c,%c,T%x>",
+        snprintf(buffer, len, "<%s,%c,%c,T%lx>",
             label,
             e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
-            (uint32_t) (e.target & low32)
+            (unsigned long) rexdd_terminal_data(e.target)
         );
     } else {
         // Non-terminal
+        rexdd_node_handle_t et = rexdd_nonterminal_data(e.target);
         snprintf(buffer, len, "<%s,%c,%c,N%x:%06x>",
             label,
             e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
-            (uint32_t) (e.target >> 24),
-            (uint32_t) (e.target & low24)
+            (uint32_t) (et >> 24),
+            (uint32_t) (et & low24)
         );
     }
 }
@@ -92,29 +91,28 @@ void rexdd_snprint_edge(char* buffer, unsigned len, rexdd_edge_t e)
  */
 void rexdd_fprint_edge(FILE* fout, rexdd_edge_t e)
 {
-    static const uint64_t bit50 = 0x01ul << 49;
     static const uint64_t low24 = (0x01ul << 24) - 1;
-    static const uint64_t low32 = (0x01ul << 32) - 1;
 
     const char* label = rexdd_rule_name[e.label.rule];
     if (0==label) label = "null";
 
-    if (e.target & bit50) {
+    if (rexdd_is_terminal(e.target)) {
         // Terminal.
-        fprintf(fout, "<%s,%c,%c,T%x>",
+        fprintf(fout, "<%s,%c,%c,T%lx>",
             label,
             e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
-            (uint32_t) (e.target & low32)
+            (unsigned long) rexdd_terminal_data(e.target)
         );
     } else {
         // Non-terminal
+        rexdd_node_handle_t et = rexdd_nonterminal_data(e.target);
         fprintf(fout, "<%s,%c,%c,N%x:%06x>",
             label,
             e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
-            (uint32_t) (e.target >> 24),
-            (uint32_t) (e.target & low24)
+            (uint32_t) (et >> 24),
+            (uint32_t) (et & low24)
         );
     }
 }

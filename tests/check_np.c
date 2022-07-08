@@ -65,15 +65,8 @@ void alloc_mark_sweep(rexdd_nodepage_t *page, unsigned num_a, unsigned num_m)
     // (needed so mark bit will be correct)
     rexdd_unpacked_node_t u;
     u.level=2;
-    u.edge[0].target = num_a;
-    u.edge[0].label.rule = 1;
-    u.edge[0].label.complemented = false;
-    u.edge[0].label.swapped = false;
-
-    u.edge[1].target = num_m;
-    u.edge[1].label.rule = 2;
-    u.edge[1].label.complemented = false;
-    u.edge[1].label.swapped = false;
+    rexdd_set_edge(u.edge+0, 1, false, false, num_a);
+    rexdd_set_edge(u.edge+1, 2, false, false, num_m);
 
     //
     // Allocate

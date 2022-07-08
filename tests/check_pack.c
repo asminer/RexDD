@@ -19,25 +19,9 @@ bool equal(const rexdd_unpacked_node_t *P, const rexdd_unpacked_node_t *Q)
 
     if (P->level != Q->level) return false;
 
-    if (P->edge[0].target != Q->edge[0].target)
-            return false;
-    if (P->edge[0].label.rule != Q->edge[0].label.rule)
-            return false;
-    if (P->edge[0].label.complemented != Q->edge[0].label.complemented)
-            return false;
-    if (P->edge[0].label.swapped != Q->edge[0].label.swapped)
-            return false;
+    if (!rexdd_edges_are_equal(P->edge+0, Q->edge+0)) return false;
 
-    if (P->edge[1].target != Q->edge[1].target)
-            return false;
-    if (P->edge[1].label.rule != Q->edge[1].label.rule)
-            return false;
-    if (P->edge[1].label.complemented != Q->edge[1].label.complemented)
-            return false;
-    if (P->edge[1].label.swapped != Q->edge[1].label.swapped)
-            return false;
-
-    return true;
+    return rexdd_edges_are_equal(P->edge+1, Q->edge+1);
 }
 
 static inline uint64_t random64()

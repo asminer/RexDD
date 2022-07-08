@@ -9,16 +9,6 @@
  *
  */
 
-/*
- *  Node handle.
- *
- *  A valid node handle is between 1 and 2^49.
- *  Zero is used as a null handle.
- *
- */
-typedef uint_fast64_t  rexdd_node_handle_t;
-
-
 /****************************************************************************
  *
  *  Node manager.

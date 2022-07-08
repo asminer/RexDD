@@ -105,7 +105,7 @@ void show_unpacked_node(rexdd_unpacked_node_t n)
     show_edge(n.edge[0]);
     printf("\nnode's high \n");
     show_edge(n.edge[1]);
-    
+
 }
 
 
@@ -114,7 +114,7 @@ int main()
     srandom(123456789);
     rexdd_forest_t F;
     rexdd_forest_settings_t s;
-    
+
     rexdd_default_forest_settings(5, &s);
     rexdd_init_forest(&F, &s);
 
