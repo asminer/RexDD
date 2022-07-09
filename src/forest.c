@@ -30,11 +30,7 @@ void rexdd_default_forest_settings(unsigned L, rexdd_forest_settings_t *s)
 
 void rexdd_init_forest(rexdd_forest_t *F, const rexdd_forest_settings_t *s)
 {
-    if (F == NULL) {
-        rexdd_error(__FILE__, __LINE__, "Null forest");
-    }
-
-    // F = malloc(sizeof(rexdd_forest_t));
+    rexdd_sanity1(F, "null forest in rexdd_init_forest");
 
     // Initialize its members
     F->S = *s;
@@ -149,7 +145,7 @@ void rexdd_check_pattern(
 {
     rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, new_p);
     // Terminal patterns
-    if (((new_p->edge[0].target & (0x01ul << 49)) == 0) && ((new_p->edge[1].target & (0x01ul << 49)) == 0)) {
+    if ((rexdd_is_terminal(new_p->edge[0].target) == 0) && (rexdd_is_terminal(new_p->edge[1].target) == 0)) {
         reduced->target = new_p->edge[0].target;
         // pattern (a) & (c)
         if (new_p->edge[0].label.rule == rexdd_rule_X ) {
@@ -253,7 +249,7 @@ void rexdd_check_pattern(
         }
     }
     // Nonterminal patterns 1)
-    else if (((new_p->edge[0].target & (0x01ul << 49)) == 0) && ((new_p->edge[1].target & (0x01ul << 49)) != 0)) {
+    else if ((rexdd_is_terminal(new_p->edge[0].target) == 0) && (rexdd_is_terminal(new_p->edge[1].target) != 0)) {
         reduced->target = new_p->edge[1].target;
         reduced->label.swapped = new_p->edge[1].label.swapped;
         reduced->label.complemented = new_p->edge[1].label.complemented;
@@ -281,7 +277,7 @@ void rexdd_check_pattern(
         }
     }
     // Nonterminal parttern 2)
-    else if (((new_p->edge[0].target & (0x01ul << 49)) != 0) && ((new_p->edge[1].target & (0x01ul << 49)) == 0)) {
+    else if ((rexdd_is_terminal(new_p->edge[0].target) != 0) && (rexdd_is_terminal(new_p->edge[1].target) == 0)) {
         reduced->target = new_p->edge[0].target;
         reduced->label.swapped = new_p->edge[0].label.swapped;
         reduced->label.complemented = new_p->edge[0].label.complemented;
@@ -309,8 +305,9 @@ void rexdd_check_pattern(
         }
     }
     // Nonterminal pattern 3)
-    else if (((new_p->edge[0].target & (0x01ul << 49)) != 0) && (new_p->edge[1].target == new_p->edge[0].target)) {
-        //                                                                            ^ maybe the lower 50 bits?
+    else if ((rexdd_is_terminal(new_p->edge[0].target) != 0) 
+                && rexdd_are_packed_duplicates(rexdd_get_packed_for_handle(F->M,new_p->edge[1].target), 
+                                                rexdd_get_packed_for_handle(F->M,new_p->edge[0].target))) {
         reduced->target = new_p->edge[0].target;
         reduced->label.swapped = new_p->edge[0].label.swapped;
         reduced->label.complemented = new_p->edge[0].label.complemented;
@@ -369,14 +366,14 @@ void rexdd_merge_edge(
     if ((2 <= l.rule && l.rule <= 13)
         && reduced->label.rule == rexdd_rule_X
         && l.rule%2 == reduced->label.complemented
-        && (reduced->target & (0x01ul << 49)) == 0) {
+        && rexdd_is_terminal(reduced->target) == 0) {
         out = reduced;
     }
     if ((l.rule == rexdd_rule_HZ || l.rule == rexdd_rule_HN || l.rule == rexdd_rule_EHZ || l.rule == rexdd_rule_EHN)
         && l.rule%2 == reduced->label.complemented
         && (reduced->label.rule == rexdd_rule_LZ || reduced->label.rule == rexdd_rule_LN)
         && reduced->label.rule%2 != reduced->label.complemented
-        && (reduced->target & (0x01ul << 49)) == 0) {
+        && rexdd_is_terminal(reduced->target) == 0) {
         out = reduced;
         if (reduced->label.complemented == 1) {
             out->label.rule = rexdd_rule_EHN;
@@ -426,7 +423,7 @@ void rexdd_merge_edge(
 
             new_p->edge[0].label.rule = rexdd_rule_X;
             new_p->edge[0].label.swapped = 0;
-            new_p->edge[0].target = reduced->target & ((0x01ul << 50) - 1); // not sure for the terminal node location
+            new_p->edge[0].target = rexdd_make_terminal(reduced->target);
             new_p->edge[1] = *reduced;
 
             if (l.rule%2 == 0) {
@@ -440,7 +437,7 @@ void rexdd_merge_edge(
 
             new_p->edge[1].label.rule = rexdd_rule_X;
             new_p->edge[1].label.swapped = 0;
-            new_p->edge[1].target = reduced->target & ((0x01ul << 50) - 1); // not sure for the terminal node location
+            new_p->edge[1].target = rexdd_make_terminal(reduced->target);
             new_p->edge[0] = *reduced;
             if (l.rule%2 == 0) {
                 new_p->edge[1].label.complemented = 0;
