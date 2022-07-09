@@ -108,6 +108,16 @@ void show_unpacked_node(rexdd_unpacked_node_t n)
 
 }
 
+void build_nodes(rexdd_forest_t *F, rexdd_unpacked_node_t *root)
+{
+    //TBD
+
+}
+
+void eval(rexdd_edge_t *e, bool var[])
+{
+    // TBD
+}
 
 int main()
 {
@@ -148,7 +158,7 @@ int main()
 
     // 1. check the function values
     // 2. check if the return edge is correct
-    
+    bool var[4];
 
     rexdd_free_forest(&F);
 
