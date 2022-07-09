@@ -63,6 +63,9 @@ void rexdd_normalize_edge(
         rexdd_unpacked_node_t   *P,
         rexdd_edge_t            *out)
 {
+    if (rexdd_is_terminal(P->edge[0].target) == 0)  P->edge[0].label.swapped = 0;
+    if (rexdd_is_terminal(P->edge[1].target) == 0)  P->edge[1].label.swapped = 0;
+    
     if (P->edge[0].target < P->edge[1].target) {
         // (a, s_a) < (b, s_b)
         if (P->edge[0].label.complemented == 1){
@@ -306,8 +309,7 @@ void rexdd_check_pattern(
     }
     // Nonterminal pattern 3)
     else if ((rexdd_is_terminal(new_p->edge[0].target) != 0) 
-                && rexdd_are_packed_duplicates(rexdd_get_packed_for_handle(F->M,new_p->edge[1].target), 
-                                                rexdd_get_packed_for_handle(F->M,new_p->edge[0].target))) {
+                && new_p->edge[1].target == new_p->edge[0].target) {
         reduced->target = new_p->edge[0].target;
         reduced->label.swapped = new_p->edge[0].label.swapped;
         reduced->label.complemented = new_p->edge[0].label.complemented;
@@ -521,7 +523,7 @@ void rexdd_reduce_edge(
         rexdd_merge_edge(F, n, l, reduced, out);
         if ((rexdd_get_packed_for_handle(F->M, out->target)->fourth32 & ((0x01ul << 29) - 1)) > n) {
             rexdd_unpacked_node_t *temp = malloc(sizeof(rexdd_unique_table_t));
-            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, out->target) ,&temp);
+            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, out->target) ,temp);
             rexdd_reduce_edge (F, n+1, l, *temp, out);
             free(temp);
         }
