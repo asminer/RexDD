@@ -173,6 +173,101 @@ rexdd_unpacked_to_packed(const rexdd_unpacked_node_t *uN, rexdd_packed_node_t *p
 
 /****************************************************************************
  *
+ *  Get the level of a packed node.
+ *  static inlined for speed.
+ *      @param      pN  Packed node to read from.
+ */
+static inline uint_fast32_t
+rexdd_unpack_level(const rexdd_packed_node_t *pN)
+{
+    // bits 0..29
+    static const uint32_t   LOW29_MASK  = (0x01ul << 29) - 1;
+
+    return pN->fourth32 & LOW29_MASK;
+}
+
+
+/****************************************************************************
+ *
+ *  Get the low edge label from a packed node.
+ *  static inlined for speed.
+ *      @param      pN  Packed node to read from.
+ *      @param      el  Edge label to fill.
+ */
+static inline void
+rexdd_unpack_low_edge(const rexdd_packed_node_t *pN, rexdd_edge_label_t *el)
+{
+    // bits 22..26
+    static const uint32_t   LORU_MASK   = ((0x01 << 5) - 1) << 22;
+    // bit 29
+    static const uint32_t   BIT29_MASK  = 0x01ul << 29;
+
+    el->rule = (pN->third32 & LORU_MASK) >> 22;
+    el->swapped = pN->fourth32 & BIT29_MASK;
+    el->complemented = 0;
+}
+
+/****************************************************************************
+ *
+ *  Get the low edge target node from a packed node.
+ *  static inlined for speed.
+ *      @param      pN  Packed node to read from.
+ */
+static inline rexdd_node_handle_t
+rexdd_unpack_low_child(const rexdd_packed_node_t *pN)
+{
+    // bits 50..63
+    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);
+    // bits 0..35
+    static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1;
+
+    return  ((pN->first64 & TOP14_MASK) >> 14)
+            |
+            (pN->second64 & LOW36_MASK);
+}
+
+/****************************************************************************
+ *
+ *  Get the high edge label from a packed node.
+ *  static inlined for speed.
+ *      @param      pN  Packed node to read from.
+ *      @param      el  Edge label to fill.
+ */
+static inline void
+rexdd_unpack_high_edge(const rexdd_packed_node_t *pN, rexdd_edge_label_t *el)
+{
+    // bits 27..31
+    static const uint32_t   HIRU_MASK   = ((0x01 << 5) - 1) << 27;
+    static const uint32_t   BIT30_MASK  = 0x01ul << 30;
+    static const uint32_t   BIT31_MASK  = 0x01ul << 31;
+
+    el->rule = (pN->third32 & HIRU_MASK) >> 27;
+    el->swapped = pN->fourth32 & BIT30_MASK;
+    el->complemented = pN->fourth32 & BIT31_MASK;
+}
+
+/****************************************************************************
+ *
+ *  Get the high edge target node from a packed node.
+ *  static inlined for speed.
+ *      @param      pN  Packed node to read from.
+ */
+static inline rexdd_node_handle_t
+rexdd_unpack_high_child(const rexdd_packed_node_t *pN)
+{
+    // bits 0..35
+    static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1;
+    // bits 0..21
+    static const uint32_t   LOW22_MASK  = (0x01 << 22) - 1;
+
+    return  ((pN->second64 & ~LOW36_MASK) >> 14)
+            |
+            (pN->third32 & LOW22_MASK);
+}
+
+
+/****************************************************************************
+ *
  *  Fill in an unpacked node from a packed one.
  *  static inlined for speed.
  *      @param      pN  Packed node to read from.
@@ -181,34 +276,13 @@ rexdd_unpacked_to_packed(const rexdd_unpacked_node_t *uN, rexdd_packed_node_t *p
 static inline void
 rexdd_packed_to_unpacked(const rexdd_packed_node_t *pN, rexdd_unpacked_node_t *uN)
 {
-    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
-    static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1; // bits 0..35
+    rexdd_unpack_low_edge(pN, &(uN->edge[0].label));
+    uN->edge[0].target = rexdd_unpack_low_child(pN);
 
-    static const uint32_t   LOW22_MASK  = (0x01 << 22) - 1; // bits 0..21
-    static const uint32_t   LORU_MASK   = ((0x01 << 5) - 1) << 22;    // bits 22..26
-    static const uint32_t   HIRU_MASK   = ((0x01 << 5) - 1) << 27;    // bits 27..31
-    static const uint32_t   LOW29_MASK  = (0x01ul << 29) - 1; // bits 0..29
-    static const uint32_t   BIT29_MASK  = 0x01ul << 29;
-    static const uint32_t   BIT30_MASK  = 0x01ul << 30;
-    static const uint32_t   BIT31_MASK  = 0x01ul << 31;
+    rexdd_unpack_high_edge(pN, &(uN->edge[1].label));
+    uN->edge[1].target = rexdd_unpack_high_child(pN);
 
-    uN->edge[0].label.rule = (pN->third32 & LORU_MASK) >> 22;
-    uN->edge[0].label.swapped = pN->fourth32 & BIT29_MASK;
-    uN->edge[0].label.complemented = 0;
-    uN->edge[0].target =
-        ((pN->first64 & TOP14_MASK) >> 14)
-        |
-        (pN->second64 & LOW36_MASK);
-
-    uN->edge[1].label.rule = (pN->third32 & HIRU_MASK) >> 27;
-    uN->edge[1].label.swapped = pN->fourth32 & BIT30_MASK;
-    uN->edge[1].label.complemented = pN->fourth32 & BIT31_MASK;
-    uN->edge[1].target =
-        ((pN->second64 & ~LOW36_MASK) >> 14)
-        |
-        (pN->third32 & LOW22_MASK);
-
-    uN->level = pN->fourth32 & LOW29_MASK;
+    uN->level = rexdd_unpack_level(pN);
 }
 
 
