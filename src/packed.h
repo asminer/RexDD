@@ -11,7 +11,7 @@
  *      next (in unique table)  : 49 bits (1/2 quadrillion max nodes)
  *      mark (for G.C.)         :  1 bit
  *
- *      loch (low child)        : 50 bits (high bit: 0 terminal, 1 nonterm.)
+ *      loch (low child)        : 50 bits
  *      hich (high child)       : 50 bits
  *      loru (low rule)         :  5 bits
  *      hiru (high rule)        :  5 bits
