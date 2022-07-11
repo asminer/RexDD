@@ -189,6 +189,7 @@ bool eval(rexdd_edge_t *e, bool var[], uint32_t edge_level) // x1, x2,..., xn;
         }
     } else {
         // TBD
+
     }
     return out;
     // int comlemented_count = 0;
@@ -247,10 +248,12 @@ int main()
         one_level_nodes[i].level = 1;
         one_level_nodes[i].edge[0].label.swapped = 0;
         one_level_nodes[i].edge[1].label.swapped = 0;
+        handles[num_nodes1-1] = rand()%5;
     }
 
     // build terminal node
-    handles[num_nodes1-1] = rexdd_make_terminal(1234);
+    handles[num_nodes1-1] = rexdd_make_terminal(handles[num_nodes1-1]);
+    printf("Building terminal node: %d\n", rexdd_is_terminal(handles[num_nodes1-1]));
     one_level_nodes[num_nodes1-1].level = 0;
 
     // build level one nodes
@@ -285,13 +288,21 @@ int main()
     bool true_varsZ[4] = {0,0,1,1};
     // bool true_varsN[4] = {0,1,0,1};
 
-    // bool var[1] = {0};
+    bool var_test[2] = {0, 0};
     for (int i=0; i<num_nodes1-1; i++) {
         // reduce edge
         printf("showing edge %d...\n", i);
         show_unpacked_node(one_level_nodes[i]);
         printf("showing handle of node %d: %llu\n", i, handles[i]);
-        // rexdd_check_pattern(&F, &one_level_nodes[i], &reduced);
+
+        rexdd_check_pattern(&F, &one_level_nodes[i], &reduced);
+
+        if (eval(&reduced, var_test[1], 2) == true_varsZ[i]) {
+            continue;
+        } else {
+            printf("eval wrong!\n");
+            break;
+        }
         // rexdd_reduce_edge(&F, 1, one_var.label, one_level_nodes[i], &reduced);
         // show_edge(reduced);
         // reduced = one_var;
