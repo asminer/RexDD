@@ -116,13 +116,13 @@ void rexdd_reduce_edge(
 
 /**
  *  Check the patterns for the target unpacked node
- *      @param  F       Forest for the edge
+ *      @param  handle       Handle of the target node
  *      @param  new_p   The target node
  *      @param  reduced Reduced edge will be written here
  * 
  */
 void rexdd_check_pattern(
-        rexdd_forest_t          *F,
+        rexdd_node_handle_t     handle,
         rexdd_unpacked_node_t   *new_p, 
         rexdd_edge_t            *reduced);
 
