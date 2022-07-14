@@ -13,7 +13,7 @@
 
 /* ================================================================= */
 
-void rexdd_default_forest_settings(unsigned L, rexdd_forest_settings_t *s)
+void rexdd_default_forest_settings(uint_fast32_t L, rexdd_forest_settings_t *s)
 {
     if (s) {
         s->num_levels = L;
@@ -65,7 +65,7 @@ void rexdd_normalize_edge(
 {
     if (rexdd_is_terminal(P->edge[0].target) == 0)  P->edge[0].label.swapped = 0;
     if (rexdd_is_terminal(P->edge[1].target) == 0)  P->edge[1].label.swapped = 0;
-    
+
     if (P->edge[0].target < P->edge[1].target) {
         // (a, s_a) < (b, s_b)
         if (P->edge[0].label.complemented == 1){
@@ -308,7 +308,7 @@ void rexdd_check_pattern(
         }
     }
     // Nonterminal pattern 3)
-    else if ((rexdd_is_terminal(new_p->edge[0].target) != 0) 
+    else if ((rexdd_is_terminal(new_p->edge[0].target) != 0)
                 && new_p->edge[1].target == new_p->edge[0].target) {
         reduced->target = new_p->edge[0].target;
         reduced->label.swapped = new_p->edge[0].label.swapped;
