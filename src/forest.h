@@ -102,13 +102,15 @@ void rexdd_normalize_edge(
 /**
  *  Reduce an edge.
  *      @param  F       Forest for the edge.
- *      @param  n       Level number
+ *      @param  m       The root level of the incoming edge
+ *      @param  n       The target node level of the reduced edge
  *      @param  l       Desired edge labels; might not be possible
  *      @param  p       Desired target node, unpacked
  *      @param  out     Reduced edge will be written here.
  */
 void rexdd_reduce_edge(
         rexdd_forest_t          *F,
+        uint_fast32_t           m,
         uint_fast32_t           n,
         rexdd_edge_label_t      l,
         rexdd_unpacked_node_t   p,
@@ -131,7 +133,8 @@ void rexdd_check_pattern(
 /**
  *  Merge the reduced edge and the incoming edge of the target node
  *      @param  F       Forest for the edge
- *      @param  n       Node level
+ *      @param  m       The root level of the incoming edge
+ *      @param  n       The target node level of the reduced edge
  *      @param  l       The incoming edge label
  *      @param  reduced The reduced edge
  *      @param  out     The merged edge will be written here if so
@@ -139,6 +142,7 @@ void rexdd_check_pattern(
  */
 void rexdd_merge_edge(
         rexdd_forest_t          *F,
+        uint32_t                m,
         uint32_t                n,
         rexdd_edge_label_t      l,
         rexdd_edge_t            *reduced,

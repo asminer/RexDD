@@ -383,7 +383,7 @@ void rexdd_check_pattern(
         // pattern (d)
         } else if (new_p->edge[1].label.rule == rexdd_rule_X
             && hn > 1
-            && ((rexdd_is_LH(new_p->edge[1].label.rule) && (hn == 2))
+            && ((rexdd_is_EL(new_p->edge[1].label.rule) && (hn == 2))
                 || (rexdd_is_AL(new_p->edge[1].label.rule) && (hn>=3)))
             ) {
             if (rexdd_is_one(new_p->edge[1].label.rule)) {
@@ -400,108 +400,156 @@ void rexdd_check_pattern(
 /* ================================================================= */
 
 void rexdd_merge_edge(
-    rexdd_forest_t              *F,
+        rexdd_forest_t          *F,
+        uint32_t                m,
         uint32_t                n,
         rexdd_edge_label_t      l,
         rexdd_edge_t            *reduced,
         rexdd_edge_t            *out)
 {
+    uint32_t incoming_skip = m - n;
+    uint32_t reduced_skip = n - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, reduced->target));
+
     if (l.complemented == 1) rexdd_edge_com (*reduced);
 
-    if (reduced->label.rule == rexdd_rule_N) {
-        reduced->label.rule = l.rule;
-        out = reduced;
+    // Unreduceable and compatible merge
+    if (reduced->label.rule == rexdd_rule_X && (reduced_skip==0)) {
+            reduced->label.rule = l.rule;
+            out = reduced;
     }
-    if ((2 <= l.rule && l.rule <= 13)
-        && reduced->label.rule == rexdd_rule_X
-        && l.rule%2 == reduced->label.complemented
-        && rexdd_is_terminal(reduced->target) == 0) {
-        out = reduced;
+
+    // compatible merge with two long edges when considering terminal node (a)
+    if (reduced->label.rule == rexdd_rule_X
+        && l.rule != rexdd_rule_X
+        && rexdd_is_one(l.rule) == reduced->label.complemented
+        && rexdd_is_terminal(reduced->target) == 1) {
+            out = reduced;
+            out->label.complemented = l.complemented ^ reduced->label.complemented;
     }
-    if ((l.rule == rexdd_rule_HZ || l.rule == rexdd_rule_HN || l.rule == rexdd_rule_EHZ || l.rule == rexdd_rule_EHN)
-        && l.rule%2 == reduced->label.complemented
-        && (reduced->label.rule == rexdd_rule_LZ || reduced->label.rule == rexdd_rule_LN)
-        && reduced->label.rule%2 != reduced->label.complemented
-        && rexdd_is_terminal(reduced->target) == 0) {
-        out = reduced;
-        if (reduced->label.complemented == 1) {
-            out->label.rule = rexdd_rule_EHN;
-            out->label.complemented = 0;
-        } else {
-            out->label.rule = rexdd_rule_EHZ;
-            out->label.complemented = 1;
-        }
+
+    // compatible merge with two long edges when considering terminal node (b)
+    if (rexdd_is_EH(l.rule)
+        && rexdd_is_one(reduced->label.rule) == !reduced->label.complemented
+        && (rexdd_is_EL(reduced->label.rule) && (n==2))
+        && rexdd_is_terminal(reduced->target) == 1) {
+            out = reduced;
+            out->label.rule = l.rule;
+            out->label.complemented = !(l.complemented ^ reduced->label.complemented);
     }
-    if (l.rule == rexdd_rule_N
-        ||
-        (l.rule == rexdd_rule_X && reduced->label.rule == rexdd_rule_N)) {
-        out = reduced;
-    } else if ((l.rule == rexdd_rule_LZ || l.rule == rexdd_rule_LN || l.rule == rexdd_rule_ELZ || l.rule == rexdd_rule_ELN)
-             && (reduced->label.rule == rexdd_rule_LZ || reduced->label.rule == rexdd_rule_LN
-                || reduced->label.rule == rexdd_rule_ELZ || reduced->label.rule == rexdd_rule_ELN)
-             && l.rule%2 == reduced->label.rule%2) {
-        out = reduced;
-        if (l.rule%2 == 0) {
-            out->label.rule = rexdd_rule_ELZ;
-        } else {
-            out->label.rule = rexdd_rule_ELN;
+
+    // Reduceable and compatible merge with two long edges when considering nonterminal node
+        // mergeable (1)
+    if ((l.rule == rexdd_rule_X && (incoming_skip==1))) {
+        
+        if (rexdd_is_AL(reduced->label.rule) || rexdd_is_AH(reduced->label.rule)) {
+            rexdd_sanity1(reduced_skip>2, "Bad skip levels of reduced edge");
         }
-    } else if ((l.rule == rexdd_rule_HZ || l.rule == rexdd_rule_HN || l.rule == rexdd_rule_EHZ || l.rule == rexdd_rule_EHN)
-             && (reduced->label.rule == rexdd_rule_HZ || reduced->label.rule == rexdd_rule_HN
-                || reduced->label.rule == rexdd_rule_EHZ || reduced->label.rule == rexdd_rule_EHN)
-             && l.rule%2 == reduced->label.rule%2) {
         out = reduced;
-        if (l.rule%2 == 0) {
-            out->label.rule = rexdd_rule_EHZ;
-        } else {
-            out->label.rule = rexdd_rule_EHN;
-        }
-    } else if (1 <= l.rule && l.rule <=9) {
-        // push up one
-        rexdd_unpacked_node_t *new_p = malloc(sizeof(rexdd_unpacked_node_t));
-        new_p->level = n+1;
-        out->label.complemented = 0;
-        out->label.swapped = 0;
+        
+        // mergeable (2)
+    } else if ((l.rule == rexdd_rule_X && (incoming_skip>1))
+                && reduced->label.rule == rexdd_rule_X){
+                    out = reduced;
 
-        if (l.rule == rexdd_rule_X) {
-            new_p->edge[0] = *reduced;
-            new_p->edge[1] = *reduced;
-            out->label.rule = rexdd_rule_N;
+        // mergeable (3)
+    } else if (rexdd_is_EL(l.rule)
+                && rexdd_is_EL(reduced->label.rule)
+                && rexdd_is_one(l.rule) == rexdd_is_one(reduced->label.rule)) {
+                    out = reduced;
+        
+        // mergeable (4)
+    } else if (rexdd_is_EH(l.rule)
+                && rexdd_is_EH(reduced->label.rule)
+                && rexdd_is_one(l.rule) == rexdd_is_one(reduced->label.rule)) {
+                    out = reduced;
 
-        } else if (l.rule == rexdd_rule_LZ || l.rule == rexdd_rule_LN || l.rule == rexdd_rule_ELZ || l.rule == rexdd_rule_ELN) {
+        // Unmergeable (push up one) (1)
+    } else if ((l.rule == rexdd_rule_X && (incoming_skip>1))
+                && reduced->label.rule != rexdd_rule_X) {
 
-            new_p->edge[0].label.rule = rexdd_rule_X;
-            new_p->edge[0].label.swapped = 0;
-            new_p->edge[0].target = rexdd_make_terminal(reduced->target);
-            new_p->edge[1] = *reduced;
+                    if (rexdd_is_AL(reduced->label.rule) || rexdd_is_AH(reduced->label.rule)) {
+                        rexdd_sanity1(reduced_skip>2, "Bad skip levels of reduced edge");
+                    }
 
-            if (l.rule%2 == 0) {
-                new_p->edge[0].label.complemented = 0;
-                out->label.rule = rexdd_rule_LZ;
-            } else {
-                new_p->edge[0].label.complemented = 1;
-                out->label.rule = rexdd_rule_LN;
-            }
-        }else if (l.rule == rexdd_rule_HZ || l.rule == rexdd_rule_HN || l.rule == rexdd_rule_EHZ || l.rule == rexdd_rule_EHN) {
+                    printf("\nPush up one making handle\n");    // clean later
+                    rexdd_unpacked_node_t *new_p = malloc(sizeof(rexdd_unpacked_node_t));
+                    new_p->level = n+1;
+                    new_p->edge[0] = *reduced;
+                    new_p->edge[1] = *reduced;
+                    rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, new_p);
 
-            new_p->edge[1].label.rule = rexdd_rule_X;
-            new_p->edge[1].label.swapped = 0;
-            new_p->edge[1].target = rexdd_make_terminal(reduced->target);
-            new_p->edge[0] = *reduced;
-            if (l.rule%2 == 0) {
-                new_p->edge[1].label.complemented = 0;
-                out->label.rule = rexdd_rule_HZ;
-            } else {
-                new_p->edge[1].label.complemented = 1;
-                out->label.rule = rexdd_rule_HN;
-            }
+                    out->label.rule = rexdd_rule_X;
+                    out->label.complemented = 0;
+                    out->label.swapped = 0;
+                    out->target = handle;
+                    free(new_p);
 
-        }
-        printf("\nPush up one making handle\n");    // clean later
-        rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, new_p);
-        out->target = handle;
-        rexdd_normalize_edge (new_p, out);
+        // Unmergeable (push up one) (2)
+    } else if (rexdd_is_EL(l.rule)
+                && !rexdd_is_EL(reduced->label.rule)
+                && ((reduced->label.rule == rexdd_rule_X)
+                    || 
+                    ((reduced->label.rule != rexdd_rule_X)
+                        && 
+                        (rexdd_is_one(l.rule) == rexdd_is_one(reduced->label.rule))))
+            ) {
+                    if (rexdd_is_AL(reduced->label.rule) || rexdd_is_AH(reduced->label.rule)) {
+                        rexdd_sanity1(reduced_skip>2, "Bad skip levels of reduced edge");
+                    }
 
+                    printf("\nPush up one making handle\n");    // clean later
+                    rexdd_unpacked_node_t *new_p = malloc(sizeof(rexdd_unpacked_node_t));
+                    new_p->level = n+1;
+                    new_p->edge[0] = *reduced;
+                    new_p->edge[0].label.rule = rexdd_rule_X;
+                    new_p->edge[0].label.swapped = 0;
+                    new_p->edge[0].label.complemented = rexdd_is_one(l.rule);
+                    new_p->edge[0].target = rexdd_make_terminal(new_p->edge[0].target);
+                    new_p->edge[1] = *reduced;
+                    rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, new_p);
+
+                    if (incoming_skip == 2) {
+                        out->label.rule = rexdd_rule_X;
+                    } else {
+                        out->label.rule = l.rule;
+                    }
+                    out->label.complemented = 0;
+                    out->label.swapped = 0;
+                    out->target = handle;
+                    free(new_p);
+        // Unmergeable (push up one) (3)
+    } else if (rexdd_is_EH(l.rule)
+                && !rexdd_is_EH(reduced->label.rule)
+                && ((reduced->label.rule == rexdd_rule_X)
+                    || 
+                    ((reduced->label.rule != rexdd_rule_X)
+                        && 
+                        (rexdd_is_one(l.rule) == rexdd_is_one(reduced->label.rule))))
+            ) {
+                    if (rexdd_is_AL(reduced->label.rule) || rexdd_is_AH(reduced->label.rule)) {
+                        rexdd_sanity1(reduced_skip>2, "Bad skip levels of reduced edge");
+                    }
+
+                    printf("\nPush up one making handle\n");    // clean later
+                    rexdd_unpacked_node_t *new_p = malloc(sizeof(rexdd_unpacked_node_t));
+                    new_p->level = n+1;
+                    new_p->edge[1] = *reduced;
+                    new_p->edge[1].label.rule = rexdd_rule_X;
+                    new_p->edge[1].label.swapped = 0;
+                    new_p->edge[1].label.complemented = rexdd_is_one(l.rule);
+                    new_p->edge[1].target = rexdd_make_terminal(new_p->edge[1].target);
+                    new_p->edge[0] = *reduced;
+                    rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, new_p);
+
+                    if (incoming_skip == 2) {
+                        out->label.rule = rexdd_rule_X;
+                    } else {
+                        out->label.rule = l.rule;
+                    }
+                    out->label.complemented = 0;
+                    out->label.swapped = 0;
+                    out->target = handle;
+                    free(new_p);
     } else {
         // push up all TBD
         out = reduced;
@@ -511,11 +559,12 @@ void rexdd_merge_edge(
 /* ================================================================= */
 
 void rexdd_reduce_edge(
-        rexdd_forest_t          *F,      // the forest (S, M, UT)
-        uint_fast32_t           n,      // node level
-        rexdd_edge_label_t      l,      // rexdd_rule_t, bool, bool
-        rexdd_unpacked_node_t   p,      // uint_fast32_t level, rexdd_edge_t edge[2]
-        rexdd_edge_t            *out)   // rexdd_edge_lable_t, uint_fast64_t
+        rexdd_forest_t          *F,
+        uint_fast32_t           m,
+        uint_fast32_t           n,
+        rexdd_edge_label_t      l,
+        rexdd_unpacked_node_t   p,
+        rexdd_edge_t            *out)
 {
     if (n != p.level) {
         rexdd_error(__FILE__, __LINE__, "Target node level unmatched");
@@ -549,17 +598,16 @@ void rexdd_reduce_edge(
     // avoid push up all for the AL or AH cases in merge part
     if (l.rule <= 9 ) {
         printf("\nDoing check patterns\n");     // clean later
-        rexdd_check_pattern(handle, new_p, reduced);
+        rexdd_check_pattern(F, handle, new_p, reduced);
     }
 
-    //
+    // normalize for the reduced edge if it has no forbidden patterns
+    rexdd_normalize_edge(new_p, reduced);
 
     // ==============================*Fix following things*====================================================
 
     // Normalize the four equivalent forms
     if (reduced->target == handle) {
-        // normalize for the reduced edge if it has no forbidden patterns
-        rexdd_normalize_edge(new_p, reduced);
 
         /*
         * Check if it is in this forest unique table. if so, return it
@@ -576,7 +624,7 @@ void rexdd_reduce_edge(
 
     } else {
         printf("\nDoing merge edge...\n");      // clean later
-        rexdd_merge_edge(F, n, l, reduced, out);
+        rexdd_merge_edge(F, m, n, l, reduced, out);
         // if ((rexdd_get_packed_for_handle(F->M, out->target)->fourth32 & ((0x01ul << 29) - 1)) > n) {
         //     rexdd_unpacked_node_t *temp = malloc(sizeof(rexdd_unique_table_t));
         //     rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, out->target) ,temp);
