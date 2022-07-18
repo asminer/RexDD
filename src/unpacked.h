@@ -12,21 +12,47 @@
  *
  */
 typedef enum {
-    rexdd_rule_N = 0,
-    rexdd_rule_X = 1,
-    rexdd_rule_LZ = 2,
-    rexdd_rule_LN = 3,
-    rexdd_rule_HZ = 4,
-    rexdd_rule_HN = 5,
-    rexdd_rule_ELZ = 6,
-    rexdd_rule_ELN = 7,
-    rexdd_rule_EHZ = 8,
-    rexdd_rule_EHN = 9,
-    rexdd_rule_ALZ = 10,
-    rexdd_rule_ALN = 11,
-    rexdd_rule_AHZ = 12,
-    rexdd_rule_AHN = 13
+    
+    rexdd_rule_X = 0x1000,
+    rexdd_rule_EL0 = 0x0000,
+    rexdd_rule_EL1 = 0x0010,
+    rexdd_rule_EH0 = 0x0100,
+    rexdd_rule_EH1 = 0x0110,
+    rexdd_rule_AL0 = 0x0001,
+    rexdd_rule_AL1 = 0x0011,
+    rexdd_rule_AH0 = 0x0101,
+    rexdd_rule_AH1 = 0x0111
 } rexdd_rule_t;
+
+/****************************************************************************
+ *
+ *  Helper: is the rexdd rule specific?
+ *
+ */
+static inline bool rexdd_is_EL(rexdd_rule_t R)
+{
+    return !(R & 0x0001) & !(R & 0x0100);
+}
+
+static inline bool rexdd_is_EH(rexdd_rule_t R)
+{
+    return !(R & 0x0001) & (R & 0x0100);
+}
+
+static inline bool rexdd_is_AL(rexdd_rule_t R)
+{
+    return (R & 0x0001) & !(R & 0x0100);
+}
+
+static inline bool rexdd_is_AH(rexdd_rule_t R)
+{
+    return (R & 0x0001) & (R & 0x0100);
+}
+
+static inline bool rexdd_is_one(rexdd_rule_t R)
+{
+    return R & 0x0010;
+}
 
 
 /****************************************************************************
@@ -38,22 +64,12 @@ typedef enum {
  */
 static inline rexdd_rule_t rexdd_rule_com_t (rexdd_rule_t R)
 {
-    switch (R) {
-        case rexdd_rule_N:      return rexdd_rule_N;
-        case rexdd_rule_X:      return rexdd_rule_X;
-        case rexdd_rule_LZ:     return rexdd_rule_LN;
-        case rexdd_rule_LN:     return rexdd_rule_LZ;
-        case rexdd_rule_HZ:     return rexdd_rule_HN;
-        case rexdd_rule_HN:     return rexdd_rule_HZ;
-        case rexdd_rule_ELZ:    return rexdd_rule_ELN;
-        case rexdd_rule_ELN:    return rexdd_rule_ELZ;
-        case rexdd_rule_EHZ:    return rexdd_rule_EHN;
-        case rexdd_rule_EHN:    return rexdd_rule_EHZ;
-        case rexdd_rule_ALZ:    return rexdd_rule_ALN;
-        case rexdd_rule_ALN:    return rexdd_rule_ALZ;
-        case rexdd_rule_AHZ:    return rexdd_rule_AHN;
-        case rexdd_rule_AHN:    return rexdd_rule_AHZ;
-        default:                return rexdd_rule_N;
+    if (R == rexdd_rule_X) {
+        return R;
+    } else if (rexdd_is_one(R)) {
+        return R & 0x1101;
+    } else {
+        return R | 0x0010;
     }
 }
 
