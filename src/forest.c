@@ -566,9 +566,8 @@ void rexdd_reduce_edge(
         rexdd_unpacked_node_t   p,
         rexdd_edge_t            *out)
 {
-    if (n != p.level) {
-        rexdd_error(__FILE__, __LINE__, "Target node level unmatched");
-    }
+    rexdd_sanity1(n == p.level, "Bad target node level");
+    rexdd_sanity1(m > n, "Bad incoming edge root level");
 
     // new node at the same level
     rexdd_unpacked_node_t *new_p = malloc(sizeof(rexdd_unpacked_node_t));
@@ -591,37 +590,33 @@ void rexdd_reduce_edge(
     rexdd_edge_t *reduced = malloc(sizeof(rexdd_edge_t));
     rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, new_p);
     reduced->target = handle;
-    reduced->label.rule = rexdd_rule_N;
+    reduced->label.rule = rexdd_rule_X;
     reduced->label.swapped = l.swapped;
     reduced->label.complemented = l.complemented;
 
     // avoid push up all for the AL or AH cases in merge part
-    if (l.rule <= 9 ) {
+    if (!rexdd_is_AL(l.rule) && !rexdd_is_AH(l.rule)) {
         printf("\nDoing check patterns\n");     // clean later
         rexdd_check_pattern(F, handle, new_p, reduced);
     }
 
-    // normalize for the reduced edge if it has no forbidden patterns
+    // normalize for the reduced edge
     rexdd_normalize_edge(new_p, reduced);
 
     // ==============================*Fix following things*====================================================
 
     // Normalize the four equivalent forms
     if (reduced->target == handle) {
-
-        /*
-        * Check if it is in this forest unique table. if so, return it
-        */
+        // insert
         printf("\tDoing insert node into UT\n");    // clean later
         uint_fast64_t H = rexdd_insert_UT(F->UT, handle & ((0x01ul << 49)-1));
         printf("\tNode handle in the UT is: %llu\n", H);    // clean later
         out = reduced;
         out->label.rule = l.rule;
-        if (rexdd_is_terminal(reduced->target)) {
+        if (rexdd_is_terminal(handle)) {
             H = rexdd_make_terminal(H);
+            out->target = H;
         }
-        out->target = H;
-
     } else {
         printf("\nDoing merge edge...\n");      // clean later
         rexdd_merge_edge(F, m, n, l, reduced, out);
@@ -632,13 +627,15 @@ void rexdd_reduce_edge(
         //     free(temp);
         // }
 
+        // insert
         printf("\tDoing insert node into UT\n");    // clean later
         uint_fast64_t H = rexdd_insert_UT(F->UT, out->target & ((0x01ul << 49)-1));
         printf("\tNode handle in the UT is: %llu\n", H);    // clean later
-        if (rexdd_is_terminal(reduced->target)) {
+        if (rexdd_is_terminal(out->target)) {
             H = rexdd_make_terminal(H);
+            out->target = H;
         }
-        out->target = H;
+        
     }
 
     // =====================================================================================================
