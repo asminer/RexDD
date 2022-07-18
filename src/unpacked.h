@@ -31,17 +31,17 @@ typedef enum {
  */
 static inline bool rexdd_is_EL(rexdd_rule_t R)
 {
-    return !(R & 0x0001) & !(R & 0x0100);
+    return (!(R & 0x0001)) & (!(R & 0x0100));
 }
 
 static inline bool rexdd_is_EH(rexdd_rule_t R)
 {
-    return !(R & 0x0001) & (R & 0x0100);
+    return (!(R & 0x0001)) & (R & 0x0100);
 }
 
 static inline bool rexdd_is_AL(rexdd_rule_t R)
 {
-    return (R & 0x0001) & !(R & 0x0100);
+    return (R & 0x0001) & (!(R & 0x0100));
 }
 
 static inline bool rexdd_is_AH(rexdd_rule_t R)
