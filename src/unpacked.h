@@ -13,15 +13,15 @@
  */
 typedef enum {
     
-    rexdd_rule_X = 0x1000,
-    rexdd_rule_EL0 = 0x0000,
-    rexdd_rule_EL1 = 0x0010,
-    rexdd_rule_EH0 = 0x0100,
-    rexdd_rule_EH1 = 0x0110,
-    rexdd_rule_AL0 = 0x0001,
-    rexdd_rule_AL1 = 0x0011,
-    rexdd_rule_AH0 = 0x0101,
-    rexdd_rule_AH1 = 0x0111
+    rexdd_rule_X =   8,
+    rexdd_rule_EL0 = 0,
+    rexdd_rule_EL1 = 2,
+    rexdd_rule_EH0 = 4,
+    rexdd_rule_EH1 = 6,
+    rexdd_rule_AL0 = 1,
+    rexdd_rule_AL1 = 3,
+    rexdd_rule_AH0 = 5,
+    rexdd_rule_AH1 = 7
 } rexdd_rule_t;
 
 /****************************************************************************
@@ -31,27 +31,27 @@ typedef enum {
  */
 static inline bool rexdd_is_EL(rexdd_rule_t R)
 {
-    return (!(R & 0x0001)) & (!(R & 0x0100));
+    return (!(R & 1)) && (!(R & 4));
 }
 
 static inline bool rexdd_is_EH(rexdd_rule_t R)
 {
-    return (!(R & 0x0001)) & (R & 0x0100);
+    return (!(R & 1)) && (R & 4);
 }
 
 static inline bool rexdd_is_AL(rexdd_rule_t R)
 {
-    return (R & 0x0001) & (!(R & 0x0100));
+    return (R & 1) && (!(R & 4));
 }
 
 static inline bool rexdd_is_AH(rexdd_rule_t R)
 {
-    return (R & 0x0001) & (R & 0x0100);
+    return (R & 1) && (R & 4);
 }
 
 static inline bool rexdd_is_one(rexdd_rule_t R)
 {
-    return R & 0x0010;
+    return R & 2;
 }
 
 
@@ -67,9 +67,9 @@ static inline rexdd_rule_t rexdd_rule_com_t (rexdd_rule_t R)
     if (R == rexdd_rule_X) {
         return R;
     } else if (rexdd_is_one(R)) {
-        return R & 0x1101;
+        return R & 13;
     } else {
-        return R | 0x0010;
+        return R | 2;
     }
 }
 
