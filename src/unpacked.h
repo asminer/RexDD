@@ -207,9 +207,10 @@ typedef struct {
 /*
  *  The complement of rexdd edge
  */
-static inline void rexdd_edge_com (rexdd_edge_t e) {
+static inline rexdd_edge_t rexdd_edge_com (rexdd_edge_t e) {
     e.label.rule = rexdd_rule_com_t (e.label.rule);
     e.label.complemented = !e.label.complemented;
+    return e;
 }
 
 /*

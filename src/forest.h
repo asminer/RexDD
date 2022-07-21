@@ -163,6 +163,20 @@ void rexdd_puo_edge(
         rexdd_edge_t            *reduced,
         rexdd_edge_t            *out);
 
+/**
+ *  Evaluate the function result corresponding to the given variables for the target edge
+ *      @param  F       Forest for the edge
+ *      @param  e       The target edge
+ *      @param  m       The root level of the target edge
+ *      @param  vars    The given variables
+ * 
+ */
+bool rexdd_eval(
+        rexdd_forest_t          *F,
+        rexdd_edge_t            *e,
+        uint32_t                m,
+        bool                    vars[]);
+
 /********************************************************************
  *
  *  Top-level, easy to use function interface.

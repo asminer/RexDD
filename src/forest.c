@@ -5,19 +5,12 @@
 #include "forest.h"
 #include "error.h"
 
-/********************************************************************
-
-    Front end.
-
-********************************************************************/
-
 /* ================================================================= */
 
 void rexdd_default_forest_settings(uint_fast32_t L, rexdd_forest_settings_t *s)
 {
     if (s) {
         s->num_levels = L;
-
         // TBD
     }
 }
@@ -70,8 +63,8 @@ void rexdd_normalize_edge(
         // (a, s_a) < (b, s_b)
         if (P->edge[0].label.complemented == 1){
             out->label.complemented = !out->label.complemented;
-            rexdd_edge_com (P->edge[0]);
-            rexdd_edge_com (P->edge[1]);
+            P->edge[0] = rexdd_edge_com (P->edge[0]);
+            P->edge[1] = rexdd_edge_com (P->edge[1]);
         } else {
 
         }
@@ -80,8 +73,8 @@ void rexdd_normalize_edge(
             // (a, s_a) < (b, s_b)
             if (P->edge[0].label.complemented == 1){
                 out->label.complemented = !out->label.complemented;
-                rexdd_edge_com (P->edge[0]);
-                rexdd_edge_com (P->edge[1]);
+                P->edge[0] = rexdd_edge_com (P->edge[0]);
+                P->edge[1] = rexdd_edge_com (P->edge[1]);
             } else {
 
             }
@@ -90,8 +83,8 @@ void rexdd_normalize_edge(
             if (P->edge[1].label.complemented == 1){
                 out->label.complemented = !out->label.complemented;
                 out->label.swapped = !out->label.swapped;
-                rexdd_edge_com (P->edge[0]);
-                rexdd_edge_com (P->edge[1]);
+                P->edge[0] = rexdd_edge_com (P->edge[0]);
+                P->edge[1] = rexdd_edge_com (P->edge[1]);
                 rexdd_node_sw (P);
             } else {
                 out->label.swapped = !out->label.swapped;
@@ -107,28 +100,28 @@ void rexdd_normalize_edge(
             } else if (P->edge[0].label.complemented == 1 && P->edge[1].label.complemented == 1) {
                 if (rexdd_rule_com_t(P->edge[0].label.rule) <= rexdd_rule_com_t(P->edge[1].label.rule)) {
                     out->label.complemented = !out->label.complemented;
-                    rexdd_edge_com (P->edge[0]);
-                    rexdd_edge_com (P->edge[1]);
+                    P->edge[0] = rexdd_edge_com (P->edge[0]);
+                    P->edge[1] = rexdd_edge_com (P->edge[1]);
                 } else {
                     out->label.complemented = !out->label.complemented;
                     out->label.swapped = !out->label.swapped;
-                    rexdd_edge_com (P->edge[0]);
-                    rexdd_edge_com (P->edge[1]);
+                    P->edge[0] = rexdd_edge_com (P->edge[0]);
+                    P->edge[1] = rexdd_edge_com (P->edge[1]);
                     rexdd_node_sw (P);
                 }
             } else if (P->edge[0].label.complemented == 0 && P->edge[1].label.complemented == 1) {
                 if (P->edge[0].label.rule > rexdd_rule_com_t(P->edge[1].label.rule)) {
                     out->label.complemented = !out->label.complemented;
                     out->label.swapped = !out->label.swapped;
-                    rexdd_edge_com (P->edge[0]);
-                    rexdd_edge_com (P->edge[1]);
+                    P->edge[0] = rexdd_edge_com (P->edge[0]);
+                    P->edge[1] = rexdd_edge_com (P->edge[1]);
                     rexdd_node_sw (P);
                 }
             } else {
                 if (rexdd_rule_com_t(P->edge[0].label.rule) <= P->edge[1].label.rule) {
                     out->label.complemented = !out->label.complemented;
-                    rexdd_edge_com (P->edge[0]);
-                    rexdd_edge_com (P->edge[1]);
+                    P->edge[0] = rexdd_edge_com (P->edge[0]);
+                    P->edge[1] = rexdd_edge_com (P->edge[1]);
                 } else {
                     out->label.swapped = !out->label.swapped;
                     rexdd_node_sw (P);
@@ -147,36 +140,22 @@ void rexdd_check_pattern(
         rexdd_unpacked_node_t   *new_p,
         rexdd_edge_t            *reduced)
 {
-    uint_fast32_t ln = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[0].target));
-    uint_fast32_t hn = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[1].target));
+    uint_fast32_t ln, hn;
     
     // Terminal patterns
     if ((rexdd_is_terminal(new_p->edge[0].target) == 1) && (rexdd_is_terminal(new_p->edge[1].target) == 1)) {
-        if (new_p->edge[0].target <= new_p->edge[0].target) {
-            reduced->target = new_p->edge[0].target;
-        } else {
-            reduced->target = new_p->edge[1].target;
-        }
-
+        ln = new_p->level;
+        hn = new_p->level;
         rexdd_sanity1(ln == hn, "low edge and high edge skip level error");
         
-        // pattern (a)
+        // pattern (a) & (b) [change later]
         if (new_p->edge[0].label.rule == rexdd_rule_X 
-            && ln > 1
+            && ln >= 1
             && new_p->edge[0].label.rule == new_p->edge[1].label.rule
             && new_p->edge[0].label.complemented == new_p->edge[1].label.complemented) {
             
             reduced->label.rule = rexdd_rule_X;
             reduced->label.complemented = new_p->edge[0].label.complemented;
-
-        // pattern (b)
-        } else if (new_p->edge[0].label.rule == rexdd_rule_X
-                    && ln == 1
-                    && new_p->edge[0].label.rule == new_p->edge[1].label.rule
-                    && new_p->edge[0].label.complemented == new_p->edge[1].label.complemented) {
-
-                        reduced->label.rule = rexdd_rule_X;
-                        reduced->label.complemented = new_p->edge[0].label.complemented;
 
         // pattern (c)
         } else if (new_p->edge[0].label.rule == rexdd_rule_X
@@ -293,6 +272,9 @@ void rexdd_check_pattern(
     }
     // Nonterminal patterns 1)
     else if ((rexdd_is_terminal(new_p->edge[0].target) == 1) && (rexdd_is_terminal(new_p->edge[1].target) == 0)) {
+        ln = new_p->level;
+        hn = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[1].target));
+
         reduced->target = new_p->edge[1].target;
         reduced->label.swapped = new_p->edge[1].label.swapped;
         reduced->label.complemented = new_p->edge[1].label.complemented;
@@ -305,7 +287,7 @@ void rexdd_check_pattern(
             && ln > hn
             ) {
             if (new_p->edge[0].label.complemented == 0) {
-                if (new_p->edge[1].label.rule == rexdd_rule_X && (hn == 1)
+                if ((new_p->edge[1].label.rule == rexdd_rule_X && (hn == 1))
                     || new_p->edge[1].label.rule == rexdd_rule_EL0) {
                     reduced->label.rule = rexdd_rule_EL0;
                 } else {
@@ -325,6 +307,9 @@ void rexdd_check_pattern(
     }
     // Nonterminal parttern 2)
     else if ((rexdd_is_terminal(new_p->edge[0].target) == 0) && (rexdd_is_terminal(new_p->edge[1].target) == 1)) {
+        ln = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[0].target));
+        hn = new_p->level;
+
         reduced->target = new_p->edge[0].target;
         reduced->label.swapped = new_p->edge[0].label.swapped;
         reduced->label.complemented = new_p->edge[0].label.complemented;
@@ -356,8 +341,11 @@ void rexdd_check_pattern(
         }
     }
     // Nonterminal pattern 3)
-    else if ((rexdd_is_terminal(new_p->edge[0].target) == 0)
+    else if (!rexdd_is_terminal(new_p->edge[0].target) && !rexdd_is_terminal(new_p->edge[1].target)
                 && new_p->edge[1].target == new_p->edge[0].target) {
+        ln = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[0].target));
+        hn = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[1].target));
+    
         reduced->target = new_p->edge[0].target;
         reduced->label.swapped = new_p->edge[0].label.swapped;
         reduced->label.complemented = new_p->edge[0].label.complemented;
@@ -393,6 +381,8 @@ void rexdd_check_pattern(
             }
         } else {
             reduced->target = handle;
+            // normalize for the reduced edge
+            rexdd_normalize_edge(new_p, reduced);
         }
     }
 }
@@ -410,7 +400,7 @@ void rexdd_merge_edge(
     uint32_t incoming_skip = m - n;
     uint32_t reduced_skip = n - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, reduced->target));
 
-    if (l.complemented == 1) rexdd_edge_com (*reduced);
+    if (l.complemented == 1) *reduced = rexdd_edge_com (*reduced);
 
     // Unreduceable and compatible merge
     if (reduced->label.rule == rexdd_rule_X && (reduced_skip==0)) {
@@ -600,14 +590,9 @@ void rexdd_reduce_edge(
         rexdd_check_pattern(F, handle, new_p, reduced);
     }
 
-    // normalize for the reduced edge
-    rexdd_normalize_edge(new_p, reduced);
-
-    // ==============================*Fix following things*====================================================
-
-    // Normalize the four equivalent forms
+    
     if (reduced->target == handle) {
-        // insert
+        // insert (into normalize)
         printf("\tDoing insert node into UT\n");    // clean later
         uint_fast64_t H = rexdd_insert_UT(F->UT, handle & ((0x01ul << 49)-1));
         printf("\tNode handle in the UT is: %llu\n", H);    // clean later
@@ -627,7 +612,7 @@ void rexdd_reduce_edge(
         //     free(temp);
         // }
 
-        // insert
+        // insert (into normalize)
         printf("\tDoing insert node into UT\n");    // clean later
         uint_fast64_t H = rexdd_insert_UT(F->UT, out->target & ((0x01ul << 49)-1));
         printf("\tNode handle in the UT is: %llu\n", H);    // clean later
@@ -638,12 +623,103 @@ void rexdd_reduce_edge(
         
     }
 
-    // =====================================================================================================
-
     free(new_p);
     free(reduced);
 
 }
+
+
+bool rexdd_eval(
+        rexdd_forest_t          *F,
+        rexdd_edge_t            *e,
+        uint32_t                m,
+        bool                    vars[])
+{
+    rexdd_sanity1(m>=0, "Root level of edge can not be less than 0");
+    // rexdd_sanity1(sizeof(vars)/sizeof(vars[0])>=m, "The number of variables is not enough");
+
+    uint32_t k;
+    if (rexdd_is_terminal(e->target)) {
+        k = 0;
+    } else {
+        k = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, e->target));
+    }
+    rexdd_sanity1(k<=m, "Target node level of edge must be less than root level");
+
+    bool result;
+    if (k == m) {
+        if (m == 0){
+            result = e->label.complemented ^ 0;
+        } else {
+            if (!rexdd_is_terminal(e->target)) {
+                bool next = e->label.swapped ^ vars[m];
+                rexdd_edge_t *e_next = malloc(sizeof(rexdd_edge_t));
+                if (next) {
+                    rexdd_unpack_high_edge(rexdd_get_packed_for_handle(F->UT->M, e->target), &(e_next->label));
+                    e_next->target = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, e->target));
+                } else {
+                    rexdd_unpack_low_edge(rexdd_get_packed_for_handle(F->UT->M, e->target), &(e_next->label));
+                    e_next->target = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, e->target));
+                }
+                result = e->label.complemented ^ rexdd_eval(F, e_next, m-1, vars);
+                free(e_next);
+            } else {
+                result = e->label.complemented ^ 0;
+            }
+        }
+    } else {
+        if (e->label.rule == rexdd_rule_X) {
+            result = rexdd_eval(F, e, k, vars);
+        } else {
+
+            bool vars_and = 1, vars_or = 0;
+            for (uint32_t i=k+1; i<=m; i++) {
+                vars_and = vars_and & vars[i];
+                vars_or = vars_or | vars[i];
+            }
+
+            if (rexdd_is_EL(e->label.rule)) {
+                if (vars_and) {
+                    result = rexdd_eval(F, e, k, vars);
+                } else {
+                    result = rexdd_is_one(e->label.rule);
+                }
+            }
+            if (rexdd_is_AH(e->label.rule)) {
+                if (vars_and) {
+                    result = rexdd_is_one(e->label.rule);
+                } else {
+                    result = rexdd_eval(F, e, k, vars);
+                }
+            }
+
+            if (rexdd_is_AL(e->label.rule)) {
+                if (vars_or) {
+                    result = rexdd_eval(F, e, k, vars);
+                } else {
+                    result = rexdd_is_one(e->label.rule);
+                }
+            }
+            if (rexdd_is_EH(e->label.rule)) {
+                if (vars_or) {
+                    result = rexdd_is_one(e->label.rule);
+                } else {
+                    result = rexdd_eval(F, e, k, vars);
+                }
+            }
+            
+        }
+        
+    }
+
+    return result;
+}
+
+
+
+
+
+
 
 /********************************************************************
  *
