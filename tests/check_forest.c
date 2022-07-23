@@ -82,8 +82,9 @@ int main()
     rexdd_init_forest(&F, &s);
 
     rexdd_unpacked_node_t n;
+    rexdd_unpacked_node_t child;
     rexdd_edge_t e;
-    e.label.rule = rexdd_rule_X;
+    e.label.rule = rexdd_rule_EL0;
     e.label.complemented = 0;
     e.label.swapped = 0;
 
@@ -93,13 +94,27 @@ int main()
      *      Building the unpacked node and the number of levels
      *          TBD----Build more and different nodes and edges
      * ==========================================================================*/
-    n.level = 3;
+    uint32_t Levels = 3;
+
+    child.level = Levels-1;
+    child.edge[0].target = rexdd_make_terminal(0x06ul);
+    child.edge[0].label.rule = rexdd_rule_EH1;
+    child.edge[0].label.complemented = 0;
+    child.edge[0].label.swapped = 0;
+    child.edge[1].target = rexdd_make_terminal(0x06ul);
+    child.edge[1].label.rule = rexdd_rule_X;
+    child.edge[1].label.complemented = 0;
+    child.edge[1].label.swapped = 0;
+
+    rexdd_node_handle_t h_child = rexdd_nodeman_get_handle(F.M, &child);
+
+    n.level = Levels;
     n.edge[0].target = rexdd_make_terminal(0x06ul);
     n.edge[0].label.rule = rexdd_rule_EL0;
     n.edge[0].label.complemented = 1;
     n.edge[0].label.swapped = 0;
-    n.edge[1].target = rexdd_make_terminal(0x06ul);
-    n.edge[1].label.rule = rexdd_rule_EL0;
+    n.edge[1].target = h_child;              //rexdd_make_terminal(0x06ul);
+    n.edge[1].label.rule = rexdd_rule_X;
     n.edge[1].label.complemented = 0;
     n.edge[1].label.swapped = 0;
 
@@ -124,12 +139,17 @@ int main()
         e.target = h;
     }
 
+    // merge edge by hands
+    // e.label.rule = rexdd_rule_EL0;
+    // e.label.complemented = 0;
+    // e.label.swapped = 0;
+
     printf("\n=================Checking eval function...===================\n");
 
     /* ==========================================================================
      *      Building the vars for the specific number of levels
      * ==========================================================================*/
-    uint32_t num_level = 3;
+    uint32_t num_level = Levels;
 
     // Build the vars for the specific number of levels
     bool vars[0x01 << num_level][num_level+1];
@@ -145,7 +165,7 @@ int main()
         }
 
         // Checking the eval function for the target edge
-        out = rexdd_eval(&F, &e, 3, vars[i]);
+        out = rexdd_eval(&F, &e, Levels+1, vars[i]);
         printf("eval out: %d\n", out);
         printf("\n");
         var = var-1;
