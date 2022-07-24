@@ -73,6 +73,7 @@ typedef struct rexdd_forest_s   rexdd_forest_t;
 
 /**
  *  Initialize a forest.
+ * 
  *      @param  F       Forest to initialize.
  *      @param  s       Pointer to forest settings to use.
  */
@@ -82,6 +83,7 @@ void rexdd_init_forest(
 
 /**
  *  Free all memory used by a forest.
+ * 
  *      @param  F           Pointer to forest struct
  */
 void rexdd_free_forest(
@@ -89,20 +91,86 @@ void rexdd_free_forest(
 
 
 /**
- * @brief Normalize the four equivalent forms
- *      @param  P       Desired target node, unpacked
- *      @param  out     Normalized edge will be written here
+ *  Normalize the unpacked node, and check if the normalized node
+ *  is stored in the unique table, if not then insert it.
+ * 
+ *      The rexdd_edge out will store the normalized swapped bit,
+ *      complement bit and the normalized node handle in the unique
+ *      table
+ * 
+ *      @param  P       Desired unpacked node waiting for normalization
+ *      @param  out     Normalized edge label will be written here
  * 
  */
-void rexdd_normalize_edge(
+void rexdd_normalize_node(
         rexdd_unpacked_node_t   *P,
         rexdd_edge_t            *out);
 
 
 /**
- *  Reduce an edge.
- *      @param  F       Forest for the edge.
- *      @param  m       The root level of the incoming edge
+ *  Reduce unpacked node by checking the forbidden patterns
+ *  of nodes with both edges to terminal 0 (terminal patterns)
+ *  and when at most one child of node is terminal 0
+ *  (nonterminal patterns).
+ * 
+ *      If the unpacked node can be represented by long edge,
+ *      eliminate this node and store the long edge in rexdd_edge
+ *      reduced; else store an edge with rule rexdd_rule_X,
+ *      swapped bit 0, complement bit 0 and target to this node
+ *      in the rexdd_edge reduced.
+ * 
+ *      @param  F       Rexdd Forest
+ *      @param  handle  Handle of the unpacked node
+ *      @param  new_p   The unpacked node waiting for reduction
+ *      @param  reduced Reduced edge will be written here
+ * 
+ */
+void rexdd_reduce_node(
+        rexdd_forest_t          *F,
+        rexdd_node_handle_t     handle,
+        rexdd_unpacked_node_t   *new_p, 
+        rexdd_edge_t            *reduced);
+
+
+/**
+ *  Merge the incoming edge target to the node with the reduced
+ *  edge.
+ *
+ *      The reduced edge stored the long edge that represent the
+ *      node after calling rexdd_reduce_node.
+ * 
+ *  If it is mergeable, the merged edge will be stored in the
+ *  rexdd_edge out. If it is not mergeable, there will be a new
+ *  node created upon the target node, check and insert it
+ *  to the unique table by calling rexdd_normalize_node; then
+ *  the rexdd_edge out will store an edge with rule rexdd_rule_X,
+ *  swapped bit 0, complement bit 0 and target to this new node
+ * 
+ *      @param  F       RexDD Forest
+ *      @param  m       The represent level of the incoming edge
+ *      @param  n       The target node level of the reduced edge
+ *      @param  l       The incoming edge label
+ *      @param  reduced The reduced edge
+ *      @param  out     Merged edge will be written here
+ * 
+ */
+void rexdd_merge_edge(
+        rexdd_forest_t          *F,
+        uint32_t                m,
+        uint32_t                n,
+        rexdd_edge_label_t      l,
+        rexdd_edge_t            *reduced,
+        rexdd_edge_t            *out);
+
+
+/**
+ *  Reduce the desired edge to its target node. It will first reduce
+ *  its target node by calling rexdd_reduce_node, then merge the edge
+ *  with the reduced long edge, finally check and insert node to the
+ *  unique table
+ * 
+ *      @param  F       RexDD Forest
+ *      @param  m       The represent level of the incoming edge
  *      @param  n       The target node level of the reduced edge
  *      @param  l       Desired edge labels; might not be possible
  *      @param  p       Desired target node, unpacked
@@ -116,38 +184,8 @@ void rexdd_reduce_edge(
         rexdd_unpacked_node_t   p,
         rexdd_edge_t            *out);
 
-/**
- *  Check the patterns for the target unpacked node
- *      @param  F       Forest fir the node
- *      @param  handle  Handle of the target node
- *      @param  new_p   The target node
- *      @param  reduced Reduced edge will be written here
- * 
- */
-void rexdd_check_pattern(
-        rexdd_forest_t          *F,
-        rexdd_node_handle_t     handle,
-        rexdd_unpacked_node_t   *new_p, 
-        rexdd_edge_t            *reduced);
 
-/**
- *  Merge the reduced edge and the incoming edge of the target node
- *      @param  F       Forest for the edge
- *      @param  m       The root level of the incoming edge
- *      @param  n       The target node level of the reduced edge
- *      @param  l       The incoming edge label
- *      @param  reduced The reduced edge
- *      @param  out     The merged edge will be written here if so
- * 
- */
-void rexdd_merge_edge(
-        rexdd_forest_t          *F,
-        uint32_t                m,
-        uint32_t                n,
-        rexdd_edge_label_t      l,
-        rexdd_edge_t            *reduced,
-        rexdd_edge_t            *out);
-
+//---------------------TBD not used for now-----------------------------
 /**
  *  Push up one node for the specific merge case
  *      @param  F       Forest for the edge
@@ -157,18 +195,33 @@ void rexdd_merge_edge(
  *      @param  out     The result edge will be written here
  * 
  */
-void rexdd_puo_edge(
-        uint32_t                n,
-        rexdd_edge_label_t      l,
-        rexdd_edge_t            *reduced,
-        rexdd_edge_t            *out);
+// void rexdd_puo_edge(
+//         uint32_t                n,
+//         rexdd_edge_label_t      l,
+//         rexdd_edge_t            *reduced,
+//         rexdd_edge_t            *out);
+
+//----------------------TBD Not used for now---------------------------
 
 /**
- *  Evaluate the function result corresponding to the given variables for the target edge
- *      @param  F       Forest for the edge
- *      @param  e       The target edge
- *      @param  m       The root level of the target edge
- *      @param  vars    The given variables
+ *  Evaluate the function
+ * 
+ *  Evaluate the function f^m_<rexdd_edge>(vars[]) by the edge with
+ *  respect of level m on vars.
+ * 
+ *      For example, edge <EL0, 0, 1, P> of level m has rule EL0,
+ *      swapped bit 0, complement bit 0 and target node P. Then
+ *      condition
+ *              P.level < m < forest setting level L
+ *      must be met, and
+ *              vars[] must be indexed from 0 to L (vars[0] is not
+ *              used); vars[i] is represented the variable of node
+ *              at level i
+ * 
+ *      @param  F       Rexdd Forest
+ *      @param  e       The edge with respect of level m
+ *      @param  m       The represent level of the edge
+ *      @param  vars    The given variables from nodes of each level
  * 
  */
 bool rexdd_eval(
