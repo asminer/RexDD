@@ -91,13 +91,14 @@ void rexdd_free_forest(
 
 
 /**
- *  Normalize the unpacked node, and check if the normalized node
- *  is stored in the unique table, if not then insert it.
+ *  Normalize the unpacked node, the edge out with the original incoming
+ *  edge rule, swapped bit and complement bit, but its target is ignored
  * 
  *      The rexdd_edge out will store the normalized swapped bit,
- *      complement bit and the normalized node handle in the unique
- *      table
+ *      complement bit with its original incoming rule; its target
+ *      is not used
  * 
+ *      @param  F       Rexdd Forest
  *      @param  P       Desired unpacked node waiting for normalization
  *      @param  out     Normalized edge label will be written here
  * 
@@ -111,24 +112,26 @@ void rexdd_normalize_node(
  *  Reduce unpacked node by checking the forbidden patterns
  *  of nodes with both edges to terminal 0 (terminal patterns)
  *  and when at most one child of node is terminal 0
- *  (nonterminal patterns).
+ *  (nonterminal patterns), with the original incoming edge
+ *  swapped bit and complement bit stored in the rexdd_edge
+ *  reduced
  * 
  *      If the unpacked node can be represented by long edge,
  *      eliminate this node and store the long edge in rexdd_edge
- *      reduced; else store an edge with rule rexdd_rule_X,
- *      swapped bit 0, complement bit 0 and target to this node
- *      in the rexdd_edge reduced.
+ *      reduced; else store a normalized edge with rule rexdd_rule_X,
+ *      and target to this node handle in the unique table in 
+ *      the rexdd_edge reduced.
  * 
  *      @param  F       Rexdd Forest
  *      @param  handle  Handle of the unpacked node
- *      @param  new_p   The unpacked node waiting for reduction
+ *      @param  P       The unpacked node waiting for reduction
  *      @param  reduced Reduced edge will be written here
  * 
  */
 void rexdd_reduce_node(
         rexdd_forest_t          *F,
         rexdd_node_handle_t     handle,
-        rexdd_unpacked_node_t   *new_p, 
+        rexdd_unpacked_node_t   *P, 
         rexdd_edge_t            *reduced);
 
 
@@ -213,7 +216,11 @@ void rexdd_reduce_edge(
  *      swapped bit 0, complement bit 0 and target node P. Then
  *      condition
  *              P.level < m < forest setting level L
- *      must be met, and
+ *      must be met; More specifically, if this edge skips 1 node,
+ *      m must be P.level + 1; if this edge skips k>1 nodes, m must
+ *      be P.level + k.
+ *      
+ *      and
  *              vars[] must be indexed from 0 to L (vars[0] is not
  *              used); vars[i] is represented the variable of node
  *              at level i
