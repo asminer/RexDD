@@ -91,14 +91,12 @@ void rexdd_free_forest(
 
 
 /**
- *  Normalize the unpacked node, the edge out with the original incoming
- *  edge rule, swapped bit and complement bit, but its target is ignored
+ *  Normalize unpacked node "*P".  Edge "*out", which specifies an incoming
+ *  edge rule (ignored), a swap bit, a complement bit, and a target (ignored)
+ *  is only used to return the swap bit and the complement bit, which may be
+ *  changed by the normalization.
  * 
- *      The rexdd_edge out will store the normalized swapped bit,
- *      complement bit with its original incoming rule; its target
- *      is not used
- * 
- *      @param  F       Rexdd Forest
+ *      @param  F       Rexdd Forest   NOT NEEDED NOW, BUT MAYBE IN THE FUTURE???
  *      @param  P       Desired unpacked node waiting for normalization
  *      @param  out     Normalized edge label will be written here
  * 
@@ -109,12 +107,11 @@ void rexdd_normalize_node(
 
 
 /**
- *  Reduce unpacked node by checking the forbidden patterns
+ *  Reduce unpacked node "*P" by checking the forbidden patterns
  *  of nodes with both edges to terminal 0 (terminal patterns)
- *  and when at most one child of node is terminal 0
- *  (nonterminal patterns), with the original incoming edge
- *  swapped bit and complement bit stored in the rexdd_edge
- *  reduced
+ *  and with at most one edge to terminal 0 *  (nonterminal patterns),
+ *  with the original incoming edge
+ *  swap bit and complement bit stored in the rexdd_edge *  reduced
  * 
  *      If the unpacked node can be represented by long edge,
  *      eliminate this node and store the long edge in rexdd_edge
