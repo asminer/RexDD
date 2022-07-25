@@ -84,7 +84,7 @@ int main()
     rexdd_unpacked_node_t n;
     rexdd_unpacked_node_t child;
     rexdd_edge_t e;
-    e.label.rule = rexdd_rule_EL0;
+    e.label.rule = rexdd_rule_X;
     e.label.complemented = 0;
     e.label.swapped = 0;
 
@@ -110,39 +110,23 @@ int main()
 
     n.level = Levels;
     n.edge[0].target = rexdd_make_terminal(0x06ul);
-    n.edge[0].label.rule = rexdd_rule_EL0;
+    n.edge[0].label.rule = rexdd_rule_X;
     n.edge[0].label.complemented = 1;
     n.edge[0].label.swapped = 0;
-    n.edge[1].target = h_child;              //rexdd_make_terminal(0x06ul);
-    n.edge[1].label.rule = rexdd_rule_X;
+    n.edge[1].target = h_child;
+    // n.edge[1].target = rexdd_make_terminal(0x06ul);
+    n.edge[1].label.rule = rexdd_rule_EL1;
     n.edge[1].label.complemented = 0;
     n.edge[1].label.swapped = 0;
 
     rexdd_node_handle_t h = rexdd_nodeman_get_handle(F.M, &n);
     
-    rexdd_check_pattern(&F, h, &n, &e);
+    rexdd_reduce_node(&F, h, &n, &e);
 
     show_unpacked_node(n);
     printf("\nnode handle is: %llu\n", h);
     printf("\nreduced edge: \n");
     show_edge(e);
-    printf("\n-------------------normalizing-------------------\n");
-    rexdd_normalize_edge(&n, &e);
-    show_unpacked_node(n);
-    printf("\nnormalized edge: \n");
-    show_edge(e);
-
-    // after normalization the target node changed, needs rewrite into the table
-    //      TBD----Need to think about how to optimize this step later
-    if (e.target == h) {
-        h = rexdd_nodeman_get_handle(F.M, &n);
-        e.target = h;
-    }
-
-    // merge edge by hands
-    // e.label.rule = rexdd_rule_EL0;
-    // e.label.complemented = 0;
-    // e.label.swapped = 0;
 
     printf("\n=================Checking eval function...===================\n");
 
@@ -165,7 +149,7 @@ int main()
         }
 
         // Checking the eval function for the target edge
-        out = rexdd_eval(&F, &e, Levels+1, vars[i]);
+        out = rexdd_eval(&F, &e, Levels, vars[i]);
         printf("eval out: %d\n", out);
         printf("\n");
         var = var-1;
