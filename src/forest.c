@@ -51,10 +51,12 @@ void rexdd_free_forest(rexdd_forest_t *F)
 
 /* ================================================================================================ */
 
-void rexdd_normalize_edge(
+void rexdd_normalize_node(
         rexdd_unpacked_node_t   *P,
         rexdd_edge_t            *out)
 {
+    rexdd_sanity1(out, "null edge to the normalized node");
+    
     if (rexdd_is_terminal(P->edge[0].target))  P->edge[0].label.swapped = 0;
     if (rexdd_is_terminal(P->edge[1].target))  P->edge[1].label.swapped = 0;
 
@@ -72,9 +74,8 @@ void rexdd_normalize_edge(
             out->label.complemented = !out->label.complemented;
             rexdd_edge_com (&(P->edge[0]));
             rexdd_edge_com (&(P->edge[1]));
-            
-            // TBD insert normalized node into unique table
         }
+
     // Low child node address and swapped bit > High child node address and swapped bit
     } else if ((P->edge[0].target*2+P->edge[0].target) > (P->edge[1].target*2+P->edge[1].target)) {
         if (P->edge[1].label.complemented){
@@ -87,7 +88,6 @@ void rexdd_normalize_edge(
             out->label.swapped = !out->label.swapped;
             rexdd_node_sw (P);
         }
-        // TBD insert normalized node into unique table
 
     // Low child node address and swapped bit = High child node address and swapped bit
     } else {
@@ -95,8 +95,6 @@ void rexdd_normalize_edge(
             if (P->edge[0].label.rule > P->edge[1].label.rule) {
                 out->label.swapped = !out->label.swapped;
                 rexdd_node_sw (P);
-
-                // TBD insert normalized node into unique table
             }
         } else if (P->edge[0].label.complemented && P->edge[1].label.complemented) {
             if (rexdd_rule_com_t(P->edge[0].label.rule) <= rexdd_rule_com_t(P->edge[1].label.rule)) {
@@ -110,8 +108,6 @@ void rexdd_normalize_edge(
                 rexdd_edge_com (&(P->edge[1]));
                 rexdd_node_sw (P);
             }
-            // TBD insert normalized node into unique table
-
         } else if (!P->edge[0].label.complemented && P->edge[1].label.complemented) {
             if (P->edge[0].label.rule > rexdd_rule_com_t(P->edge[1].label.rule)) {
                 out->label.complemented = !out->label.complemented;
@@ -119,8 +115,6 @@ void rexdd_normalize_edge(
                 rexdd_edge_com (&(P->edge[0]));
                 rexdd_edge_com (&(P->edge[1]));
                 rexdd_node_sw (P);
-
-                // TBD insert normalized node into unique table
             }
         } else {
             if (rexdd_rule_com_t(P->edge[0].label.rule) <= P->edge[1].label.rule) {
@@ -131,24 +125,47 @@ void rexdd_normalize_edge(
                 out->label.swapped = !out->label.swapped;
                 rexdd_node_sw (P);
             }
-            // TBD insert normalized node into unique table
-
         }
     }
-    // TBD make sure out->target is pointed to normalized P
 }
 
 /* ================================================================================================ */
 
-void rexdd_check_pattern(
+void rexdd_reduce_node(
         rexdd_forest_t          *F,
         rexdd_node_handle_t     handle,
-        rexdd_unpacked_node_t   *new_p,
+        rexdd_unpacked_node_t   *P,
         rexdd_edge_t            *reduced)
 {
+    rexdd_sanity1(reduced, "null reduced esge");
+
     // The level difference between unpacked node and both child nodes
     uint_fast32_t ln, hn;
-    
+
+    // Temporarily store the original unpacked node for the operation, so as to later check if it has changed
+    rexdd_unpacked_node_t *new_p = malloc(sizeof(rexdd_unpacked_node_t));
+    *new_p = *P;
+
+    /* -----------------------------------------------------------------------------------------
+        Constant edge: the edges <ELc, 0, c, 0>, <EHc, 0, c, 0>, <ALc, 0, c, 0>, <AHc, 0, c, 0> 
+        with any complement bit c can be uniformly represented by <X, 0, c, 0>
+            After this, there are only two kinds of edges to terminal 0:
+                
+                1. edge rule rexdd_rule_X with any complement bit
+                2. edge rule not rexdd_rule_X with different complement bit,
+                    for example <EL0, 0, 1, 0>
+    */
+    if (rexdd_is_terminal(new_p->edge[0].target)
+        && new_p->edge[0].label.rule != rexdd_rule_X 
+        && (rexdd_is_one(new_p->edge[0].label.rule) == new_p->edge[0].label.complemented)) {
+            new_p->edge[0].label.rule = rexdd_rule_X;
+        }
+    if (rexdd_is_terminal(new_p->edge[1].target)
+        && new_p->edge[1].label.rule != rexdd_rule_X 
+        && (rexdd_is_one(new_p->edge[1].label.rule) == new_p->edge[1].label.complemented)) {
+            new_p->edge[0].label.rule = rexdd_rule_X;
+        }
+
     /* ---------------------------------------------------------------------------------------------
      * Forbidden patterns of nodes with both edges to terminal 0 in canonical RexBDDs
      * --------------------------------------------------------------------------------------------*/
@@ -156,11 +173,14 @@ void rexdd_check_pattern(
         ln = new_p->level;
         hn = new_p->level;
         rexdd_sanity1(ln == hn, "low edge and high edge skip level error");
-
-        /* Both edges with rexdd_rule_X (skip 0 or more nodes) and same complement bits */
+        
+        /* 
+            Meta-edge: Constant <C, 0, c, 0> = <X, 0, c, 0>
+                Both edges with rexdd_rule_X (skip 0 or more nodes) and same complement bits
+        */
         if (new_p->edge[0].label.rule == rexdd_rule_X 
+            && new_p->edge[1].label.rule == rexdd_rule_X
             && ln >= 1
-            && new_p->edge[0].label.rule == new_p->edge[1].label.rule
             && new_p->edge[0].label.complemented == new_p->edge[1].label.complemented) {
             
             rexdd_set_edge(reduced,
@@ -169,215 +189,131 @@ void rexdd_check_pattern(
                     0,
                     new_p->edge[0].target);
 
-        /* Both edges with rexdd_rule_X (skip 0 node) and different complement bits */
+        /* 
+            Meta-edge: Bottom variable <B, 0, c, 0> = <ELc, 0, not_c, 0>
+                Both edges with rexdd_rule_X (skip 0 node) and different complement bits
+        */
         } else if (new_p->edge[0].label.rule == rexdd_rule_X
+                    && new_p->edge[1].label.rule == rexdd_rule_X
                     && ln == 1
-                    && new_p->edge[0].label.rule == new_p->edge[1].label.rule
                     && new_p->edge[0].label.complemented != new_p->edge[1].label.complemented) {
 
-                    if (!new_p->edge[0].label.complemented) {
-                        rexdd_set_edge(reduced,
-                                rexdd_rule_EL0,
-                                new_p->edge[1].label.complemented,
-                                0,
-                                new_p->edge[0].target);
-                    } else {
-                        rexdd_set_edge(reduced,
-                                rexdd_rule_EL1,
-                                new_p->edge[1].label.complemented,
-                                0,
-                                new_p->edge[0].target);
+                if (!new_p->edge[0].label.complemented) {
+                    rexdd_set_edge(reduced,
+                            rexdd_rule_EL0,
+                            new_p->edge[1].label.complemented,
+                            0,
+                            new_p->edge[0].target);
+                } else {
+                    rexdd_set_edge(reduced,
+                            rexdd_rule_EL1,
+                            new_p->edge[1].label.complemented,
+                            0,
+                            new_p->edge[0].target);
+                }
+
+        /* 
+            Meta-edge: anD (conjunction) <D, 0, c, 0> = <ELc, 0, not_c, 0>
+                Low edge with rexdd_rule_X (skip 1 or more nodes) and High edge with not rexdd_rule_X
+                    
+                    1. High edge with rule EL, different complement bit to Low edge;
+                    2. High edge with rule EH or AH (skip 2 or more nodes), the same
+                       complement bit with Low edge;
+         */
+        } else if (new_p->edge[0].label.rule == rexdd_rule_X
+                    && new_p->edge[1].label.rule != rexdd_rule_X
+                    && ln>1
+                    && ((new_p->edge[0].label.complemented != new_p->edge[1].label.complemented
+                            && rexdd_is_EL(new_p->edge[1].label.rule))
+                        ||
+                        (new_p->edge[0].label.complemented == new_p->edge[1].label.complemented
+                            && (rexdd_is_EH(new_p->edge[1].label.rule)
+                                || 
+                                (rexdd_is_AH(new_p->edge[1].label.rule) && hn>2)))
+                        )
+                    ) {
+
+                if (!new_p->edge[0].label.complemented) {
+                    rexdd_set_edge(reduced,
+                            rexdd_rule_EL0,
+                            1,
+                            0,
+                            new_p->edge[0].target);
+                } else {
+                    rexdd_set_edge(reduced,
+                            rexdd_rule_EL1,
+                            0,
+                            0,
+                            new_p->edge[0].target);
+                }
+
+        /* 
+            Meta-edge: oR (disjunction) <R, 0, c, 0> = <EHnot_c, 0, c, 0>
+                High edge with rexdd_rule_X (skip 1 or more nodes) and Low edge with not rexdd_rule_X
+                    
+                    1. Low edge with rule EH, different complement bit to High edge;
+                    2. Low edge with rule EL or Al (skip 2 or more nodes), the same
+                       complement bit with High edge;
+         */
+        } else if (new_p->edge[1].label.rule == rexdd_rule_X
+                    && new_p->edge[0].label.rule != rexdd_rule_X
+                    && hn>1
+                    && ((new_p->edge[0].label.complemented != new_p->edge[1].label.complemented
+                            && rexdd_is_EH(new_p->edge[0].label.rule))
+                        ||
+                        (new_p->edge[0].label.complemented == new_p->edge[1].label.complemented
+                            && (rexdd_is_EL(new_p->edge[0].label.rule)
+                                || 
+                                (rexdd_is_AL(new_p->edge[0].label.rule) && ln>2)))
+                        )
+                    ) {
+
+            if (!new_p->edge[1].label.complemented) {
+                rexdd_set_edge(reduced,
+                        rexdd_rule_EH0,
+                        1,
+                        0,
+                        new_p->edge[0].target);
+            } else {
+                rexdd_set_edge(reduced,
+                        rexdd_rule_EH1,
+                        0,
+                        0,
+                        new_p->edge[0].target);
             }
 
         /* 
-            Low edge with rexdd_rule_X (skip more than 1 node) and different complement bits
-                High edge with rexdd_rule_EL, rexdd_rule_EH or rexdd_rule_AH
-                and rexdd_is_one(High edge rule) = Low edge complement bit;
-            => reduced to rexdd_rule_EL or rexdd_rule_AH;
+            new_p can not be represented by a long edge, we need to normalize it
+                
+                1. The normalized unpacked node may be changed, the reason may be:
 
-            Low edge with rexdd_rule_X (skip more than 1 node) and different complement bits
-                High edge rule is not rexdd_rule_X
-                and rexdd_is_one(high edge rule) = High edge complement bit;
-            => reduced to rexdd_rule_X to unpacked node, and change High edge rule to rexdd_rule_X;
-         */
-        } else if (new_p->edge[0].label.rule == rexdd_rule_X
-                    && ln>1
-                    && new_p->edge[0].label.rule != new_p->edge[1].label.rule
-                    && new_p->edge[0].label.complemented != new_p->edge[1].label.complemented) {
-                    
-                    if ((rexdd_is_EL(new_p->edge[1].label.rule)
-                         || (rexdd_is_AH(new_p->edge[1].label.rule)))
-                        && rexdd_is_one(new_p->edge[1].label.rule) == new_p->edge[0].label.complemented) {
+                    a). Low or High edge is changed to meta-edge Constant, then it already 
+                        met the canonicity (not need to do swap or complement);
+                    b). Low or High edge is not changed to meta-edge Constant, but it needs
+                        to do swap or complement for canonicity;
+                    c). Low or High edge is changed to meta-edge Constant, then it also
+                        needs to do swap or complement for canonicity.
+                   
+                   Then it needs to get a new handle for this different unpacked node, check
+                   and insert it to the unique table by calling rexdd_insert_UT
 
-                            rexdd_set_edge(reduced,
-                                    new_p->edge[1].label.rule,
-                                    new_p->edge[1].label.complemented,
-                                    0,
-                                    new_p->edge[0].target);
-
-                    } else if (rexdd_is_EH(new_p->edge[1].label.rule)
-                        && rexdd_is_one(new_p->edge[1].label.rule) == new_p->edge[0].label.complemented) {
-                            if (new_p->edge[0].label.complemented) {
-
-                                rexdd_set_edge(reduced,
-                                        rexdd_rule_AH1,
-                                        new_p->edge[1].label.complemented,
-                                        0,
-                                        new_p->edge[0].target);
-                            } else {
-
-                                rexdd_set_edge(reduced,
-                                        rexdd_rule_AH0,
-                                        new_p->edge[1].label.complemented,
-                                        0,
-                                        new_p->edge[0].target);
-                            }
-                    } else if (rexdd_is_AL(new_p->edge[1].label.rule)
-                        && rexdd_is_one(new_p->edge[1].label.rule) == new_p->edge[0].label.complemented) {
-
-                            rexdd_set_edge(reduced,
-                                    rexdd_rule_X,
-                                    0,
-                                    0,
-                                    handle);
-                            rexdd_normalize_edge(new_p, reduced);
-                    } else {
-                        // ------------------------ simple for an output------------------
-                        rexdd_set_edge(reduced,
-                                rexdd_rule_X,
-                                0,
-                                0,
-                                handle);
-                            rexdd_normalize_edge(new_p, reduced);
-                        // ---------------------------------------------------------------
-
-                        // TBD set the unpacked node's high edge rule rexdd_rule_X, and insert it into unique table
-
-                    }
-
-        /* 
-            High edge with rexdd_rule_X (skip more than 1 node) and different complement bits
-                Low edge with rexdd_rule_EL, rexdd_rule_EH or rexdd_rule_AL
-                and rexdd_is_one(Low edge rule) = High edge complement bit;
-            => reduced to rexdd_rule_AL or rexdd_rule_EH;
-
-            High edge with rexdd_rule_X (skip more than 1 node) and different complement bits
-                Low edge is not rexdd_rule_X
-                and rexdd_is_one(Low edge rule) = Low edge complement bit;
-            => reduced to rexdd_rule_X to unpacked node, and change High edge rule to rexdd_rule_X;
-         */
-        } else if (new_p->edge[1].label.rule == rexdd_rule_X
-                    && hn>1
-                    && new_p->edge[0].label.rule != new_p->edge[1].label.rule
-                    && new_p->edge[0].label.complemented != new_p->edge[1].label.complemented) {
-
-                    if ((rexdd_is_EH(new_p->edge[0].label.rule)
-                         || (rexdd_is_AL(new_p->edge[0].label.rule)))
-                        && rexdd_is_one(new_p->edge[0].label.rule) == new_p->edge[1].label.complemented) {
-
-                            rexdd_set_edge(reduced,
-                                    new_p->edge[0].label.rule,
-                                    new_p->edge[0].label.complemented,
-                                    0,
-                                    new_p->edge[0].target);
-
-                    } else if (rexdd_is_EL(new_p->edge[0].label.rule)
-                        && rexdd_is_one(new_p->edge[0].label.rule) == new_p->edge[1].label.complemented) {
-                            if (new_p->edge[1].label.complemented) {
-
-                                rexdd_set_edge(reduced,
-                                        rexdd_rule_AL1,
-                                        new_p->edge[1].label.complemented,
-                                        0,
-                                        new_p->edge[0].target);
-                            } else {
-
-                                rexdd_set_edge(reduced,
-                                        rexdd_rule_AL0,
-                                        new_p->edge[1].label.complemented,
-                                        0,
-                                        new_p->edge[0].target);
-                            }
-                    } else if (rexdd_is_AL(new_p->edge[0].label.rule)
-                        && rexdd_is_one(new_p->edge[0].label.rule) == new_p->edge[0].label.complemented) {
-
-                            rexdd_set_edge(reduced,
-                                    rexdd_rule_X,
-                                    0,
-                                    0,
-                                    handle);
-                            rexdd_normalize_edge(new_p, reduced);
-                    } else {
-                        // ------------------------ simple for an output------------------
-                        rexdd_set_edge(reduced,
-                                rexdd_rule_X,
-                                0,
-                                0,
-                                handle);
-                            rexdd_normalize_edge(new_p, reduced);
-                        // ---------------------------------------------------------------
-
-                        // TBD set the unpacked node's high edge rule rexdd_rule_X, and insert it into unique table
-
-                    }
-
-
-        /*
-            Low edge with rexdd_rule_X (skip more than 1 node) and same complement bits
-                High edge with rexdd_rule_EL, rexdd_rule_EH, rexdd_rule_AL or rexdd_rule_AH 
-                and rexdd_is_one(High edge rule) = High edge complement bit;
-            => reduced to rexdd_rule_X with same complement bit
+                2. The normalized unpacked node is not changed, because its Low or High edge
+                   is not changed to meta-edge Constant and it already met the canonicity. So
+                   the reduced edge can still target to the original handle.
         */
-        } else if (new_p->edge[0].label.rule == rexdd_rule_X
-                    && ln > 1
-                    && new_p->edge[0].label.rule != new_p->edge[1].label.rule
-                    && new_p->edge[0].label.complemented == new_p->edge[1].label.complemented) {
+        } else {               
+            rexdd_normalize_node(new_p, reduced);
 
-                        if (rexdd_is_one(new_p->edge[1].label.rule) == new_p->edge[0].label.complemented) {
+            reduced->label.rule = rexdd_rule_X;
 
-                            rexdd_set_edge(reduced,
-                                    rexdd_rule_X,
-                                    new_p->edge[0].label.complemented,
-                                    0,
-                                    new_p->edge[0].target);
-                    
-                        } else {
-                            rexdd_set_edge(reduced,
-                                    rexdd_rule_X,
-                                    0,
-                                    0,
-                                    handle);
-                            rexdd_normalize_edge(new_p, reduced);
-                        }
-        /*
-            High edge with rexdd_rule_X (skip more than 1 node) and same complement bits
-                Low edge with rexdd_rule_EL, rexdd_rule_EH, rexdd_rule_AL or rexdd_rule_AH 
-                and rexdd_is_one(Low edge rule) = Low edge complement bit;
-            => reduced to rexdd_rule_X with same complement bit
-        */
-        } else if (new_p->edge[1].label.rule == rexdd_rule_X
-                    && hn > 1
-                    && new_p->edge[0].label.rule != new_p->edge[1].label.rule
-                    && new_p->edge[0].label.complemented == new_p->edge[1].label.complemented) {
-
-                        if (rexdd_is_one(new_p->edge[0].label.rule) == new_p->edge[1].label.complemented) {
-
-                            rexdd_set_edge(reduced,
-                                    rexdd_rule_X,
-                                    new_p->edge[0].label.complemented,
-                                    0,
-                                    new_p->edge[0].target);
-                            
-                        } else {
-                            rexdd_set_edge(reduced,
-                                    rexdd_rule_X,
-                                    0,
-                                    0,
-                                    handle);
-                            rexdd_normalize_edge(new_p, reduced);
-                        }
-        }else {
-            reduced->target = handle;
+            if (!rexdd_edges_are_equal(&(new_p->edge[0]), &(P->edge[0]))
+                || !rexdd_edges_are_equal(&(new_p->edge[1]), &(P->edge[1]))) {
+                rexdd_node_handle_t new_handle = rexdd_nodeman_get_handle(F->M, new_p);
+                new_handle = rexdd_insert_UT(F->UT, new_handle);
+                reduced->target = new_handle;
+            } else {
+                reduced->target = handle;
+            }
         }
     }
 
@@ -388,36 +324,46 @@ void rexdd_check_pattern(
         ln = new_p->level;
         hn = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[1].target));
 
-        rexdd_set_edge(reduced,
-                rexdd_rule_X,
-                new_p->edge[1].label.complemented,
-                new_p->edge[1].label.swapped,
-                new_p->edge[1].target);
-        
-        rexdd_sanity1(ln != hn, "low edge and high edge skip level error");
-
-        // pattern (b) & (c)
-        if (new_p->edge[0].label.rule == rexdd_rule_X
-            && ln > 1
-            && ln > hn) {
-
-            if (!new_p->edge[0].label.complemented) {
-                if ((new_p->edge[1].label.rule == rexdd_rule_X && (hn == 1))
-                    || new_p->edge[1].label.rule == rexdd_rule_EL0) {
-                    reduced->label.rule = rexdd_rule_EL0;
-                } else {
-                    reduced->target = handle;
-                }
+        /*
+            Low edge to terminal 0 with rule rexdd_rule_X and complement bit t
+                
+                1. High edge to nonterminal ndoe q with rule rexdd_rule_X (skip 0 node),
+                   swapped bit s and complement bit c;
+                2. High edge to nonterminal ndoe q with rule rexdd_rule_ELt (skip 1 or more node),
+                   swapped bit s and complement bit c;
+            
+            the unpacked node can be represented by a long edge <ELt, s, c, q>
+        */
+       if (new_p->edge[0].label.rule == rexdd_rule_X
+            && (((new_p->edge[1].label.rule == rexdd_rule_X) && hn==1)
+                ||
+                (rexdd_is_EL(new_p->edge[1].label.rule) && hn>1))) {
+            if (new_p->edge[0].label.complemented) {
+                rexdd_set_edge(reduced,
+                        rexdd_rule_EL1,
+                        new_p->edge[1].label.complemented,
+                        new_p->edge[1].label.swapped,
+                        new_p->edge[1].target);
             } else {
-                if ((new_p->edge[1].label.rule == rexdd_rule_X && (hn == 1))
-                    || new_p->edge[1].label.rule == rexdd_rule_EL1) {
-                        reduced->label.rule = rexdd_rule_EL1;
-                } else {
-                    reduced->target = handle;
-                }
+                rexdd_set_edge(reduced,
+                        rexdd_rule_EL0,
+                        new_p->edge[1].label.complemented,
+                        new_p->edge[1].label.swapped,
+                        new_p->edge[1].target);
             }
         } else {
-            reduced->target = handle;
+            rexdd_normalize_node(new_p, reduced);
+
+            reduced->label.rule = rexdd_rule_X;
+
+            if (!rexdd_edges_are_equal(&(new_p->edge[0]), &(P->edge[0]))
+                || !rexdd_edges_are_equal(&(new_p->edge[1]), &(P->edge[1]))) {
+                rexdd_node_handle_t new_handle = rexdd_nodeman_get_handle(F->M, new_p);
+                new_handle = rexdd_insert_UT(F->UT, new_handle);
+                reduced->target = new_handle;
+            } else {
+                reduced->target = handle;
+            }
         }
     }
     /* ---------------------------------------------------------------------------------------------
@@ -427,36 +373,49 @@ void rexdd_check_pattern(
         ln = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[0].target));
         hn = new_p->level;
 
-        reduced->target = new_p->edge[0].target;
-        reduced->label.swapped = new_p->edge[0].label.swapped;
-        reduced->label.complemented = new_p->edge[0].label.complemented;
-
-        rexdd_sanity1(ln != hn, "low edge and high edge skip level error");
-
-        // pattern (e) & (f)
+        /*
+            High edge to terminal 0 with rule rexdd_rule_X and complement bit t
+                
+                1. Low edge to nonterminal ndoe q with rule rexdd_rule_X (skip 0 node),
+                   swapped bit s and complement bit c;
+                2. Low edge to nonterminal ndoe q with rule rexdd_rule_ELt (skip 1 or more node),
+                   swapped bit s and complement bit c;
+            
+            the unpacked node can be represented by a long edge <ELt, s, c, q>
+        */
         if (new_p->edge[1].label.rule == rexdd_rule_X
-            && hn > 1
-            && hn > ln
-            ) {
-            if (!new_p->edge[1].label.complemented) {
-                if ((new_p->edge[0].label.rule == rexdd_rule_X && (ln == 1))
-                    || new_p->edge[0].label.rule == rexdd_rule_EH0) {
-                    reduced->label.rule = rexdd_rule_EH0;
-                } else {
-                    reduced->target = handle;
-                }
+            && (((new_p->edge[0].label.rule == rexdd_rule_X) && ln==1)
+                ||
+                (rexdd_is_EH(new_p->edge[0].label.rule) && ln>1))) {
+            if (new_p->edge[1].label.complemented) {
+                rexdd_set_edge(reduced,
+                        rexdd_rule_EH1,
+                        new_p->edge[0].label.complemented,
+                        new_p->edge[0].label.swapped,
+                        new_p->edge[0].target);
             } else {
-                if ((new_p->edge[0].label.rule == rexdd_rule_X && (ln == 1))
-                    || new_p->edge[0].label.rule == rexdd_rule_EH1) {
-                    reduced->label.rule = rexdd_rule_EH1;
-                } else {
-                    reduced->target = handle;
-                }
+                rexdd_set_edge(reduced,
+                        rexdd_rule_EH0,
+                        new_p->edge[0].label.complemented,
+                        new_p->edge[0].label.swapped,
+                        new_p->edge[0].target);
             }
         } else {
-            reduced->target = handle;
+            rexdd_normalize_node(new_p, reduced);
+
+            reduced->label.rule = rexdd_rule_X;
+
+            if (!rexdd_edges_are_equal(&(new_p->edge[0]), &(P->edge[0]))
+                || !rexdd_edges_are_equal(&(new_p->edge[1]), &(P->edge[1]))) {
+                rexdd_node_handle_t new_handle = rexdd_nodeman_get_handle(F->M, new_p);
+                new_handle = rexdd_insert_UT(F->UT, new_handle);
+                reduced->target = new_handle;
+            } else {
+                reduced->target = handle;
+            }
         }
     }
+
     /* ---------------------------------------------------------------------------------------------
      * Forbidden patterns of nodes with both edges to nonterminal in canonical RexBDDs
      * --------------------------------------------------------------------------------------------*/
@@ -464,46 +423,85 @@ void rexdd_check_pattern(
                 && new_p->edge[1].target == new_p->edge[0].target) {
         ln = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[0].target));
         hn = new_p->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, new_p->edge[1].target));
-    
-        reduced->target = new_p->edge[0].target;
-        reduced->label.swapped = new_p->edge[0].label.swapped;
-        reduced->label.complemented = new_p->edge[0].label.complemented;
 
-        rexdd_sanity1(ln == hn, "low edge and high edge skip level error");
+        /*
+            Low and High edges to the same nonterminal node q with the same complement bit c and swapped
+            bit s
 
-        // pattern (a)
-        if (new_p->edge[0].label.rule == rexdd_rule_X 
-            && new_p->edge[1].label.rule == rexdd_rule_X
-            ) {
-            reduced->label.rule = rexdd_rule_X;
-        // pattern (g)
-        } else if (new_p->edge[0].label.rule == rexdd_rule_X
-            && ln > 1
-            && ((rexdd_is_EH(new_p->edge[1].label.rule) && (hn == 2))
-                || (rexdd_is_AH(new_p->edge[1].label.rule) && (hn>=3)))
-            ) {
+                1. High and Low edges with rule rexdd_rule_X (skip 0 or more nodes)
+                        The unpacked node can be represented by a long edge <X, s, c, q>;
+                2. Low edges with rule rexdd_rule_X (skip 0 or more nodes), High edge
+                   with rule rexdd_rule_EHt (skip 1 node) or rexdd_rule_AHt (skip more
+                   than 2 nodes)
+                        The unpacked node can be represented by a long edge <AHt, s, c, q>;
+                3. High edges with rule rexdd_rule_X (skip 0 or more nodes), Low edge
+                   with rule rexdd_rule_ELt (skip 1 node) or rexdd_rule_ALt (skip more
+                   than 2 nodes)
+                        The unpacked node can be represented by a long edge <ALt, s, c, q>;
+        */
+       if ((new_p->edge[0].label.complemented == new_p->edge[1].label.complemented)
+            && (new_p->edge[0].label.swapped == new_p->edge[1].label.swapped)
+            && new_p->edge[0].label.rule == rexdd_rule_X
+            && new_p->edge[1].label.rule == rexdd_rule_X) {
+            rexdd_set_edge(reduced,
+                    rexdd_rule_X,
+                    new_p->edge[0].label.complemented,
+                    new_p->edge[0].label.swapped,
+                    new_p->edge[0].target);
+
+        } else if ((new_p->edge[0].label.complemented == new_p->edge[1].label.complemented)
+                    && (new_p->edge[0].label.swapped == new_p->edge[1].label.swapped)
+                    && new_p->edge[0].label.rule == rexdd_rule_X
+                    && ((rexdd_is_EH(new_p->edge[1].label.rule) && hn==2)
+                        ||(rexdd_is_AH(new_p->edge[1].label.rule) && hn>2))) {
             if (rexdd_is_one(new_p->edge[1].label.rule)) {
-                reduced->label.rule = rexdd_rule_AH1;
+                rexdd_set_edge(reduced,
+                        rexdd_rule_AH1,
+                        new_p->edge[0].label.complemented,
+                        new_p->edge[0].label.swapped,
+                        new_p->edge[0].target);
             } else {
-                reduced->label.rule = rexdd_rule_AH0;
+                rexdd_set_edge(reduced,
+                        rexdd_rule_AH0,
+                        new_p->edge[0].label.complemented,
+                        new_p->edge[0].label.swapped,
+                        new_p->edge[0].target);
             }
-        // pattern (d)
-        } else if (new_p->edge[1].label.rule == rexdd_rule_X
-            && hn > 1
-            && ((rexdd_is_EL(new_p->edge[1].label.rule) && (hn == 2))
-                || (rexdd_is_AL(new_p->edge[1].label.rule) && (hn>=3)))
-            ) {
-            if (rexdd_is_one(new_p->edge[1].label.rule)) {
-                reduced->label.rule = rexdd_rule_AL1;
+
+        } else if ((new_p->edge[0].label.complemented == new_p->edge[1].label.complemented)
+                    && (new_p->edge[0].label.swapped == new_p->edge[1].label.swapped)
+                    && new_p->edge[1].label.rule == rexdd_rule_X
+                    && ((rexdd_is_EL(new_p->edge[0].label.rule) && ln==2)
+                        ||(rexdd_is_AL(new_p->edge[0].label.rule) && ln>2))) {
+            if (rexdd_is_one(new_p->edge[0].label.rule)) {
+                rexdd_set_edge(reduced,
+                        rexdd_rule_AL1,
+                        new_p->edge[0].label.complemented,
+                        new_p->edge[0].label.swapped,
+                        new_p->edge[0].target);
             } else {
-                reduced->label.rule = rexdd_rule_AL0;
+                rexdd_set_edge(reduced,
+                        rexdd_rule_AL0,
+                        new_p->edge[0].label.complemented,
+                        new_p->edge[0].label.swapped,
+                        new_p->edge[0].target);
             }
         } else {
-            reduced->target = handle;
-            // normalize for the reduced edge
-            rexdd_normalize_edge(new_p, reduced);
+            rexdd_normalize_node(new_p, reduced);
+
+            reduced->label.rule = rexdd_rule_X;
+
+            if (!rexdd_edges_are_equal(&(new_p->edge[0]), &(P->edge[0]))
+                || !rexdd_edges_are_equal(&(new_p->edge[1]), &(P->edge[1]))) {
+                rexdd_node_handle_t new_handle = rexdd_nodeman_get_handle(F->M, new_p);
+                new_handle = rexdd_insert_UT(F->UT, new_handle);
+                reduced->target = new_handle;
+            } else {
+                reduced->target = handle;
+            }
         }
     }
+    free(new_p);
 }
 
 /* ================================================================================================ */
@@ -706,7 +704,7 @@ void rexdd_reduce_edge(
     // avoid push up all for the AL or AH cases in merge part
     if (!rexdd_is_AL(l.rule) && !rexdd_is_AH(l.rule)) {
         printf("\nDoing check patterns\n");     // clean later
-        rexdd_check_pattern(F, handle, new_p, reduced);
+        rexdd_reduce_node(F, handle, new_p, reduced);
     }
 
     
@@ -724,13 +722,7 @@ void rexdd_reduce_edge(
     } else {
         printf("\nDoing merge edge...\n");      // clean later
         rexdd_merge_edge(F, m, n, l, reduced, out);
-        // if ((rexdd_get_packed_for_handle(F->M, out->target)->fourth32 & ((0x01ul << 29) - 1)) > n) {
-        //     rexdd_unpacked_node_t *temp = malloc(sizeof(rexdd_unique_table_t));
-        //     rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, out->target) ,temp);
-        //     rexdd_reduce_edge (F, n+1, l, *temp, out);
-        //     free(temp);
-        // }
-
+    
         // insert (into normalize)
         printf("\tDoing insert node into UT\n");    // clean later
         uint_fast64_t H = rexdd_insert_UT(F->UT, out->target & ((0x01ul << 49)-1));
@@ -769,65 +761,36 @@ bool rexdd_eval(
         if (m == 0){
             result = e->label.complemented ^ 0;
         } else {
-            if (!rexdd_is_terminal(e->target)) {
-                bool next = e->label.swapped ^ vars[m];
-                rexdd_edge_t *e_next = malloc(sizeof(rexdd_edge_t));
-                if (next) {
-                    rexdd_unpack_high_edge(rexdd_get_packed_for_handle(F->UT->M, e->target), &(e_next->label));
-                    e_next->target = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, e->target));
-                } else {
-                    rexdd_unpack_low_edge(rexdd_get_packed_for_handle(F->UT->M, e->target), &(e_next->label));
-                    e_next->target = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, e->target));
-                }
-                result = e->label.complemented ^ rexdd_eval(F, e_next, m-1, vars);
-                free(e_next);
+            bool next = e->label.swapped ^ vars[m];
+            rexdd_edge_t *e_next = malloc(sizeof(rexdd_edge_t));
+            if (next) {
+                rexdd_unpack_high_edge(rexdd_get_packed_for_handle(F->UT->M, e->target), &(e_next->label));
+                e_next->target = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, e->target));
             } else {
-                result = e->label.complemented ^ 0;
+                rexdd_unpack_low_edge(rexdd_get_packed_for_handle(F->UT->M, e->target), &(e_next->label));
+                e_next->target = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, e->target));
             }
-        }
+            result = e->label.complemented ^ rexdd_eval(F, e_next, m-1, vars);
+            free(e_next);
+    }
     } else {
-        if (e->label.rule == rexdd_rule_X) {
-            result = rexdd_eval(F, e, k, vars);
-        } else {
-
-            bool vars_and = 1, vars_or = 0;
-            for (uint32_t i=k+1; i<=m; i++) {
-                vars_and = vars_and & vars[i];
-                vars_or = vars_or | vars[i];
-            }
-
-            if (rexdd_is_EL(e->label.rule)) {
-                if (vars_and) {
+            if (e->label.rule == rexdd_rule_X) {
+                result = rexdd_eval(F, e, k, vars);
+            } else {
+                bool vars_and = 1, vars_or = 0;
+                for (uint32_t i=k+1; i<=m; i++) {
+                    vars_and = vars_and & vars[i];
+                    vars_or = vars_or | vars[i];
+                }
+                if ((rexdd_is_EL(e->label.rule) && vars_and)
+                    || (rexdd_is_AH(e->label.rule) && !vars_and)
+                    || (rexdd_is_AL(e->label.rule) && vars_or)
+                    || (rexdd_is_EH(e->label.rule) && !vars_or)) {
                     result = rexdd_eval(F, e, k, vars);
                 } else {
                     result = rexdd_is_one(e->label.rule);
                 }
             }
-            if (rexdd_is_AH(e->label.rule)) {
-                if (vars_and) {
-                    result = rexdd_is_one(e->label.rule);
-                } else {
-                    result = rexdd_eval(F, e, k, vars);
-                }
-            }
-
-            if (rexdd_is_AL(e->label.rule)) {
-                if (vars_or) {
-                    result = rexdd_eval(F, e, k, vars);
-                } else {
-                    result = rexdd_is_one(e->label.rule);
-                }
-            }
-            if (rexdd_is_EH(e->label.rule)) {
-                if (vars_or) {
-                    result = rexdd_is_one(e->label.rule);
-                } else {
-                    result = rexdd_eval(F, e, k, vars);
-                }
-            }
-            
-        }
-        
     }
 
     return result;
