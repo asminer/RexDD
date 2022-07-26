@@ -110,18 +110,18 @@ int main()
 
     n.level = Levels;
     n.edge[0].target = rexdd_make_terminal(0x06ul);
-    n.edge[0].label.rule = rexdd_rule_X;
+    n.edge[0].label.rule = rexdd_rule_EL0;
     n.edge[0].label.complemented = 1;
     n.edge[0].label.swapped = 0;
     n.edge[1].target = h_child;
     // n.edge[1].target = rexdd_make_terminal(0x06ul);
-    n.edge[1].label.rule = rexdd_rule_EL1;
+    n.edge[1].label.rule = rexdd_rule_X;
     n.edge[1].label.complemented = 0;
     n.edge[1].label.swapped = 0;
 
     rexdd_node_handle_t h = rexdd_nodeman_get_handle(F.M, &n);
     
-    rexdd_reduce_node(&F, h, &n, &e);
+    rexdd_reduce_node(&F, &n, &e);
 
     show_unpacked_node(n);
     printf("\nnode handle is: %llu\n", h);
