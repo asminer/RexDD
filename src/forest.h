@@ -96,6 +96,11 @@ void rexdd_free_forest(
  *  is only used to return the swap bit and the complement bit, which may be
  *  changed by the normalization.
  * 
+ *      If the node "*P" needs swap, the swap bit of edge "*out" will be
+ *      set to 1, the node "*P" will be swapped;
+ *      If the node "*P" needs complement, the complement bit of edge "*out"
+ *      will be set to 1, the node "*P" will be complemented.
+ * 
  *      @param  F       Rexdd Forest   NOT NEEDED NOW, BUT MAYBE IN THE FUTURE???
  *      @param  P       Desired unpacked node waiting for normalization
  *      @param  out     Normalized edge label will be written here
@@ -109,25 +114,29 @@ void rexdd_normalize_node(
 /**
  *  Reduce unpacked node "*P" by checking the forbidden patterns
  *  of nodes with both edges to terminal 0 (terminal patterns)
- *  and with at most one edge to terminal 0 *  (nonterminal patterns),
- *  with the original incoming edge
- *  swap bit and complement bit stored in the rexdd_edge *  reduced
+ *  and with at most one edge to terminal 0 *  (nonterminal patterns).
+ *  Edge "*reduced" can not be null, it will be written the long edge 
+ *  that represent unpacked node "*P".
  * 
- *      If the unpacked node can be represented by long edge,
- *      eliminate this node and store the long edge in rexdd_edge
- *      reduced; else store a normalized edge with rule rexdd_rule_X,
- *      and target to this node handle in the unique table in 
- *      the rexdd_edge reduced.
+ *      If the unpacked node "*P" is a pattern node, the long edge
+ *      written into "*reduced" will target to one child of node "*P"
+ *      (depends on the different patterns), and store the corresponding
+ *      rule, swap bit, complement bit;
+ * 
+ *      If the unpacked node "*P" is not a pattern node, it will be
+ *      normalized by calling rexdd_normalize_node function, which
+ *      can set the swap bit and complement bit of edge "*reduced".
+ *      Then node "*P" will get a node handle in the unique table by
+ *      calling rexdd_nodeman_get_handle and rexdd_insert_UT to check
+ *      if this node is duplicated and insert it into the unique table.
  * 
  *      @param  F       Rexdd Forest
- *      @param  handle  Handle of the unpacked node
  *      @param  P       The unpacked node waiting for reduction
  *      @param  reduced Reduced edge will be written here
  * 
  */
 void rexdd_reduce_node(
         rexdd_forest_t          *F,
-        rexdd_node_handle_t     handle,
         rexdd_unpacked_node_t   *P, 
         rexdd_edge_t            *reduced);
 
