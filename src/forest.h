@@ -142,22 +142,35 @@ void rexdd_reduce_node(
 
 
 /**
- *  Merge the incoming edge target to the node with the reduced
- *  edge.
- *
- *      The reduced edge stored the long edge that represent the
- *      node after calling rexdd_reduce_node.
+ *  Merge the incoming edge with label "l", which is respect of
+ *  level m, target to the node at level n; edge "*reduced"
+ *  represents the node at level n after calling rexdd_reduce_node
+ *  function. Edge "*out" can not be null, it will be written the
+ *  merged edge.
  * 
- *  If it is mergeable, the merged edge will be stored in the
- *  rexdd_edge out. If it is not mergeable, there will be a new
- *  node created upon the target node, check and insert it
- *  to the unique table by calling rexdd_normalize_node; then
- *  the rexdd_edge out will store an edge with rule rexdd_rule_X,
- *  swapped bit 0, complement bit 0 and target to this new node
+ *      If it is compatible merge, the merged edge written
+ *      into "*out" will target to the target node of "*reduced",
+ *      and store the corresponding rule, swap bit, complement bit;
+ * 
+ *      (Push up one)
+ *      If it is incompatible merge, the incoming edge label "l" rule
+ *      is not rexdd_rule_AL or rexdd_rule_AH, the merged edge written
+ *      into "*out" will target to a new node created at level n+1, and
+ *      store the corresponding rule, swap bit, complement bit; the node
+ *      at level n will be one child of the new node with corresponding
+ *      edges. The new node will be normalized, then check and insert
+ *      into the unique table by calling rexdd_insert_UT function.
+ *
+ *      (Push up all)
+ *      If it is incompatible merge, the incoming edge label "l" rule
+ *      is rexdd_rule_AL or rexdd_rule_AH, there will be (m-n) or (m-n+1)
+ *      new nodes created from level n+1 to m. The merged edge written
+ *      into "*out" will target to the new node at level m with rule
+ *      rexdd_rule_X and corresponding swap bit, complement bit.
  * 
  *      @param  F       RexDD Forest
  *      @param  m       The represent level of the incoming edge
- *      @param  n       The target node level of the reduced edge
+ *      @param  n       The target node level of the incoming edge
  *      @param  l       The incoming edge label
  *      @param  reduced The reduced edge
  *      @param  out     Merged edge will be written here
@@ -173,14 +186,12 @@ void rexdd_merge_edge(
 
 
 /**
- *  Reduce the desired edge to its target node. It will first reduce
- *  its target node by calling rexdd_reduce_node, then merge the edge
- *  with the reduced long edge, finally check and insert node to the
- *  unique table
+ *  Reduce the incoming edge with label "l", which is respect of
+ *  level m, target to the unpacked node "p"; edge "*out" can not
+ *  be null, it will be written the reduced edge.
  * 
  *      @param  F       RexDD Forest
  *      @param  m       The represent level of the incoming edge
- *      @param  n       The target node level of the reduced edge
  *      @param  l       Desired edge labels; might not be possible
  *      @param  p       Desired target node, unpacked
  *      @param  out     Reduced edge will be written here.
@@ -188,7 +199,6 @@ void rexdd_merge_edge(
 void rexdd_reduce_edge(
         rexdd_forest_t          *F,
         uint_fast32_t           m,
-        uint_fast32_t           n,
         rexdd_edge_label_t      l,
         rexdd_unpacked_node_t   p,
         rexdd_edge_t            *out);
