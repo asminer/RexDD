@@ -541,14 +541,14 @@ void rexdd_merge_edge(
      *         A new node upon the target node level of "*reduced" will be created, its High edge
      *         to the terminal 0 while Low edge to the tartget node of "*reduced".
      *
-     *      The new node level is set to n.
+     *      The new node level is set to n+1.
      * --------------------------------------------------------------------------------------------*/
     } else if (((l.rule == rexdd_rule_X) && (incoming_skip >= 1) && (reduced->label.rule != rexdd_rule_X))){
         // push up one 
         rexdd_unpacked_node_t new_p;
         new_p.edge[0] = *reduced;
         new_p.edge[1] = *reduced;
-        new_p.level = n;
+        new_p.level = n+1;
         rexdd_normalize_node(&new_p, out);
         rexdd_node_handle_t new_handle = rexdd_nodeman_get_handle(F->M, &new_p);
         new_handle = rexdd_insert_UT(F->UT, new_handle);
@@ -562,11 +562,11 @@ void rexdd_merge_edge(
         new_p.edge[0].label.complemented = rexdd_is_one(l.rule);
         new_p.edge[0].label.swapped = 0;
         new_p.edge[1] = *reduced;
-        new_p.level = n;
+        new_p.level = n+1;
         rexdd_normalize_node(&new_p, out);
         rexdd_node_handle_t new_handle = rexdd_nodeman_get_handle(F->M, &new_p);
         new_handle = rexdd_insert_UT(F->UT, new_handle);
-        if (incoming_skip > 0) {
+        if (incoming_skip > 1) {
             out->label.rule = l.rule;
         } else {
             out->label.rule = rexdd_rule_X;
@@ -580,11 +580,11 @@ void rexdd_merge_edge(
         new_p.edge[1].label.rule = rexdd_rule_X;
         new_p.edge[1].label.complemented = rexdd_is_one(l.rule);
         new_p.edge[1].label.swapped = 0;
-        new_p.level = n;
+        new_p.level = n+1;
         rexdd_normalize_node(&new_p, out);
         rexdd_node_handle_t new_handle = rexdd_nodeman_get_handle(F->M, &new_p);
         new_handle = rexdd_insert_UT(F->UT, new_handle);
-        if (incoming_skip > 0) {
+        if (incoming_skip > 1) {
             out->label.rule = l.rule;
         } else {
             out->label.rule = rexdd_rule_X;
@@ -639,6 +639,7 @@ void rexdd_reduce_edge(
         rexdd_edge_t            *out)
 {
     rexdd_sanity1(m > p.level, "Bad incoming edge root level");
+    rexdd_sanity1(out, "null reduced edge");
 
     rexdd_edge_t reduced;
 

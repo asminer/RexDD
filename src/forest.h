@@ -155,7 +155,7 @@ void rexdd_reduce_node(
  *      (Push up one)
  *      If it is incompatible merge, the incoming edge label "l" rule
  *      is not rexdd_rule_AL or rexdd_rule_AH, the merged edge written
- *      into "*out" will target to a new node created at level n, and
+ *      into "*out" will target to a new node created at level n+1, and
  *      store the corresponding rule, swap bit, complement bit; the node
  *      q will be one child of the new node with corresponding edges.
  *      The new node will be normalized, then check and insert
