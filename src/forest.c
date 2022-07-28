@@ -594,9 +594,11 @@ void rexdd_merge_edge(
         ||
         ((l.rule == rexdd_rule_X) && (incoming_skip >= 1) && (reduced->label.rule == rexdd_rule_X))
         ||
-        (rexdd_is_EL(l.rule) && rexdd_is_EL(reduced->label.rule))
+        (rexdd_is_EL(l.rule) && rexdd_is_EL(reduced->label.rule)
+            && rexdd_is_one(l.rule) == rexdd_is_one(reduced->label.rule))
         ||
-        (rexdd_is_EH(l.rule) && rexdd_is_EH(reduced->label.rule))) {
+        (rexdd_is_EH(l.rule) && rexdd_is_EH(reduced->label.rule)
+            && rexdd_is_one(l.rule) == rexdd_is_one(reduced->label.rule))) {
         rexdd_set_edge(out,
                 reduced->label.rule,
                 reduced->label.complemented,
