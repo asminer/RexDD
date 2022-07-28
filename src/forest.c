@@ -229,9 +229,7 @@ void rexdd_reduce_node(
                         (P->edge[0].label.complemented == P->edge[1].label.complemented
                             && (rexdd_is_EH(P->edge[1].label.rule)
                                 || 
-                                (rexdd_is_AH(P->edge[1].label.rule) && hn>2)))
-                        )
-                    ) {
+                                (rexdd_is_AH(P->edge[1].label.rule) && hn>2))))) {
 
                 if (!P->edge[0].label.complemented) {
                     rexdd_set_edge(reduced,
@@ -264,9 +262,7 @@ void rexdd_reduce_node(
                         (P->edge[0].label.complemented == P->edge[1].label.complemented
                             && (rexdd_is_EL(P->edge[0].label.rule)
                                 || 
-                                (rexdd_is_AL(P->edge[0].label.rule) && ln>2)))
-                        )
-                    ) {
+                                (rexdd_is_AL(P->edge[0].label.rule) && ln>2))))) {
 
             if (!P->edge[1].label.complemented) {
                 rexdd_set_edge(reduced,
@@ -300,10 +296,42 @@ void rexdd_reduce_node(
                 
                 No matter it changed or not, we can call rexdd_insert_UT to check if it is duplicated,
                 then insert it to the unique table.
+
+                If swapped new_p is a pattern node, then normalize new_p without swapping to ensure
+                new_p[0] complement bit 0.
         */
         } else {
-            // rexdd_normalize_node will set edge "*reduced" swap bit and complement bit
-            rexdd_normalize_node(P, reduced);
+            if (P->edge[0].label.rule == rexdd_rule_X
+                && ((P->edge[0].label.complemented != P->edge[1].label.complemented
+                            && rexdd_is_EH(P->edge[1].label.rule))
+                        ||
+                        (P->edge[0].label.complemented == P->edge[1].label.complemented
+                            && (rexdd_is_EL(P->edge[1].label.rule)
+                                || 
+                                (rexdd_is_AL(P->edge[1].label.rule) && ln>2))))) {
+                if (P->edge[0].label.complemented) {
+                    reduced->label.complemented = 1;
+                    rexdd_edge_com(&(P->edge[0]));
+                    rexdd_edge_com(&(P->edge[1]));
+                }
+            } else if (P->edge[1].label.rule == rexdd_rule_X
+                        && ((P->edge[0].label.complemented != P->edge[1].label.complemented
+                                    && rexdd_is_EL(P->edge[0].label.rule))
+                                ||
+                                (P->edge[0].label.complemented == P->edge[1].label.complemented
+                                    && (rexdd_is_EH(P->edge[0].label.rule)
+                                        || 
+                                        (rexdd_is_AH(P->edge[0].label.rule) && ln>2))))) {
+                if (P->edge[0].label.complemented) {
+                    reduced->label.complemented = 1;
+                    rexdd_edge_com(&(P->edge[0]));
+                    rexdd_edge_com(&(P->edge[1]));
+                }
+            } else {
+                // rexdd_normalize_node will set edge "*reduced" swap bit and complement bit
+                rexdd_normalize_node(P, reduced);
+            }
+            
             reduced->label.rule = rexdd_rule_X;
             rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, P);
             handle = rexdd_insert_UT(F->UT, handle);
@@ -331,7 +359,8 @@ void rexdd_reduce_node(
        if (P->edge[0].label.rule == rexdd_rule_X
             && (((P->edge[1].label.rule == rexdd_rule_X) && hn==1)
                 ||
-                (rexdd_is_EL(P->edge[1].label.rule) && hn>1))) {
+                (rexdd_is_EL(P->edge[1].label.rule) && hn>1
+                && rexdd_is_one(P->edge[1].label.rule) == P->edge[0].label.complemented))) {
             if (P->edge[0].label.complemented) {
                 rexdd_set_edge(reduced,
                         rexdd_rule_EL1,
@@ -346,7 +375,18 @@ void rexdd_reduce_node(
                         P->edge[1].target);
             }
         } else {
-            rexdd_normalize_node(P, reduced);
+            if (P->edge[0].label.rule == rexdd_rule_X
+                && rexdd_is_EH(P->edge[1].label.rule) && hn>1
+                && rexdd_is_one(P->edge[1].label.rule) == P->edge[0].label.complemented) {
+                if (P->edge[0].label.complemented) {
+                    reduced->label.complemented = 1;
+                    rexdd_edge_com(&(P->edge[0]));
+                    rexdd_edge_com(&(P->edge[1]));
+                }
+            } else {
+                rexdd_normalize_node(P, reduced);
+            }
+
             reduced->label.rule = rexdd_rule_X;
             rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, P);
             handle = rexdd_insert_UT(F->UT, handle);
@@ -373,7 +413,8 @@ void rexdd_reduce_node(
         if (P->edge[1].label.rule == rexdd_rule_X
             && (((P->edge[0].label.rule == rexdd_rule_X) && ln==1)
                 ||
-                (rexdd_is_EH(P->edge[0].label.rule) && ln>1))) {
+                (rexdd_is_EH(P->edge[0].label.rule) && ln>1
+                && rexdd_is_one(P->edge[0].label.rule) == P->edge[1].label.complemented))) {
             if (P->edge[1].label.complemented) {
                 rexdd_set_edge(reduced,
                         rexdd_rule_EH1,
@@ -388,7 +429,17 @@ void rexdd_reduce_node(
                         P->edge[0].target);
             }
         } else {
-            rexdd_normalize_node(P, reduced);
+            if (P->edge[1].label.rule == rexdd_rule_X
+                        && rexdd_is_EL(P->edge[0].label.rule) && ln>1
+                        && rexdd_is_one(P->edge[0].label.rule) == P->edge[1].label.complemented) {
+                if (P->edge[0].label.complemented) {
+                    reduced->label.complemented = 1;
+                    rexdd_edge_com(&(P->edge[0]));
+                    rexdd_edge_com(&(P->edge[1]));
+                }
+            } else {
+                rexdd_normalize_node(P, reduced);
+            }
             reduced->label.rule = rexdd_rule_X;
             rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, P);
             handle = rexdd_insert_UT(F->UT, handle);
@@ -433,7 +484,8 @@ void rexdd_reduce_node(
                     && (P->edge[0].label.swapped == P->edge[1].label.swapped)
                     && P->edge[0].label.rule == rexdd_rule_X
                     && ((rexdd_is_EH(P->edge[1].label.rule) && hn==2)
-                        ||(rexdd_is_AH(P->edge[1].label.rule) && hn>2))) {
+                        ||(rexdd_is_AH(P->edge[1].label.rule) && hn>2))
+            ) {
             if (rexdd_is_one(P->edge[1].label.rule)) {
                 rexdd_set_edge(reduced,
                         rexdd_rule_AH1,
@@ -467,7 +519,29 @@ void rexdd_reduce_node(
                         P->edge[0].target);
             }
         } else {
-            rexdd_normalize_node(P, reduced);
+            if ((P->edge[0].label.complemented == P->edge[1].label.complemented)
+                && (P->edge[0].label.swapped == P->edge[1].label.swapped)
+                && P->edge[0].label.rule == rexdd_rule_X
+                && ((rexdd_is_EL(P->edge[1].label.rule) && hn==2)
+                    ||(rexdd_is_AL(P->edge[1].label.rule) && hn>2))) {
+                if (P->edge[0].label.complemented) {
+                    reduced->label.complemented = 1;
+                    rexdd_edge_com(&(P->edge[0]));
+                    rexdd_edge_com(&(P->edge[1]));
+                }
+            } else if ((P->edge[0].label.complemented == P->edge[1].label.complemented)
+                && (P->edge[0].label.swapped == P->edge[1].label.swapped)
+                && P->edge[1].label.rule == rexdd_rule_X
+                && ((rexdd_is_EH(P->edge[0].label.rule) && ln==2)
+                    ||(rexdd_is_AH(P->edge[0].label.rule) && ln>2))) {
+                if (P->edge[0].label.complemented) {
+                    reduced->label.complemented = 1;
+                    rexdd_edge_com(&(P->edge[0]));
+                    rexdd_edge_com(&(P->edge[1]));
+                }
+            } else {
+                rexdd_normalize_node(P, reduced);
+            }
             reduced->label.rule = rexdd_rule_X;
             rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, P);
             handle = rexdd_insert_UT(F->UT, handle);
@@ -640,6 +714,11 @@ void rexdd_reduce_edge(
 {
     rexdd_sanity1(m > p.level, "Bad incoming edge root level");
     rexdd_sanity1(out, "null reduced edge");
+
+    if (l.swapped == 1) {
+        rexdd_node_sw(&p);
+        l.swapped = 0;
+    }
 
     rexdd_edge_t reduced;
 
