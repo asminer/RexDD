@@ -7,58 +7,32 @@
 
 #define CHECK_PATTERN
 
-void commaprint(int width, uint_fast64_t a)
+void show_unpacked_node(rexdd_forest_t *F, rexdd_unpacked_node_t n)
 {
-    char buffer[22];
-    snprintf(buffer, 22, "%lu", (unsigned long) a);
-    buffer[21] = 0;
-    unsigned digs = strlen(buffer);
+    char buffer[20];
 
-    int i;
-    for (i=digs + (digs-1)/3; i < width; i++) {
-        fputc(' ', stdout);
-    }
-    unsigned comma = digs % 3;
-    if (0==comma) comma += 3;
-    for (i=0; buffer[i]; i++) {
-        if (0==comma) {
-            fputc(',', stdout);
-            comma = 2;
-        } else {
-            --comma;
-        }
-        fputc(buffer[i], stdout);
+    printf("\nLevel %d node's low \n", n.level);
+    rexdd_snprint_edge(buffer, 20, n.edge[0]);
+    printf("\t%s\n", buffer);
+    if (!rexdd_is_terminal(n.edge[0].target)) {
+        printf("---------Low child-------------\n");
+        rexdd_unpacked_node_t nodel;
+        rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M,n.edge[0].target), &nodel);
+        show_unpacked_node(F, nodel);
+        printf("-------------------------------\n");
     }
 
-    for (i=digs + (digs-1)/3; i < -width; i++) {
-        fputc(' ', stdout);
-    }
-}
+    printf("\nLevel %d node's high \n", n.level);
+    rexdd_snprint_edge(buffer, 20, n.edge[1]);
+    printf("\t%s\n", buffer);
+    if (!rexdd_is_terminal(n.edge[1].target)) {
+        printf("---------High child-------------\n");
+        rexdd_unpacked_node_t nodeh;
+        rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M,n.edge[1].target), &nodeh);
+        show_unpacked_node(F, nodeh);
+        printf("-------------------------------\n");
 
-void show_edge(rexdd_edge_t e)
-{
-    if (!rexdd_is_terminal(e.target)) {
-        commaprint(13, e.target);
-        printf(" edge's target (nonterminal)\n");
-    }else {
-        commaprint(13, rexdd_terminal_value(e.target));
-        printf(" edge's target (terminal)\n");
     }
-    commaprint(13,e.label.rule);
-    printf(" edge rule\n");
-    commaprint(13, e.label.complemented);
-    printf(" edge complement bit\n");
-    commaprint(13, e.label.swapped);
-    printf(" edge swap bit\n");
-}
-
-void show_unpacked_node(rexdd_unpacked_node_t n)
-{
-    printf("node level is %d\n", n.level);
-    printf("\nnode's low \n");
-    show_edge(n.edge[0]);
-    printf("\nnode's high \n");
-    show_edge(n.edge[1]);
 
 }
 
@@ -121,12 +95,23 @@ int main()
 
     rexdd_node_handle_t h = rexdd_nodeman_get_handle(F.M, &n);
     
-    rexdd_reduce_node(&F, &n, &e);
-
-    show_unpacked_node(n);
+    show_unpacked_node(&F, n);
     printf("\nnode handle is: %llu\n", h);
+    
+    rexdd_reduce_node(&F, &n, &e);
     printf("\nreduced edge: \n");
-    show_edge(e);
+    char buffer[20];
+    rexdd_snprint_edge(buffer, 20, e);
+    printf("\t%s\n", buffer);
+    if (e.target != h) {
+        if (!rexdd_is_terminal(e.target)) {
+            printf("---------Normalized node-------\n");
+            rexdd_unpacked_node_t node;
+            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.M,e.target), &node);
+            show_unpacked_node(&F, node);
+            printf("-------------------------------\n");
+        }
+    }
 
     printf("\n=================Checking eval function...===================\n");
 
