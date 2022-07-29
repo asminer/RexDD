@@ -7,20 +7,15 @@
 
 // TBD - should this be private, in unpacked.c?
 static const char* rexdd_rule_name[] = {
-    "N",
-    "X",
-    "L0",
-    "L1",
-    "H0",
-    "H1",
     "EL0",
-    "EL1",
-    "EH0",
-    "EH1",
     "AL0",
+    "EL1",
     "AL1",
+    "EH0",
     "AH0",
+    "EH1",
     "AH1",
+    "X",
     "?",
     "?",
 //
@@ -63,8 +58,8 @@ void rexdd_snprint_edge(char* buffer, unsigned len, rexdd_edge_t e)
         // Terminal.
         snprintf(buffer, len, "<%s,%c,%c,T%lx>",
             label,
-            e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
+            e.label.complemented ? 'c' : '_',
             (unsigned long) rexdd_terminal_value(e.target)
         );
     } else {
@@ -72,8 +67,8 @@ void rexdd_snprint_edge(char* buffer, unsigned len, rexdd_edge_t e)
         rexdd_node_handle_t et = rexdd_nonterminal_handle(e.target);
         snprintf(buffer, len, "<%s,%c,%c,N%x:%06x>",
             label,
-            e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
+            e.label.complemented ? 'c' : '_',
             (uint32_t) (et >> 24),
             (uint32_t) (et & low24)
         );
@@ -100,8 +95,8 @@ void rexdd_fprint_edge(FILE* fout, rexdd_edge_t e)
         // Terminal.
         fprintf(fout, "<%s,%c,%c,T%lx>",
             label,
-            e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
+            e.label.complemented ? 'c' : '_',
             (unsigned long) rexdd_terminal_value(e.target)
         );
     } else {
@@ -109,8 +104,8 @@ void rexdd_fprint_edge(FILE* fout, rexdd_edge_t e)
         rexdd_node_handle_t et = rexdd_nonterminal_handle(e.target);
         fprintf(fout, "<%s,%c,%c,N%x:%06x>",
             label,
-            e.label.complemented ? 'c' : '_',
             e.label.swapped ? 's' : '_',
+            e.label.complemented ? 'c' : '_',
             (uint32_t) (et >> 24),
             (uint32_t) (et & low24)
         );
