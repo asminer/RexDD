@@ -671,25 +671,45 @@ void rexdd_merge_edge(
      *
      *      1. Incoming edge rule is rexdd_rule_ALt, the edge "*reduced" <rho, s, c, q> rule is
      *         rexdd_rule_X. There will be (m - p.level) new nodes p_i created from level p.level+1
-     *         to m (1 <= i <= m - p.level-1). Node p_1 Low edge to terminal 0 with rule rexdd_rule_X,
+     *         to m (1 <= i <= m - p.level). Node p_1 Low edge to terminal 0 with rule rexdd_rule_X,
      *         swap bit 0, complement bit t; while High edge to node q with rule rexdd_rule_X, swap
-     *         bit s, complement bit c. Node p_k Low edge to node p_(k-1) with rule rexdd_rule_X,
-     *         swap bit 0, complement bit 0; while High edge to node q with rule rexdd_rule_X, swap
-     *         bit s, complement bit c (k>1).
+     *         bit s, complement bit c. (p.level = n)
+     *              
+     *              Node p_k at level n+k Low edge to node p_(k-1) with rule rexdd_rule_X, swap bit 0,
+     *              complement bit 0; while High edge to node q with rule rexdd_rule_X, swap bit s,
+     *              complement bit c (k>1).
      * 
      *      2. Incoming edge rule is rexdd_rule_AHt, the edge "*reduced" <rho, s, c, q> rule is
      *         rexdd_rule_X. There will be (m - p.level) new nodes p_i created from level p.level+1
-     *         to m (1 <= i <= m - p.level-1). Node p_1 High edge to terminal 0 with rule rexdd_rule_X,
+     *         to m (1 <= i <= m - p.level). Node p_1 High edge to terminal 0 with rule rexdd_rule_X,
      *         swap bit 0, complement bit t; while Low edge to node q with rule rexdd_rule_X, swap
-     *         bit s, complement bit c. Node p_k High edge to node p_(k-1) with rule rexdd_rule_X,
-     *         swap bit 0, complement bit 0; while Low edge to node q with rule rexdd_rule_X, swap
-     *         bit s, complement bit c (k>1).
+     *         bit s, complement bit c. (p.level = n)
      * 
-     *      3. Incoming edge rule is rexdd_rule_AL, the edge "*reduced" <rho, s, c, q> rule is not
-     *         rexdd_rule_X.
+     *              Node p_k at level n+k High edge to node p_(k-1) with rule rexdd_rule_X, swap bit 0,
+     *              complement bit 0; while Low edge to node q with rule rexdd_rule_X, swap bit s,
+     *              complement bit c (k>1).
      * 
-     *      4. Incoming edge rule is rexdd_rule_AH, the edge "*reduced" <rho, s, c, q> rule is not
-     *         rexdd_rule_X.
+     *      3. Incoming edge rule is rexdd_rule_ALt, the edge "*reduced" <rho, s, c, q> rule is not
+     *         rexdd_rule_X. There will be (m - p.level + 1) new nodes p_i created from level p.level+1
+     *         to m (1 <= i <= m - p.level + 1). Node p_1 and p_2 are both at level p.level+1. p_1 with
+     *         both child edges same as the edge "*reduced" <rho, s, c, q>; while p_2 Low edge to terminal
+     *         0 with rule rexdd_rule_X, swap bit 0 and complement bit t, High edge same as the edge
+     *         "*reduced" <rho, s, c, q>. (p.level = n)
+     * 
+     *              Node p_k at level n+k-1 Low edge to node p_(k-1) with rule rexdd_rule_X, swap bit 0,
+     *              complement bit 0; while High edge to node p_1 with rule rexdd_rule_X, swap bit 0,
+     *              complement bit 0 (k>2).
+     * 
+     *      4. Incoming edge rule is rexdd_rule_AHt, the edge "*reduced" <rho, s, c, q> rule is not
+     *         rexdd_rule_X. There will be (m - p.level + 1) new nodes p_i created from level p.level+1
+     *         to m (1 <= i <= m - p.level + 1). Node p_1 and p_2 are both at level p.level+1. p_1 with
+     *         both child edges same as the edge "*reduced" <rho, s, c, q>; while p_2 High edge to terminal
+     *         0 with rule rexdd_rule_X, swap bit 0 and complement bit t, Low edge same as the edge
+     *         "*reduced" <rho, s, c, q>. (p.level = n)
+     * 
+     *              Node p_k at level n+k-1 High edge to node p_(k-1) with rule rexdd_rule_X, swap bit 0,
+     *              complement bit 0; while Low edge to node p_1 with rule rexdd_rule_X, swap bit 0,
+     *              complement bit 0 (k>2).
      *      
      *
      *      The new node level is set to n.
