@@ -73,7 +73,7 @@ typedef struct rexdd_forest_s   rexdd_forest_t;
 
 /**
  *  Initialize a forest.
- * 
+ *
  *      @param  F       Forest to initialize.
  *      @param  s       Pointer to forest settings to use.
  */
@@ -83,7 +83,7 @@ void rexdd_init_forest(
 
 /**
  *  Free all memory used by a forest.
- * 
+ *
  *      @param  F           Pointer to forest struct
  */
 void rexdd_free_forest(
@@ -95,16 +95,16 @@ void rexdd_free_forest(
  *  edge rule (ignored), a swap bit, a complement bit, and a target (ignored)
  *  is only used to return the swap bit and the complement bit, which may be
  *  changed by the normalization.
- * 
+ *
  *      If the node "*P" needs swap, the swap bit of edge "*out" will be
  *      set to 1, the node "*P" will be swapped;
  *      If the node "*P" needs complement, the complement bit of edge "*out"
  *      will be set to 1, the node "*P" will be complemented.
- * 
+ *
  *      @param  F       Rexdd Forest   NOT NEEDED NOW, BUT MAYBE IN THE FUTURE???
  *      @param  P       Desired unpacked node waiting for normalization
  *      @param  out     Normalized edge label will be written here
- * 
+ *
  */
 void rexdd_normalize_node(
         rexdd_unpacked_node_t   *P,
@@ -115,29 +115,29 @@ void rexdd_normalize_node(
  *  Reduce unpacked node "*P" by checking the forbidden patterns
  *  of nodes with both edges to terminal 0 (terminal patterns)
  *  and with at most one edge to terminal 0 *  (nonterminal patterns).
- *  Edge "*reduced" can not be null, it will be written the long edge 
+ *  Edge "*reduced" can not be null, it will be written the long edge
  *  that represent unpacked node "*P".
- * 
+ *
  *      If the unpacked node "*P" is a pattern node, the long edge
  *      written into "*reduced" will target to one child of node "*P"
  *      (depends on the different patterns), and store the corresponding
  *      rule, swap bit, complement bit;
- * 
+ *
  *      If the unpacked node "*P" is not a pattern node, it will be
  *      normalized by calling rexdd_normalize_node function, which
  *      can set the swap bit and complement bit of edge "*reduced".
  *      Then node "*P" will get a node handle in the unique table by
  *      calling rexdd_nodeman_get_handle and rexdd_insert_UT to check
  *      if this node is duplicated and insert it into the unique table.
- * 
+ *
  *      @param  F       Rexdd Forest
  *      @param  P       The unpacked node waiting for reduction
  *      @param  reduced Reduced edge will be written here
- * 
+ *
  */
 void rexdd_reduce_node(
         rexdd_forest_t          *F,
-        rexdd_unpacked_node_t   *P, 
+        rexdd_unpacked_node_t   *P,
         rexdd_edge_t            *reduced);
 
 
@@ -147,11 +147,11 @@ void rexdd_reduce_node(
  *  represents the node at level n after calling rexdd_reduce_node
  *  function. Edge "*out" can not be null, it will be written the
  *  merged edge.
- * 
+ *
  *      If it is compatible merge, the merged edge written
  *      into "*out" will target to the target node of "*reduced",
  *      and store the corresponding rule, swap bit, complement bit;
- * 
+ *
  *      (Push up one)
  *      If it is incompatible merge, the incoming edge label "l" rule
  *      is not rexdd_rule_AL or rexdd_rule_AH, the merged edge written
@@ -168,14 +168,14 @@ void rexdd_reduce_node(
  *      The merged edge written into "*out" will target to the new node
  *      at level m with rule rexdd_rule_X and corresponding swap bit,
  *      complement bit.
- * 
+ *
  *      @param  F       RexDD Forest
  *      @param  m       The represent level of the incoming edge
  *      @param  n       The target node level of the incoming edge
  *      @param  l       The incoming edge label
  *      @param  reduced The reduced edge
  *      @param  out     Merged edge will be written here
- * 
+ *
  */
 void rexdd_merge_edge(
         rexdd_forest_t          *F,
@@ -190,7 +190,7 @@ void rexdd_merge_edge(
  *  Reduce the incoming edge with label "l", which is respect of
  *  level m, target to the unpacked node "p"; edge "*out" can not
  *  be null, it will be written the reduced edge.
- * 
+ *
  *      @param  F       RexDD Forest
  *      @param  m       The represent level of the incoming edge
  *      @param  l       Desired edge labels; might not be possible
@@ -213,7 +213,7 @@ void rexdd_reduce_edge(
  *      @param  l       The incoming edge label
  *      @param  reduced The reduced edge
  *      @param  out     The result edge will be written here
- * 
+ *
  */
 // void rexdd_puo_edge(
 //         uint32_t                n,
@@ -225,10 +225,10 @@ void rexdd_reduce_edge(
 
 /**
  *  Evaluate the function
- * 
+ *
  *  Evaluate the function f^m_<rexdd_edge>(vars[]) by the edge with
  *  respect of level m on vars.
- * 
+ *
  *      For example, edge <EL0, 0, 1, P> of level m has rule EL0,
  *      swapped bit 0, complement bit 0 and target node P. Then
  *      condition
@@ -236,17 +236,17 @@ void rexdd_reduce_edge(
  *      must be met; More specifically, if this edge skips 1 node,
  *      m must be P.level + 1; if this edge skips k>1 nodes, m must
  *      be P.level + k.
- *      
+ *
  *      and
  *              vars[] must be indexed from 0 to L (vars[0] is not
  *              used); vars[i] is represented the variable of node
  *              at level i
- * 
+ *
  *      @param  F       Rexdd Forest
  *      @param  e       The edge with respect of level m
  *      @param  m       The represent level of the edge
  *      @param  vars    The given variables from nodes of each level
- * 
+ *
  */
 bool rexdd_eval(
         rexdd_forest_t          *F,
@@ -389,5 +389,22 @@ void rexdd_ITE(
         const rexdd_function_p h,
               rexdd_function_p result);
 
+
+/****************************************************************************
+ *
+ *  Create a dot file for the forest,
+ *  with the given root edge.
+ *      TBD: use forest roots instead
+ *      TBD: allow names to be attached to functions
+ *      TBD: only display root edges with names?
+ *      TBD: only display nodes reachable from a root edge?
+ *
+ *      @param  out         Output stream to write to
+ *      @param  F           Forest to use.
+ *
+ *      @param  e           Root edge, for now.
+ *
+ */
+void rexdd_export_dot(FILE* out, const rexdd_forest_t *F, rexdd_edge_t e);
 
 #endif

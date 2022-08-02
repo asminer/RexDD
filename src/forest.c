@@ -56,16 +56,16 @@ void rexdd_normalize_node(
         rexdd_edge_t            *out)
 {
     rexdd_sanity1(out, "null edge to the normalized node");
-    
+
     if (rexdd_is_terminal(P->edge[0].target))  P->edge[0].label.swapped = 0;
     if (rexdd_is_terminal(P->edge[1].target))  P->edge[1].label.swapped = 0;
     out->label.complemented = 0;
     out->label.swapped = 0;
     /* ---------------------------------------------------------------------------------------------
      * Firstly, consider of the addresses and swapped bits order for target unpacked node's children;
-     * 
+     *
      * Then take the different cases of child edges' complement bits;
-     * 
+     *
      * Finally, compare the edge rules order.
      * --------------------------------------------------------------------------------------------*/
 
@@ -147,21 +147,21 @@ void rexdd_reduce_node(
     uint_fast32_t ln, hn;
 
     /* -----------------------------------------------------------------------------------------
-        Constant edge: the edges <ELc, 0, c, 0>, <EHc, 0, c, 0>, <ALc, 0, c, 0>, <AHc, 0, c, 0> 
+        Constant edge: the edges <ELc, 0, c, 0>, <EHc, 0, c, 0>, <ALc, 0, c, 0>, <AHc, 0, c, 0>
         with any complement bit c can be uniformly represented by <X, 0, c, 0>
             After this, there are only two kinds of edges to terminal 0:
-                
+
                 1. edge rule rexdd_rule_X with any complement bit
                 2. edge rule not rexdd_rule_X with different complement bit,
                     for example <EL0, 0, 1, 0>
     */
     if (rexdd_is_terminal(P->edge[0].target)
-        && P->edge[0].label.rule != rexdd_rule_X 
+        && P->edge[0].label.rule != rexdd_rule_X
         && (rexdd_is_one(P->edge[0].label.rule) == P->edge[0].label.complemented)) {
             P->edge[0].label.rule = rexdd_rule_X;
         }
     if (rexdd_is_terminal(P->edge[1].target)
-        && P->edge[1].label.rule != rexdd_rule_X 
+        && P->edge[1].label.rule != rexdd_rule_X
         && (rexdd_is_one(P->edge[1].label.rule) == P->edge[1].label.complemented)) {
             P->edge[0].label.rule = rexdd_rule_X;
         }
@@ -173,23 +173,23 @@ void rexdd_reduce_node(
         ln = P->level;
         hn = P->level;
         rexdd_sanity1(ln == hn, "low edge and high edge skip level error");
-        
-        /* 
+
+        /*
             Meta-edge: Constant <C, 0, c, 0> = <X, 0, c, 0>
                 Both edges with rexdd_rule_X (skip 0 or more nodes) and same complement bits
         */
-        if (P->edge[0].label.rule == rexdd_rule_X 
+        if (P->edge[0].label.rule == rexdd_rule_X
             && P->edge[1].label.rule == rexdd_rule_X
             && ln >= 1
             && P->edge[0].label.complemented == P->edge[1].label.complemented) {
-            
+
             rexdd_set_edge(reduced,
                     rexdd_rule_X,
                     P->edge[0].label.complemented,
                     0,
                     P->edge[0].target);
 
-        /* 
+        /*
             Meta-edge: Bottom variable <B, 0, c, 0> = <ELc, 0, not_c, 0>
                 Both edges with rexdd_rule_X (skip 0 node) and different complement bits
         */
@@ -212,10 +212,10 @@ void rexdd_reduce_node(
                             P->edge[0].target);
                 }
 
-        /* 
+        /*
             Meta-edge: anD (conjunction) <D, 0, c, 0> = <ELc, 0, not_c, 0>
                 Low edge with rexdd_rule_X (skip 1 or more nodes) and High edge with not rexdd_rule_X
-                    
+
                     1. High edge with rule EL, different complement bit to Low edge;
                     2. High edge with rule EH or AH (skip 2 or more nodes), the same
                        complement bit with Low edge;
@@ -228,7 +228,7 @@ void rexdd_reduce_node(
                         ||
                         (P->edge[0].label.complemented == P->edge[1].label.complemented
                             && (rexdd_is_EH(P->edge[1].label.rule)
-                                || 
+                                ||
                                 (rexdd_is_AH(P->edge[1].label.rule) && hn>2))))) {
 
                 if (!P->edge[0].label.complemented) {
@@ -245,10 +245,10 @@ void rexdd_reduce_node(
                             P->edge[0].target);
                 }
 
-        /* 
+        /*
             Meta-edge: oR (disjunction) <R, 0, c, 0> = <EHnot_c, 0, c, 0>
                 High edge with rexdd_rule_X (skip 1 or more nodes) and Low edge with not rexdd_rule_X
-                    
+
                     1. Low edge with rule EH, different complement bit to High edge;
                     2. Low edge with rule EL or Al (skip 2 or more nodes), the same
                        complement bit with High edge;
@@ -261,7 +261,7 @@ void rexdd_reduce_node(
                         ||
                         (P->edge[0].label.complemented == P->edge[1].label.complemented
                             && (rexdd_is_EL(P->edge[0].label.rule)
-                                || 
+                                ||
                                 (rexdd_is_AL(P->edge[0].label.rule) && ln>2))))) {
 
             if (!P->edge[1].label.complemented) {
@@ -278,12 +278,12 @@ void rexdd_reduce_node(
                         P->edge[0].target);
             }
 
-        /* 
+        /*
             new_p can not be represented by a long edge, we need to normalize it
-                
+
                 1. The normalized unpacked node may be changed, the reason may be:
 
-                    a). Low or High edge is changed to meta-edge Constant, then it already 
+                    a). Low or High edge is changed to meta-edge Constant, then it already
                         met the canonicity (not need to do swap or complement);
                     b). Low or High edge is not changed to meta-edge Constant, but it needs
                         to do swap or complement for canonicity;
@@ -293,7 +293,7 @@ void rexdd_reduce_node(
                 2. The normalized unpacked node is not changed, because its Low or High edge
                    is not changed to meta-edge Constant and it already met the canonicity. So
                    the reduced edge can still target to the original handle.
-                
+
                 No matter it changed or not, we can call rexdd_insert_UT to check if it is duplicated,
                 then insert it to the unique table.
 
@@ -307,7 +307,7 @@ void rexdd_reduce_node(
                         ||
                         (P->edge[0].label.complemented == P->edge[1].label.complemented
                             && (rexdd_is_EL(P->edge[1].label.rule)
-                                || 
+                                ||
                                 (rexdd_is_AL(P->edge[1].label.rule) && ln>2))))) {
                 if (P->edge[0].label.complemented) {
                     reduced->label.complemented = 1;
@@ -320,7 +320,7 @@ void rexdd_reduce_node(
                                 ||
                                 (P->edge[0].label.complemented == P->edge[1].label.complemented
                                     && (rexdd_is_EH(P->edge[0].label.rule)
-                                        || 
+                                        ||
                                         (rexdd_is_AH(P->edge[0].label.rule) && ln>2))))) {
                 if (P->edge[0].label.complemented) {
                     reduced->label.complemented = 1;
@@ -331,7 +331,7 @@ void rexdd_reduce_node(
                 // rexdd_normalize_node will set edge "*reduced" swap bit and complement bit
                 rexdd_normalize_node(P, reduced);
             }
-            
+
             reduced->label.rule = rexdd_rule_X;
             rexdd_node_handle_t handle = rexdd_nodeman_get_handle(F->M, P);
             handle = rexdd_insert_UT(F->UT, handle);
@@ -348,12 +348,12 @@ void rexdd_reduce_node(
 
         /*
             Low edge to terminal 0 with rule rexdd_rule_X and complement bit t
-                
+
                 1. High edge to nonterminal ndoe q with rule rexdd_rule_X (skip 0 node),
                    swapped bit s and complement bit c;
                 2. High edge to nonterminal ndoe q with rule rexdd_rule_ELt (skip 1 or more node),
                    swapped bit s and complement bit c;
-            
+
             the unpacked node can be represented by a long edge <ELt, s, c, q>
         */
        if (P->edge[0].label.rule == rexdd_rule_X
@@ -402,12 +402,12 @@ void rexdd_reduce_node(
 
         /*
             High edge to terminal 0 with rule rexdd_rule_X and complement bit t
-                
+
                 1. Low edge to nonterminal ndoe q with rule rexdd_rule_X (skip 0 node),
                    swapped bit s and complement bit c;
                 2. Low edge to nonterminal ndoe q with rule rexdd_rule_ELt (skip 1 or more node),
                    swapped bit s and complement bit c;
-            
+
             the unpacked node can be represented by a long edge <ELt, s, c, q>
         */
         if (P->edge[1].label.rule == rexdd_rule_X
@@ -562,7 +562,7 @@ void rexdd_merge_edge(
 {
     rexdd_sanity1(reduced, "null reduced edge");
     rexdd_sanity1(out, "null merged edge");
-     
+
     uint32_t incoming_skip = m - n;
     uint32_t reduced_skip = n - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, reduced->target));
 
@@ -576,9 +576,9 @@ void rexdd_merge_edge(
      *         rexdd_rule_X;
      *      3. Incoming edge rule is rexdd_rule_EL, edge "*reduced" rule is rexdd_rule_EL;
      *      4. Incoming edge rule is rexdd_rule_EH, edge "*reduced" rule is rexdd_rule_EH.
-     * 
+     *
      *      The edge "*out" is set to "*reduced".
-     * 
+     *
      *      Incoming edge rule is not rexdd_rule_X, edge "*reduced" rule is rexdd_rule_X (skip 0 node).
      *      The edge "*out" rule is set to be the incoming edge rule, while the swap bit, complement bit,
      *      target are set to be edge "*reduced"'s.
@@ -620,7 +620,7 @@ void rexdd_merge_edge(
      *      The new node level is set to n+1.
      * --------------------------------------------------------------------------------------------*/
     } else if (((l.rule == rexdd_rule_X) && (incoming_skip >= 1) && (reduced->label.rule != rexdd_rule_X))){
-        // push up one 
+        // push up one
         rexdd_unpacked_node_t new_p;
         new_p.edge[0] = *reduced;
         new_p.edge[1] = *reduced;
@@ -631,7 +631,7 @@ void rexdd_merge_edge(
         out->label.rule = rexdd_rule_X;
         out->target = new_handle;
     } else if ((rexdd_is_EL(l.rule) && !rexdd_is_EL(reduced->label.rule))) {
-        // push up one 
+        // push up one
         rexdd_unpacked_node_t new_p;
         new_p.edge[0].target = rexdd_make_terminal(new_p.edge[0].target);   // may set a fixed terminal node later?
         new_p.edge[0].label.rule = rexdd_rule_X;
@@ -646,10 +646,10 @@ void rexdd_merge_edge(
             out->label.rule = l.rule;
         } else {
             out->label.rule = rexdd_rule_X;
-        }        
+        }
         out->target = new_handle;
     } else if ((rexdd_is_EH(l.rule) && !rexdd_is_EH(reduced->label.rule))) {
-        // push up one 
+        // push up one
         rexdd_unpacked_node_t new_p;
         new_p.edge[0] = *reduced;
         new_p.edge[1].target = rexdd_make_terminal(new_p.edge[0].target);
@@ -664,7 +664,7 @@ void rexdd_merge_edge(
             out->label.rule = l.rule;
         } else {
             out->label.rule = rexdd_rule_X;
-        }    
+        }
         out->target = new_handle;
     /* ---------------------------------------------------------------------------------------------
      * Incompatible merge and push up all
@@ -674,43 +674,43 @@ void rexdd_merge_edge(
      *         to m (1 <= i <= m - p.level). Node p_1 Low edge to terminal 0 with rule rexdd_rule_X,
      *         swap bit 0, complement bit t; while High edge to node q with rule rexdd_rule_X, swap
      *         bit s, complement bit c. (p.level = n)
-     *              
+     *
      *              Node p_k at level n+k Low edge to node p_(k-1) with rule rexdd_rule_X, swap bit 0,
      *              complement bit 0; while High edge to node q with rule rexdd_rule_X, swap bit s,
      *              complement bit c (k>1).
-     * 
+     *
      *      2. Incoming edge rule is rexdd_rule_AHt, the edge "*reduced" <rho, s, c, q> rule is
      *         rexdd_rule_X. There will be (m - p.level) new nodes p_i created from level p.level+1
      *         to m (1 <= i <= m - p.level). Node p_1 High edge to terminal 0 with rule rexdd_rule_X,
      *         swap bit 0, complement bit t; while Low edge to node q with rule rexdd_rule_X, swap
      *         bit s, complement bit c. (p.level = n)
-     * 
+     *
      *              Node p_k at level n+k High edge to node p_(k-1) with rule rexdd_rule_X, swap bit 0,
      *              complement bit 0; while Low edge to node q with rule rexdd_rule_X, swap bit s,
      *              complement bit c (k>1).
-     * 
+     *
      *      3. Incoming edge rule is rexdd_rule_ALt, the edge "*reduced" <rho, s, c, q> rule is not
      *         rexdd_rule_X. There will be (m - p.level + 1) new nodes p_i created from level p.level+1
      *         to m (1 <= i <= m - p.level + 1). Node p_1 and p_2 are both at level p.level+1. p_1 with
      *         both child edges same as the edge "*reduced" <rho, s, c, q>; while p_2 Low edge to terminal
      *         0 with rule rexdd_rule_X, swap bit 0 and complement bit t, High edge same as the edge
      *         "*reduced" <rho, s, c, q>. (p.level = n)
-     * 
+     *
      *              Node p_k at level n+k-1 Low edge to node p_(k-1) with rule rexdd_rule_X, swap bit 0,
      *              complement bit 0; while High edge to node p_1 with rule rexdd_rule_X, swap bit 0,
      *              complement bit 0 (k>2).
-     * 
+     *
      *      4. Incoming edge rule is rexdd_rule_AHt, the edge "*reduced" <rho, s, c, q> rule is not
      *         rexdd_rule_X. There will be (m - p.level + 1) new nodes p_i created from level p.level+1
      *         to m (1 <= i <= m - p.level + 1). Node p_1 and p_2 are both at level p.level+1. p_1 with
      *         both child edges same as the edge "*reduced" <rho, s, c, q>; while p_2 High edge to terminal
      *         0 with rule rexdd_rule_X, swap bit 0 and complement bit t, Low edge same as the edge
      *         "*reduced" <rho, s, c, q>. (p.level = n)
-     * 
+     *
      *              Node p_k at level n+k-1 High edge to node p_(k-1) with rule rexdd_rule_X, swap bit 0,
      *              complement bit 0; while Low edge to node p_1 with rule rexdd_rule_X, swap bit 0,
      *              complement bit 0 (k>2).
-     *      
+     *
      *
      *      The new node level is set to n.
      * --------------------------------------------------------------------------------------------*/
@@ -916,4 +916,149 @@ bool rexdd_eval(
 // {
 
 // }
+
+
+/*
+ * Helper: write an edge in dot format.
+ * The source node, and the ->, should have been written already.
+ *
+ *  @param  out     File stream to write to
+ *  @param  e       edge
+ *  @param  solid   if true, write a solid edge; otherwise dashed.
+ */
+static void write_dot_edge(FILE* out, rexdd_edge_t e, bool solid)
+{
+    char label[128];
+    unsigned j, commas;
+
+    if (rexdd_is_terminal(e.target)) {
+        fprintf(out, "T%d", rexdd_terminal_value(e.target));
+    } else {
+        fprintf(out, "N%x_%x",
+            rexdd_nonterminal_handle(e.target) / REXDD_PAGE_SIZE,
+            rexdd_nonterminal_handle(e.target) % REXDD_PAGE_SIZE
+        );
+    }
+    if (solid) {
+        fprintf(out, " [style=solid,  ");
+    } else {
+        fprintf(out, " [style=dashed, ");
+    }
+
+    commas = 0;
+    rexdd_snprint_edge(label, 128, e);
+    fprintf(out, "label=\"");
+    for (j=0; j<128; j++) {
+        if (0 == label[j]) break;
+        if (',' != label[j]) {
+            fputc(label[j], out);
+            continue;
+        }
+        ++commas;
+        if (commas < 2) {
+            fputc(',', out);
+            continue;
+        }
+        fputc('>', out);
+        break;
+    }
+    fprintf(out, "\"];\n");
+}
+
+/****************************************************************************
+ *
+ *  Create a dot file for the forest,
+ *  with the given root edge.
+ *      TBD: use forest roots instead
+ *      TBD: allow names to be attached to functions
+ *      TBD: only display root edges with names?
+ *      TBD: only display nodes reachable from a root edge?
+ *
+ *      @param  out         Output stream to write to
+ *      @param  F           Forest to use.
+ *
+ *      @param  e           Root edge, for now.
+ *
+ */
+void rexdd_export_dot(FILE* out, const rexdd_forest_t *F, rexdd_edge_t e)
+{
+    unsigned i;
+    rexdd_check1(F, "Null forest in rexdd_export_dot");
+
+    fprintf(out, "//\n// Automatically generated by rexdd_export_dot\n//\n");
+    fprintf(out, "digraph g {\n");
+    fprintf(out, "    rankdir=TB;\n\n");
+
+    fprintf(out, "// Levels.\n\n");
+
+    fprintf(out, "    node [shape=none];\n");
+    fprintf(out, "    v0[label=\"\"];\n");
+    for (i=0; i<= F->S.num_levels+1; i++) {
+        fprintf(out, "    v%u[label=\"x%u\"];\n", i, i);
+    }
+    fprintf(out, "    v%u[label=\"\"];\n\n", F->S.num_levels+1);
+
+    for (i=0; i<= F->S.num_levels; i++) {
+        fprintf(out, "    v%u -> v%u [style=invis];\n", i+1, i);
+    }
+
+    fprintf(out, "\n// Terminal nodes\n\n");
+
+    fprintf(out, "    { rank=same; v0 T0[shape=rect, label=\"0\"]; }\n");
+
+    fprintf(out, "\n// Nonerminal nodes\n\n");
+
+    fprintf(out, "    node [shape=circle];\n");
+
+    //
+    // Declare all nodes before writing outgoing edges
+    //
+    uint_fast32_t p, n;
+    for (p=0; p<F->M->pages_size; p++) {
+        const rexdd_nodepage_t *page = F->M->pages+p;
+        for (n=0; n<page->first_unalloc; n++) {
+            if (rexdd_is_packed_in_use(page->chunk+n)) {
+                fprintf(out, "    { rank=same; v%u N%x_%x[label=\"\"]; }\n",
+                        rexdd_unpack_level(page->chunk+n), p, n);
+            }
+        } // for n
+    } // for p
+    fprintf(out, "\n");
+
+    //
+    // Traverse again, to write edges
+    //
+    rexdd_unpacked_node_t node;
+    char label[128];
+    unsigned commas, j;
+
+    for (p=0; p<F->M->pages_size; p++) {
+        const rexdd_nodepage_t *page = F->M->pages+p;
+        for (n=0; n<page->first_unalloc; n++) {
+            if (rexdd_is_packed_in_use(page->chunk+n)) {
+                rexdd_packed_to_unpacked(page->chunk+n, &node);
+
+                for (i=0; i<2; i++) {
+                    fprintf(out, "    N%x_%x -> ", p, n);
+                    write_dot_edge(out, node.edge[i], i);
+                } // for i
+
+
+            } // node is in use
+        } // for n
+    } // for p
+    fprintf(out, "\n");
+
+    // Root edge
+
+    fprintf(out, "\n// Root edges\n\n");
+
+    fprintf(out, "    { rank=same; v%u root[shape=none, label=\"r\"]; }\n",
+        F->S.num_levels+1
+    );
+    fprintf(out, "    r -> ");
+    write_dot_edge(out, e, true);
+    fprintf(out, "}\n");
+}
+
 
