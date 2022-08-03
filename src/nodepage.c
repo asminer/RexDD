@@ -172,7 +172,7 @@ void rexdd_dump_page(FILE* fout, const rexdd_nodepage_t *page,
     unsigned i;
     rexdd_unpacked_node_t node;
     for (i=0; i<page->first_unalloc; i++) {
-        if (page->chunk[i].fourth32) {
+        if (rexdd_is_packed_in_use(page->chunk+i)) {
             /* In use */
             if (show_used) {
                 rexdd_packed_to_unpacked(page->chunk+i, &node);
