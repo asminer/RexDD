@@ -633,7 +633,7 @@ void rexdd_merge_edge(
     } else if ((rexdd_is_EL(l.rule) && !rexdd_is_EL(reduced->label.rule))) {
         // push up one 
         rexdd_unpacked_node_t new_p;
-        new_p.edge[0].target = rexdd_make_terminal(new_p.edge[0].target);   // may set a fixed terminal node later?
+        new_p.edge[0].target = rexdd_make_terminal(0);
         new_p.edge[0].label.rule = rexdd_rule_X;
         new_p.edge[0].label.complemented = rexdd_is_one(l.rule);
         new_p.edge[0].label.swapped = 0;
@@ -652,7 +652,7 @@ void rexdd_merge_edge(
         // push up one 
         rexdd_unpacked_node_t new_p;
         new_p.edge[0] = *reduced;
-        new_p.edge[1].target = rexdd_make_terminal(new_p.edge[0].target);
+        new_p.edge[1].target = rexdd_make_terminal(0);
         new_p.edge[1].label.rule = rexdd_rule_X;
         new_p.edge[1].label.complemented = rexdd_is_one(l.rule);
         new_p.edge[1].label.swapped = 0;
@@ -710,14 +710,12 @@ void rexdd_merge_edge(
      *              Node p_k at level n+k-1 High edge to node p_(k-1) with rule rexdd_rule_X, swap bit 0,
      *              complement bit 0; while Low edge to node p_1 with rule rexdd_rule_X, swap bit 0,
      *              complement bit 0 (k>2).
-     *      
      *
-     *      The new node level is set to n.
      * --------------------------------------------------------------------------------------------*/
     } else if ((rexdd_is_AL(l.rule) && reduced->label.rule == rexdd_rule_X && reduced_skip>0)
                 ||
                 (rexdd_is_AH(l.rule) && reduced->label.rule == rexdd_rule_X && reduced_skip>0)) {
-        // Push up all TBD
+        // Push up all
         bool flag = 0;
         if (rexdd_is_AH(l.rule)) flag = 1;
 
@@ -728,7 +726,7 @@ void rexdd_merge_edge(
                 rexdd_rule_X,
                 rexdd_is_one(l.rule),
                 0,
-                rexdd_make_terminal(new_p.edge[flag].target));     // terminal node
+                rexdd_make_terminal(0));     // terminal node
         rexdd_node_handle_t handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
         handle_new_p = rexdd_insert_UT(F->UT, handle_new_p);
         for (uint32_t i=n+2; i<=m; i++) {
@@ -739,7 +737,7 @@ void rexdd_merge_edge(
                 0,
                 0,
                 handle_new_p);
-                rexdd_node_handle_t handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
+                handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
                 handle_new_p = rexdd_insert_UT(F->UT, handle_new_p);
         }
         rexdd_set_edge(out,
@@ -751,7 +749,7 @@ void rexdd_merge_edge(
     } else if ((rexdd_is_AL(l.rule) && reduced->label.rule != rexdd_rule_X)
                 ||
                 (rexdd_is_AH(l.rule) && reduced->label.rule != rexdd_rule_X)) {
-        // Push up all TBD
+        // Push up all
         bool flag = 0;
         if (rexdd_is_AH(l.rule)) flag = 1;
 
@@ -766,7 +764,7 @@ void rexdd_merge_edge(
                 rexdd_rule_X,
                 rexdd_is_one(l.rule),
                 0,
-                rexdd_make_terminal(new_p.edge[0].target));     // terminal node
+                rexdd_make_terminal(0));     // terminal node
         rexdd_node_handle_t handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
         handle_new_p = rexdd_insert_UT(F->UT, handle_new_p);
         for (uint32_t i=n+2; i<=m; i++) {
@@ -781,7 +779,7 @@ void rexdd_merge_edge(
                 0,
                 0,
                 handle_new_p1);
-            rexdd_node_handle_t handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
+            handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
             handle_new_p = rexdd_insert_UT(F->UT, handle_new_p);
         }
         rexdd_set_edge(out,
@@ -802,7 +800,7 @@ void rexdd_reduce_edge(
         rexdd_unpacked_node_t   p,
         rexdd_edge_t            *out)
 {
-    rexdd_sanity1(m > p.level, "Bad incoming edge root level");
+    rexdd_sanity1(m >= p.level, "Bad incoming edge level");
     rexdd_sanity1(out, "null reduced edge");
 
     if (l.swapped == 1) {
