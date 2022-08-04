@@ -564,7 +564,12 @@ void rexdd_merge_edge(
     rexdd_sanity1(out, "null merged edge");
 
     uint32_t incoming_skip = m - n;
-    uint32_t reduced_skip = n - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, reduced->target));
+    uint32_t reduced_skip;
+    if (rexdd_is_terminal(reduced->target)) {
+        reduced_skip = n;
+    } else {
+        reduced_skip = n - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, reduced->target));
+    }
 
     if (l.complemented) rexdd_edge_com (reduced);
 
