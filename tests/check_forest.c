@@ -150,6 +150,10 @@ void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     fprintf(f, "}");
 }
 
+void test_eval(rexdd_forest_t *F, uint32_t Levels,  rexdd_edge_t ptr[], rexdd_edge_t eval[]) {
+    // TBD
+}
+
 int main()
 {
     /* ==========================================================================
@@ -390,12 +394,12 @@ int main()
 
         printf("Done!\n");
     }
-    for (int i=0; i<4; i++) {
-        for (int j=1; j<3; j++) {
-            printf("%d\t", Vars_2[i][j]);
-        }
-        printf("\n");
-    }
+    // for (int i=0; i<4; i++) {
+    //     for (int j=1; j<3; j++) {
+    //         printf("%d\t", Vars_2[i][j]);
+    //     }
+    //     printf("\n");
+    // }
     printf("\n=============================================================\n");
 
     rexdd_free_forest(&F);
