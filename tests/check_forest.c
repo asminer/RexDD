@@ -4,40 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// #include <sys/types.h>
-// #include <sys/stat.h>
-// #include <dirent.h>
 
-#define CHECK_PATTERN
-
-void show_unpacked_node(rexdd_forest_t *F, rexdd_unpacked_node_t n)
-{
-    char buffer[20];
-
-    printf("\nLevel %d node's low \n", n.level);
-    rexdd_snprint_edge(buffer, 20, n.edge[0]);
-    printf("\t%s\n", buffer);
-    if (!rexdd_is_terminal(n.edge[0].target))
-    {
-        printf("---------Low child-------------\n");
-        rexdd_unpacked_node_t nodel;
-        rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, n.edge[0].target), &nodel);
-        show_unpacked_node(F, nodel);
-        printf("-------------------------------\n");
-    }
-
-    printf("\nLevel %d node's high \n", n.level);
-    rexdd_snprint_edge(buffer, 20, n.edge[1]);
-    printf("\t%s\n", buffer);
-    if (!rexdd_is_terminal(n.edge[1].target))
-    {
-        printf("---------High child-------------\n");
-        rexdd_unpacked_node_t nodeh;
-        rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, n.edge[1].target), &nodeh);
-        show_unpacked_node(F, nodeh);
-        printf("-------------------------------\n");
-    }
-}
 
 void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
 {
@@ -470,42 +437,6 @@ int main()
         }
     }
     printf("\nDone!\n");
-    for (int i=0; i<16; i++) {
-        for (int j=1; j<=levels; j++) {
-            printf("%d\t",Vars_4[i][j]);
-        }
-        printf("\n");
-    }
-
-
-
-    /* ==========================================================================
-     *      Debuging.......
-     * ==========================================================================*/
-    rexdd_edge_t test;
-    test = ptr4[65314];
-    for (int i = 0; i < 16; i++)
-    {
-        printf(" %d ", rexdd_eval(&F, &test, levels, Vars_4[i]));
-    }
-    printf("\n");
-    for (int j = 0; j < 16; j++)
-    {
-        printf(" %d ", Function_4[j][65314]);
-    }
-    printf("\n");
-    test = ptr3[34];
-    for (int i = 0; i < 8; i++)
-    {
-        printf(" %d ", rexdd_eval(&F, &test, levels-1, Vars_3[i]));
-    }
-    printf("\n");
-    for (int j = 0; j < 8; j++)
-    {
-        printf(" %d ", Function_3[j][34]);
-    }
-    printf("\n");
-    
 
     printf("\n=============================================================\n");
 
