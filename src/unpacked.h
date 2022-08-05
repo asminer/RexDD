@@ -31,22 +31,22 @@ typedef enum {
  */
 static inline bool rexdd_is_EL(rexdd_rule_t R)
 {
-    return (!(R & 1)) && (!(R & 4));
+    return (R==rexdd_rule_EL0 || R==rexdd_rule_EL1);
 }
 
 static inline bool rexdd_is_EH(rexdd_rule_t R)
 {
-    return (!(R & 1)) && (R & 4);
+    return (R==rexdd_rule_EH0 || R==rexdd_rule_EH1);
 }
 
 static inline bool rexdd_is_AL(rexdd_rule_t R)
 {
-    return (R & 1) && (!(R & 4));
+    return (R==rexdd_rule_AL0 || R==rexdd_rule_AL1);
 }
 
 static inline bool rexdd_is_AH(rexdd_rule_t R)
 {
-    return (R & 1) && (R & 4);
+    return (R==rexdd_rule_AH0 || R==rexdd_rule_AH1);
 }
 
 static inline bool rexdd_is_one(rexdd_rule_t R)
