@@ -150,6 +150,8 @@ void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     fprintf(f, "}");
 }
 
+/* ================================================================================================ */
+
 int main()
 {
     /* ==========================================================================
@@ -397,77 +399,113 @@ int main()
     printf("\nDone!\n");
 
     /* ==========================================================================
-     *      Building the vars for level three nodes
+     *      Building the vars for level four nodes
      * ==========================================================================*/
-    // levels = 4;
-    // printf("Testing Level Four...\n");
-    // bool Vars_4[0x01<<levels][levels+1];
-    // bool Function_4[0x01<<levels][0x01<<(0x01<<levels)];
-    // rexdd_edge_t ptr4[0x01<<(0x01<<levels)];
+    levels = 4;
+    printf("Testing Level Four...\n");
+    bool Vars_4[0x01<<levels][levels+1];
+    bool Function_4[0x01<<levels][0x01<<(0x01<<levels)];
+    rexdd_edge_t ptr4[0x01<<(0x01<<levels)];
 
-    // for (int i = 0; i < 0x01<<levels; i++)
-    // {
-    //     Vars_3[i][0] = 0;
-    //     if (i < 0x01<<(levels-1))
-    //     {
-    //         Vars_4[i][levels] = 0;
-    //     }
-    //     else
-    //     {
-    //         Vars_4[i][levels] = 1;
-    //     }
-    //     for (int j = 1; j < levels; j++)
-    //     {
-    //         Vars_4[i][j] = Vars_3[i % (0x01<<(levels-1))][j];
-    //     }
-    //     for (int k = 0; k<0x01<<(0x01<<levels); k++)
-    //     {
-    //         if (i<0x01<<(levels-1)) {
-    //             Function_4[i][k] = Function_3[i%(0x01<<(levels-1))][k/(0x01<<(0x01<<(levels-1)))];
-    //         } else {
-    //             Function_4[i][k] = Function_3[i%(0x01<<(levels-1))][k%(0x01<<(0x01<<(levels-1)))];
-    //         }
-    //     }
-    // }
+    for (int i = 0; i < 0x01<<levels; i++)
+    {
+        Vars_3[i][0] = 0;
+        if (i < 0x01<<(levels-1))
+        {
+            Vars_4[i][levels] = 0;
+        }
+        else
+        {
+            Vars_4[i][levels] = 1;
+        }
+        for (int j = 1; j < levels; j++)
+        {
+            Vars_4[i][j] = Vars_3[i % (0x01<<(levels-1))][j];
+        }
+        for (int k = 0; k<0x01<<(0x01<<levels); k++)
+        {
+            if (i<0x01<<(levels-1)) {
+                Function_4[i][k] = Function_3[i%(0x01<<(levels-1))][k/(0x01<<(0x01<<(levels-1)))];
+            } else {
+                Function_4[i][k] = Function_3[i%(0x01<<(levels-1))][k%(0x01<<(0x01<<(levels-1)))];
+            }
+        }
+    }
 
-    // temp.level = levels;
-    // for (int t=0; t<0x01<<(0x01<<levels); t++) {
-    //     temp.edge[0] = ptr3[t / (0x01<<(0x01<<(levels-1)))];
-    //     temp.edge[1] = ptr3[t % (0x01<<(0x01<<(levels-1)))];
+    temp.level = levels;
+    for (int t=65314; t<0x01<<(0x01<<levels); t++) {
+        temp.edge[0] = ptr3[t / (0x01<<(0x01<<(levels-1)))];
+        temp.edge[1] = ptr3[t % (0x01<<(0x01<<(levels-1)))];
         
-    //     printf("reduce edge...\n");
-    //     rexdd_edge_t eval;
-    //     rexdd_reduce_edge(&F, levels, l, temp, &eval);
+        printf("reduce edge...\n");
+        rexdd_edge_t eval;
+        rexdd_reduce_edge(&F, levels, l, temp, &eval);
 
-    //     printf("build dot file\n");
-    //     snprintf(buffer, 48, "L4_%d.gv", t);
-    //     // FILE *f_temp;
-    //     f_temp = fopen(buffer, "w+");
-    //     build_gv(f_temp, &F, eval);
-    //     fclose(f_temp);
+        printf("build dot file\n");
+        snprintf(buffer, 48, "L4_%d.gv", t);
+        // FILE *f_temp;
+        f_temp = fopen(buffer, "w+");
+        build_gv(f_temp, &F, eval);
+        fclose(f_temp);
 
-    //     ptr4[t] = eval;
+        ptr4[t] = eval;
 
-    //     printf("check eval...\t%d\n",t);
-    //     for (int i=0; i<0x01<<levels; i++){
-    //         if (rexdd_eval(&F, &eval, levels, Vars_4[i]) == Function_4[i][t])
-    //         {
-    //             continue;
-    //         }
-    //         else
-    //         {
-    //             printf("Eval error!\n");
-    //             for (int j = 0; j < 0x01<<levels; j++)
-    //             {
-    //                 printf("\t%d", Function_4[j][t]);
-    //             }
-    //             printf("\n");
-    //             break;
-    //         }
-    //     }
-    // }
-    // printf("\nDone!\n");
+        printf("check eval...\t%d\n",t);
+        for (int i=0; i<0x01<<levels; i++){
+            bool result = rexdd_eval(&F, &eval, levels, Vars_4[i]);
+            if (result == Function_4[i][t])
+            {
+                continue;
+            }
+            else
+            {
+                printf("Eval error!\n");
+                for (int j = 0; j < 0x01<<levels; j++)
+                {
+                    printf(" %d ", Function_4[j][t]);
+                }
+                printf("\n");
+                break;
+            }
+        }
+    }
+    printf("\nDone!\n");
+    for (int i=0; i<16; i++) {
+        for (int j=1; j<=levels; j++) {
+            printf("%d\t",Vars_4[i][j]);
+        }
+        printf("\n");
+    }
 
+
+
+    /* ==========================================================================
+     *      Debuging.......
+     * ==========================================================================*/
+    rexdd_edge_t test;
+    test = ptr4[65314];
+    for (int i = 0; i < 16; i++)
+    {
+        printf(" %d ", rexdd_eval(&F, &test, levels, Vars_4[i]));
+    }
+    printf("\n");
+    for (int j = 0; j < 16; j++)
+    {
+        printf(" %d ", Function_4[j][65314]);
+    }
+    printf("\n");
+    test = ptr3[34];
+    for (int i = 0; i < 8; i++)
+    {
+        printf(" %d ", rexdd_eval(&F, &test, levels-1, Vars_3[i]));
+    }
+    printf("\n");
+    for (int j = 0; j < 8; j++)
+    {
+        printf(" %d ", Function_3[j][34]);
+    }
+    printf("\n");
+    
 
     printf("\n=============================================================\n");
 
