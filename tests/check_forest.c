@@ -400,7 +400,7 @@ int main()
     }
 
     temp.level = levels;
-    for (int t=65314; t<0x01<<(0x01<<levels); t++) {
+    for (int t=0; t<0x01<<(0x01<<levels); t++) {
         temp.edge[0] = ptr3[t / (0x01<<(0x01<<(levels-1)))];
         temp.edge[1] = ptr3[t % (0x01<<(0x01<<(levels-1)))];
         
