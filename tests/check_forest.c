@@ -442,5 +442,66 @@ int main()
 
     rexdd_free_forest(&F);
 
+    FILE *out;
+    out = fopen("Vars.txt", "w+");
+    fprintf(out, "x1\tx2\tx3\n");
+    for (int i=0; i<2; i++) {
+        fprintf(out, "%d\n", Vars_1[i][1]);
+    }
+    fprintf(out,"=============================\n");
+    for (int i=0; i<4; i++) {
+        fprintf(out, "%d\t%d\n", Vars_2[i][1],Vars_2[i][2]);
+    }
+    fprintf(out,"=============================\n");
+    for (int i=0; i<8; i++) {
+        fprintf(out, "%d\t%d\t%d\n", Vars_3[i][1],Vars_3[i][2],Vars_3[i][3]);
+    }
+    fprintf(out,"=============================\n");
+    fclose(out);
+
+    int lvl=1;
+    out = fopen("Functions.txt", "w+");
+    for (int i = 0; i < 0x01<<(0x01<<lvl); i++) {
+        fprintf(out, "%d\t", i);
+        for (int j = 0; j < 0x01<<lvl; j++)
+        {
+            fprintf(out, " %d ", Function_1[j][i]);
+        }
+        fprintf(out,"\n");
+    }
+    fprintf(out,"=============================\n");
+    lvl=2;
+    for (int i = 0; i < 0x01<<(0x01<<lvl); i++) {
+        fprintf(out, "%d\t", i);
+        for (int j = 0; j < 0x01<<lvl; j++)
+        {
+            fprintf(out, " %d ", Function_2[j][i]);
+        }
+        fprintf(out,"\n");
+    }
+    fprintf(out,"=============================\n");
+    lvl=3;
+    for (int i = 0; i < 0x01<<(0x01<<lvl); i++) {
+        fprintf(out, "%d\t", i);
+        for (int j = 0; j < 0x01<<lvl; j++)
+        {
+            fprintf(out, " %d ", Function_3[j][i]);
+        }
+        fprintf(out,"\n");
+    }
+    fprintf(out,"=============================\n");
+    lvl=4;
+    for (int i = 0; i < 0x01<<(0x01<<lvl); i++) {
+        fprintf(out, "%d\t", i);
+        for (int j = 0; j < 0x01<<lvl; j++)
+        {
+            fprintf(out, " %d ", Function_4[j][i]);
+        }
+        fprintf(out,"\n");
+    }
+    fprintf(out,"=============================\n");
+    
+    fclose(out);
+    
     return 0;
 }
