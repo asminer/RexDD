@@ -835,16 +835,70 @@ void rexdd_reduce_edge(
     rexdd_sanity1(m >= p.level, "Bad incoming edge level");
     rexdd_sanity1(out, "null reduced edge");
 
-    if (l.swapped == 1) {
-        rexdd_node_sw(&p);
-        l.swapped = 0;
+    if (p.level == 0) {
+        if (l.rule != rexdd_rule_X && rexdd_is_one(l.rule) == l.complemented) {
+            rexdd_set_edge(out,
+                    rexdd_rule_X,
+                    l.complemented,
+                    0,
+                    rexdd_make_terminal(0));
+        } else if (rexdd_is_AL(l.rule) && l.complemented && m>1) {
+            rexdd_set_edge(out,
+                    rexdd_rule_EH1,
+                    0,
+                    0,
+                    rexdd_make_terminal(0));
+        } else if (rexdd_is_AL(l.rule) && !l.complemented && m>1) {
+            rexdd_set_edge(out,
+                    rexdd_rule_EH0,
+                    1,
+                    0,
+                    rexdd_make_terminal(0));
+        } else if ((rexdd_is_AH(l.rule) && l.complemented && m>1)
+                    ||
+                    (rexdd_is_AL(l.rule) && !l.complemented && m==1)
+                    ||
+                    ((rexdd_is_AH(l.rule) || rexdd_is_EH(l.rule)) && l.complemented && m==1)) {
+            rexdd_set_edge(out,
+                    rexdd_rule_EL1,
+                    0,
+                    0,
+                    rexdd_make_terminal(0));
+        } else if ((rexdd_is_AH(l.rule) && !l.complemented && m>1)
+                    ||
+                    (rexdd_is_AL(l.rule) && l.complemented && m==1)
+                    ||
+                    ((rexdd_is_AH(l.rule) || rexdd_is_EH(l.rule)) && !l.complemented && m==1)) {
+            rexdd_set_edge(out,
+                    rexdd_rule_EL0,
+                    1,
+                    0,
+                    rexdd_make_terminal(0));
+        } else {
+            rexdd_set_edge(out,
+                    l.rule,
+                    l.complemented,
+                    0,
+                    rexdd_make_terminal(0));
+        }
+    } else {
+        if (l.swapped) {
+            rexdd_node_sw(&p);
+            l.swapped = 0;
+        }
+
+        if (l.complemented) {
+            rexdd_edge_com(&p.edge[0]);
+            rexdd_edge_com(&p.edge[1]);
+            l.complemented = 0;
+        }
+
+        rexdd_edge_t reduced;
+
+        rexdd_reduce_node(F, &p, &reduced);
+
+        rexdd_merge_edge(F, m, p.level, l, &reduced, out);
     }
-
-    rexdd_edge_t reduced;
-
-    rexdd_reduce_node(F, &p, &reduced);
-
-    rexdd_merge_edge(F, m, p.level, l, &reduced, out);
 }
 
 /* ================================================================================================ */
@@ -1048,8 +1102,8 @@ void rexdd_export_dot(FILE* out, const rexdd_forest_t *F, rexdd_edge_t e)
         const rexdd_nodepage_t *page = F->M->pages+p;
         for (n=0; n<page->first_unalloc; n++) {
             if (rexdd_is_packed_in_use(page->chunk+n)) {
-                fprintf(out, "    { rank=same; v%u N%x_%x[label=\"\"]; }\n",
-                        rexdd_unpack_level(page->chunk+n), p, n);
+                fprintf(out, "    { rank=same; v%u N%x_%x[label=\"N%x_%x\"]; }\n",
+                        rexdd_unpack_level(page->chunk+n), p, n, p, n);
             }
         } // for n
     } // for p
