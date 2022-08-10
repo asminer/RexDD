@@ -153,9 +153,9 @@ int main()
     }
 
     if (countDistinct(buffer2, 64+18, ptr2) != 0x01 << (0x01 << levels)) {
-        printf("Level one check failed\n");
+        printf("Level two check failed\n");
     } else {
-        printf("level one reduced edge: %d\n", 0x01 << (0x01 << levels));
+        printf("level two reduced edge: %d\n", 0x01 << (0x01 << levels));
         char snp[20];
         for (int i=0; i<0x01 << (0x01 << levels); i++){
             rexdd_snprint_edge(snp, 20, ptr2[i]);
@@ -206,9 +206,9 @@ int main()
     }
 
     if (countDistinct(buffer3, 2*2*16*16+18, ptr3) != 0x01 << (0x01 << levels)) {
-        printf("Level one check failed\n");
+        printf("Level three check failed\n");
     } else {
-        printf("level one reduced edge: %d\n", 0x01 << (0x01 << levels));
+        printf("level three reduced edge: %d\n", 0x01 << (0x01 << levels));
         char snp[20];
         for (int i=0; i<0x01 << (0x01 << levels); i++){
             rexdd_snprint_edge(snp, 20, ptr3[i]);
@@ -259,9 +259,9 @@ int main()
     }
 
     if (countDistinct(buffer4, 2*2*256*256+18, ptr4) != 0x01 << (0x01 << levels)) {
-        printf("Level one check failed\n");
+        printf("Level four check failed\n");
     } else {
-        printf("level one reduced edge: %d\n", 0x01 << (0x01 << levels));
+        printf("level four reduced edge: %d\n", 0x01 << (0x01 << levels));
         char snp[20];
         for (int i=0; i<0x01 << (0x01 << levels); i++){
             rexdd_snprint_edge(snp, 20, ptr4[i]);

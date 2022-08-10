@@ -13,7 +13,7 @@ void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
 
     rexdd_unpacked_node_t node;
     rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, e.target), &node);
-    fprintf(f, "\t{rank=same v%d %llu [label = \"N%llu_%llu\", shape = circle]}\n",
+    fprintf(f, "\t{rank=same v%d N%llu [label = \"N%llu_%llu\", shape = circle]}\n",
             rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, e.target)),
             e.target,
             e.target / REXDD_PAGE_SIZE,
@@ -29,19 +29,19 @@ void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
              node.edge[1].label.swapped ? 's' : '_');
     if (rexdd_is_terminal(node.edge[1].target) && rexdd_is_terminal(node.edge[0].target))
     {
-        fprintf(f, "\t\"%llu\" -> \"T0\" [style = dashed label = \"%s\"]\n",
+        fprintf(f, "\t\"N%llu\" -> \"T0\" [style = dashed label = \"%s\"]\n",
                 e.target,
                 label_bufferL);
-        fprintf(f, "\t\"%llu\" -> \"T0\" [style = solid label = \"%s\"]\n",
+        fprintf(f, "\t\"N%llu\" -> \"T0\" [style = solid label = \"%s\"]\n",
                 e.target,
                 label_bufferH);
     }
     else if (!rexdd_is_terminal(node.edge[1].target) && rexdd_is_terminal(node.edge[0].target))
     {
-        fprintf(f, "\t\"%llu\" -> \"T0\" [style = dashed label = \"%s\"]\n",
+        fprintf(f, "\t\"N%llu\" -> \"T0\" [style = dashed label = \"%s\"]\n",
                 e.target,
                 label_bufferL);
-        fprintf(f, "\t\"%llu\" -> \"%llu\" [style = solid label = \"%s\"]\n",
+        fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = solid label = \"%s\"]\n",
                 e.target,
                 node.edge[1].target,
                 label_bufferH);
@@ -49,22 +49,22 @@ void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     }
     else if (rexdd_is_terminal(node.edge[1].target) && !rexdd_is_terminal(node.edge[0].target))
     {
-        fprintf(f, "\t\"%llu\" -> \"%llu\" [style = dashed label = \"%s\"]\n",
+        fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = dashed label = \"%s\"]\n",
                 e.target,
                 node.edge[0].target,
                 label_bufferL);
         fprint_rexdd(f, F, node.edge[0]);
-        fprintf(f, "\t\"%llu\" -> \"T0\" [style = solid label = \"%s\"]\n",
+        fprintf(f, "\t\"N%llu\" -> \"T0\" [style = solid label = \"%s\"]\n",
                 e.target,
                 label_bufferH);
     }
     else
     {
-        fprintf(f, "\t\"%llu\" -> \"%llu\" [style = dashed label = \"%s\"]\n",
+        fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = dashed label = \"%s\"]\n",
                 e.target,
                 node.edge[0].target,
                 label_bufferL);
-        fprintf(f, "\t\"%llu\" -> \"%llu\" [style = solid label = \"%s\"]\n",
+        fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = solid label = \"%s\"]\n",
                 e.target,
                 node.edge[1].target,
                 label_bufferH);
@@ -104,7 +104,7 @@ void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     fprintf(f, "\t0 [shape = point]\n");
     if (!rexdd_is_terminal(e.target))
     {
-        fprintf(f, "\t0 -> \"%llu\" [style = solid label = \"%s\"]\n", e.target, label_buffer);
+        fprintf(f, "\t0 -> \"N%llu\" [style = solid label = \"%s\"]\n", e.target, label_buffer);
         fprint_rexdd(f, F, e);
     }
     else
@@ -115,6 +115,108 @@ void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     fprintf(f, "\t{rank=same v0 \"T0\" [label = \"0\", shape = square]}\n");
 
     fprintf(f, "}");
+}
+
+void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
+{
+    fprintf(f, "digraph g\n{\n");
+    fprintf(f, "\trankdir=TB\n");
+
+    fprintf(f, "\n\tnode [shape = none]\n");
+    fprintf(f, "\tv0 [label=\"\"]\n");
+    
+    for (uint32_t i = 1; i <= F->S.num_levels; i++)
+    {
+        fprintf(f, "\tv%d [label=\"x%d\"]\n", i, i);
+        fprintf(f, "\tv%d -> v%d [style=invis]\n", i, i - 1);
+    }
+
+    char label_buffer[10];
+    for (int i=0; i<size; i++) {
+        snprintf(label_buffer, 10, "<%s,%c,%c>",
+                rexdd_rule_name[ptr[i].label.rule],
+                ptr[i].label.complemented ? 'c' : '_',
+                ptr[i].label.swapped ? 's' : '_');
+        fprintf(f, "\t{rank=same v4 %d [shape = point]}\n", i);
+        if (!rexdd_is_terminal(ptr[i].target))
+        {
+            fprintf(f, "\t%d -> \"N%llu\" [style = solid label = \"f_%d:%s\"]\n",
+                    i, ptr[i].target, i, label_buffer);
+            // fprint_rexdd(f, F, ptr[i]);
+        }
+        else
+        {
+            fprintf(f, "\t%d -> \"T0\" [style = solid label = \"f_%d:%s\"]\n",
+                    i, i, label_buffer);
+        }
+    }
+
+    rexdd_unpacked_node_t node;
+    char label_bufferL[10];
+    char label_bufferH[10];
+    for (rexdd_node_handle_t t=1; t<62; t++) {
+        rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, t), &node);
+
+        fprintf(f, "\t{rank=same v%d N%llu [label = \"N%llu_%llu\", shape = circle]}\n",
+                rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, t)),
+                t,
+                t / REXDD_PAGE_SIZE,
+                t % REXDD_PAGE_SIZE);
+        snprintf(label_bufferL, 10, "<%s,%c,%c>",
+                rexdd_rule_name[node.edge[0].label.rule],
+                node.edge[0].label.complemented ? 'c' : '_',
+                node.edge[0].label.swapped ? 's' : '_');
+        snprintf(label_bufferH, 10, "<%s,%c,%c>",
+                rexdd_rule_name[node.edge[1].label.rule],
+                node.edge[1].label.complemented ? 'c' : '_',
+                node.edge[1].label.swapped ? 's' : '_');
+        if (rexdd_is_terminal(node.edge[1].target) && rexdd_is_terminal(node.edge[0].target))
+        {
+            fprintf(f, "\t\"N%llu\" -> \"T0\" [style = dashed label = \"%s\"]\n",
+                    t,
+                    label_bufferL);
+            fprintf(f, "\t\"N%llu\" -> \"T0\" [style = solid label = \"%s\"]\n",
+                    t,
+                    label_bufferH);
+        }
+        else if (!rexdd_is_terminal(node.edge[1].target) && rexdd_is_terminal(node.edge[0].target))
+        {
+            fprintf(f, "\t\"N%llu\" -> \"T0\" [style = dashed label = \"%s\"]\n",
+                    t,
+                    label_bufferL);
+            fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = solid label = \"%s\"]\n",
+                    t,
+                    node.edge[1].target,
+                    label_bufferH);
+        }
+        else if (rexdd_is_terminal(node.edge[1].target) && !rexdd_is_terminal(node.edge[0].target))
+        {
+            fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = dashed label = \"%s\"]\n",
+                    t,
+                    node.edge[0].target,
+                    label_bufferL);
+            fprintf(f, "\t\"N%llu\" -> \"T0\" [style = solid label = \"%s\"]\n",
+                    t,
+                    label_bufferH);
+        }
+        else
+        {
+            fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = dashed label = \"%s\"]\n",
+                    t,
+                    node.edge[0].target,
+                    label_bufferL);
+            fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = solid label = \"%s\"]\n",
+                    t,
+                    node.edge[1].target,
+                    label_bufferH);
+        }        
+    }
+
+
+    fprintf(f, "\t{rank=same v0 \"T0\" [label = \"0\", shape = square]}\n");
+
+    fprintf(f, "}");
+
 }
 
 /* ================================================================================================ */
@@ -408,12 +510,12 @@ int main()
         rexdd_edge_t eval;
         rexdd_reduce_edge(&F, levels, l, temp, &eval);
 
-        printf("build dot file\n");
-        snprintf(buffer, 48, "L4_%d.gv", t);
-        // FILE *f_temp;
-        f_temp = fopen(buffer, "w+");
-        build_gv(f_temp, &F, eval);
-        fclose(f_temp);
+        // printf("build dot file\n");
+        // snprintf(buffer, 48, "L4_%d.gv", t);
+        // // FILE *f_temp;
+        // f_temp = fopen(buffer, "w+");
+        // build_gv(f_temp, &F, eval);
+        // fclose(f_temp);
 
         ptr4[t] = eval;
 
@@ -439,6 +541,10 @@ int main()
     printf("\nDone!\n");
 
     printf("\n=============================================================\n");
+
+    f_temp = fopen("Level3_forest.gv", "w+");
+    build_gv_forest(f_temp, &F, ptr3, 256);
+    fclose(f_temp);
 
     rexdd_free_forest(&F);
 
