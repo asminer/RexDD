@@ -7,6 +7,7 @@ set(EXES
   check_np
   check_ut
   check_forest
+  check_reduce
 )
 
 foreach(testexe ${EXES})
@@ -31,4 +32,5 @@ cmake_policy(SET CMP0110 NEW)
 add_test("Node packing test"   check_pack)
 add_test("Node page test"      check_np)
 add_test("Unique table test"   check_ut)
-add_test(NAME check_forest COMMAND check_forest)
+add_test("Eval function test" check_forest)
+add_test("Reduce edge test" check_reduce)
