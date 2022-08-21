@@ -4,9 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TEST_QBDD
+// #define TEST_QBDD
 
 // #define TEST_FBDD
+
+#define TEST_ZBDD
 
 void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
 {
@@ -286,6 +288,7 @@ int countTerm(rexdd_forest_t *F, rexdd_node_handle_t handle)
     return count;
 }
 
+#ifdef TEST_FBDD
 void fbdd_reduce_edge(rexdd_forest_t *F, rexdd_unpacked_node_t temp, rexdd_edge_t *out)
 {
     out->label.rule = rexdd_rule_X;
@@ -297,6 +300,59 @@ void fbdd_reduce_edge(rexdd_forest_t *F, rexdd_unpacked_node_t temp, rexdd_edge_
         out->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, &temp));
     }
 }
+#endif
+
+#ifdef TEST_ZBDD
+void zbdd_reduce_edge(rexdd_forest_t *F, rexdd_unpacked_node_t temp, rexdd_edge_t *out)
+{
+    out->label.rule = rexdd_rule_X;
+    out->label.complemented = 0;
+    out->label.swapped = 0;
+    if (temp.edge[1].target == rexdd_make_terminal(0)) {
+        out->target = temp.edge[0].target;
+    } else {
+        out->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, &temp));
+    }
+}
+
+bool zbdd_eval(rexdd_forest_t *F, rexdd_edge_t *e, uint32_t m, bool *vars)
+{
+    bool result = 0;
+    
+    uint32_t k;
+    if (rexdd_is_terminal(e->target)) {
+        k = 0;
+    } else {
+        k = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, e->target));
+    }
+
+    if (m == k) {
+        if (m == 0) {
+            result = rexdd_terminal_value(e->target);
+        } else {
+            rexdd_unpacked_node_t temp;
+            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, e->target), &temp);
+            if (vars[k]) {
+                result = zbdd_eval(F, &temp.edge[1], k-1, vars);
+            } else {
+                result = zbdd_eval(F, &temp.edge[0], k-1, vars);
+            }
+        }
+    } else {
+        bool flag = 0;
+        for (uint32_t i=k+1; i<=m; i++) {
+            flag = flag | vars[i];
+        }
+        if (flag) {
+            result = 0;
+        } else {
+            result = zbdd_eval(F, e, k, vars);
+        }
+    }
+
+    return result;
+}
+#endif
 
 void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Function_in[][0x01 << (0x01 << (levels-1))], rexdd_edge_t ptr_in[], 
                                             bool Vars_out[][levels+1], bool Function_out[][0x01 << (0x01 << levels)], rexdd_edge_t ptr_out[])
@@ -352,13 +408,27 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
 #ifdef TEST_FBDD
         fbdd_reduce_edge(&F, temp, &eval);
 #endif
+
+#ifdef TEST_ZBDD
+        zbdd_reduce_edge(&F, temp, &eval);
+#endif
+
         ptr_out[t] = eval;
 
         for (int i=0; i<0x01<<levels; i++){
+#ifndef TEST_ZBDD
             if (rexdd_eval(&F, &eval, levels, Vars_out[i]) == Function_out[i][t])
             {
                 continue;
             }
+#endif
+
+#ifdef TEST_ZBDD
+            if (zbdd_eval(&F, &eval, levels, Vars_out[i]) == Function_out[i][t])
+            {
+                continue;
+            }
+#endif
             else
             {
                 for (int j = 0; j < 0x01<<levels; j++)
@@ -384,6 +454,10 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 
 #ifdef TEST_FBDD
     snprintf(buffer, 20, "L%d_nodeFun_FBDD.txt", levels);
+#endif
+
+#ifdef TEST_ZBDD
+    snprintf(buffer, 20, "L%d_nodeFun_ZBDD.txt", levels);
 #endif
     test = fopen(buffer, "w+");
 
@@ -488,14 +562,28 @@ int main()
 #ifdef TEST_FBDD
         fbdd_reduce_edge(&F, temp, &eval);
 #endif
+
+#ifdef TEST_ZBDD
+        zbdd_reduce_edge(&F, temp, &eval);
+#endif
+
         ptr1[k] = eval;
 
         for (int i = 0; i < 0x01 << levels; i++)
         {
-            if (rexdd_eval(&F, &eval, 1, Vars_1[i]) == Function_1[i][k])
+#ifndef TEST_ZBDD
+            if (rexdd_eval(&F, &eval, levels, Vars_1[i]) == Function_1[i][k])
             {
                 continue;
             }
+#endif
+
+#ifdef TEST_ZBDD
+            if (zbdd_eval(&F, &eval, levels, Vars_1[i]) == Function_1[i][k])
+            {
+                continue;
+            }
+#endif
             else
             {
                 printf("Eval error!\n");
@@ -530,6 +618,10 @@ int main()
 
 #ifdef TEST_FBDD
     f = fopen("FBDD.gv", "w+");
+#endif
+
+#ifdef TEST_ZBDD
+    f = fopen("ZBDD.gv", "w+");
 #endif
     build_gv_forest(f, &F, ptr2, 16);
     fclose(f);
