@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define TEST_QBDD
+
+// #define TEST_FBDD
 
 void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
 {
@@ -283,6 +286,18 @@ int countTerm(rexdd_forest_t *F, rexdd_node_handle_t handle)
     return count;
 }
 
+void fbdd_reduce_edge(rexdd_forest_t *F, rexdd_unpacked_node_t temp, rexdd_edge_t *out)
+{
+    out->label.rule = rexdd_rule_X;
+    out->label.complemented = 0;
+    out->label.swapped = 0;
+    if (temp.edge[0].target == temp.edge[1].target) {
+        out->target = temp.edge[0].target;
+    } else {
+        out->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, &temp));
+    }
+}
+
 void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Function_in[][0x01 << (0x01 << (levels-1))], rexdd_edge_t ptr_in[], 
                                             bool Vars_out[][levels+1], bool Function_out[][0x01 << (0x01 << levels)], rexdd_edge_t ptr_out[])
 {
@@ -324,18 +339,19 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
     eval.label.complemented = 0;
     eval.label.swapped = 0;
 
-    rexdd_node_handle_t temp_handle;
-
     temp.level = levels;
 
     printf("check eval for level %d...\n", levels);
     for (int t=0; t<0x01<<(0x01<<levels); t++) {
         temp.edge[0] = ptr_in[t / (0x01<<(0x01<<(levels-1)))];
         temp.edge[1] = ptr_in[t % (0x01<<(0x01<<(levels-1)))];
-        
-        temp_handle = rexdd_insert_UT(F.UT, rexdd_nodeman_get_handle(F.M, &temp));
-        eval.target = temp_handle;
+#ifdef TEST_QBDD
+        eval.target = rexdd_insert_UT(F.UT, rexdd_nodeman_get_handle(F.M, &temp));
+#endif
 
+#ifdef TEST_FBDD
+        fbdd_reduce_edge(&F, temp, &eval);
+#endif
         ptr_out[t] = eval;
 
         for (int i=0; i<0x01<<levels; i++){
@@ -362,7 +378,13 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 {
     FILE *test;
     char buffer[20];
+#ifdef TEST_QBDD
     snprintf(buffer, 20, "L%d_nodeFun_QBDD.txt", levels);
+#endif
+
+#ifdef TEST_FBDD
+    snprintf(buffer, 20, "L%d_nodeFun_FBDD.txt", levels);
+#endif
     test = fopen(buffer, "w+");
 
     int max_num = 0;
@@ -425,8 +447,6 @@ int main()
     eval.label.complemented = 0;
     eval.label.swapped = 0;
 
-    rexdd_node_handle_t temp_handle;
-
     int levels;
     /* ==========================================================================
      *      Testing eval function in QBDD case
@@ -461,9 +481,13 @@ int main()
     for (int k = 0; k < 0x01 << (0x01 << levels); k++) {
         temp.edge[Vars_1[0][1]].target = rexdd_make_terminal(Function_1[0][k]);
         temp.edge[Vars_1[1][1]].target = rexdd_make_terminal(Function_1[1][k]);
-        temp_handle = rexdd_insert_UT(F.UT, rexdd_nodeman_get_handle(F.M, &temp));
-        eval.target = temp_handle;
+#ifdef TEST_QBDD
+        eval.target = rexdd_insert_UT(F.UT, rexdd_nodeman_get_handle(F.M, &temp));
+#endif
 
+#ifdef TEST_FBDD
+        fbdd_reduce_edge(&F, temp, &eval);
+#endif
         ptr1[k] = eval;
 
         for (int i = 0; i < 0x01 << levels; i++)
@@ -500,7 +524,13 @@ int main()
     check_eval(F, 2, Vars_1, Function_1, ptr1, Vars_2, Function_2, ptr2);
 
     FILE *f;
+#ifdef TEST_QBDD
     f = fopen("QBDD.gv", "w+");
+#endif
+
+#ifdef TEST_FBDD
+    f = fopen("FBDD.gv", "w+");
+#endif
     build_gv_forest(f, &F, ptr2, 16);
     fclose(f);
 
@@ -541,7 +571,7 @@ int main()
     for (int i=0; i<levels; i++) {
         count_nodeLvl[i] = 0;
     }
-    for (rexdd_node_handle_t h = 1; h<F.M->pages->first_unalloc; h++) {
+    for (rexdd_node_handle_t h = 1; h<=F.M->pages->first_unalloc; h++) {
         if (!rexdd_is_terminal(h)) {
             node_l = rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, h));
             count_nodeLvl[node_l-1]++;
@@ -551,7 +581,7 @@ int main()
     }
 
     printf("number of nodes at each level in the forest\n");
-    for (int i=1; i<5; i++) {
+    for (uint_fast32_t i=1; i<F.S.num_levels; i++) {
         printf("L%d: %d\n", i, count_nodeLvl[i-1]);
     }
 

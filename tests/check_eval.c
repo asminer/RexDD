@@ -501,7 +501,7 @@ int main()
     for (int i=0; i<levels; i++) {
         count_nodeLvl[i] = 0;
     }
-    for (rexdd_node_handle_t h = 1; h<F.M->pages->first_unalloc; h++) {
+    for (rexdd_node_handle_t h = 1; h<=F.M->pages->first_unalloc; h++) {
         if (!rexdd_is_terminal(h)) {
             node_l = rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, h));
             count_nodeLvl[node_l-1]++;
