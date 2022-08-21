@@ -473,8 +473,17 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
             max_num = countNodes(&F, edges[i].target) + num_term;
         }
     }
+#ifdef TEST_QBDD
     printf("max number of nodes(including terminal) for any level %d QBDD is: %d\n\n",levels, max_num);
+#endif
 
+#ifdef TEST_FBDD
+    printf("max number of nodes(including terminal) for any level %d FBDD is: %d\n\n",levels, max_num);
+#endif
+
+#ifdef TEST_ZBDD
+    printf("max number of nodes(including terminal) for any level %d ZBDD is: %d\n\n",levels, max_num);
+#endif
     int numFunc[max_num+1];
     for (int i=0; i<max_num+1; i++) {
         numFunc[i] = 0;
@@ -656,7 +665,7 @@ int main()
 
     printf("\n=============================================================\n");
 
-    printf("first unallocate handle: %u\n", F.M->pages->first_unalloc);
+    printf("Total number of nodes in the forest: %u\n", F.M->pages->first_unalloc);
 
     int node_l;
     int count_nodeLvl[levels];
