@@ -8,7 +8,7 @@ set(EXES
   check_ut
   check_eval
   check_reduce
-  check_qbdd
+  check_bdds
 )
 
 foreach(testexe ${EXES})
@@ -35,4 +35,4 @@ add_test("Node page test"      check_np)
 add_test("Unique table test"   check_ut)
 add_test("Eval function test" check_eval)
 add_test("Reduce edge test" check_reduce)
-add_test("QBDD test" check_qbdd)
+add_test("QBDD/FBDD/ZBDD test" check_bdds)
