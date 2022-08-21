@@ -922,7 +922,7 @@ bool rexdd_eval(
     bool result;
     if (k == m) {
         if (m == 0){
-            result = e->label.complemented ^ 0;
+            result = e->label.complemented ^ rexdd_terminal_value(e->target);
         } else {
             bool next = e->label.swapped ^ vars[m];
             rexdd_edge_t *e_next = malloc(sizeof(rexdd_edge_t));
