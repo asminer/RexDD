@@ -311,47 +311,10 @@ void zbdd_reduce_edge(rexdd_forest_t *F, rexdd_unpacked_node_t temp, rexdd_edge_
     out->label.swapped = 0;
     if (temp.edge[1].target == rexdd_make_terminal(0)) {
         out->target = temp.edge[0].target;
+        out->label.rule = rexdd_rule_EH0;
     } else {
         out->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, &temp));
     }
-}
-
-bool zbdd_eval(rexdd_forest_t *F, rexdd_edge_t *e, uint32_t m, bool *vars)
-{
-    bool result = 0;
-    
-    uint32_t k;
-    if (rexdd_is_terminal(e->target)) {
-        k = 0;
-    } else {
-        k = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, e->target));
-    }
-
-    if (m == k) {
-        if (m == 0) {
-            result = rexdd_terminal_value(e->target);
-        } else {
-            rexdd_unpacked_node_t temp;
-            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, e->target), &temp);
-            if (vars[k]) {
-                result = zbdd_eval(F, &temp.edge[1], k-1, vars);
-            } else {
-                result = zbdd_eval(F, &temp.edge[0], k-1, vars);
-            }
-        }
-    } else {
-        bool flag = 0;
-        for (uint32_t i=k+1; i<=m; i++) {
-            flag = flag | vars[i];
-        }
-        if (flag) {
-            result = 0;
-        } else {
-            result = zbdd_eval(F, e, k, vars);
-        }
-    }
-
-    return result;
 }
 #endif
 
@@ -417,19 +380,10 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
         ptr_out[t] = eval;
 
         for (int i=0; i<0x01<<levels; i++){
-#ifndef TEST_ZBDD
             if (rexdd_eval(&F, &eval, levels, Vars_out[i]) == Function_out[i][t])
             {
                 continue;
             }
-#endif
-
-#ifdef TEST_ZBDD
-            if (zbdd_eval(&F, &eval, levels, Vars_out[i]) == Function_out[i][t])
-            {
-                continue;
-            }
-#endif
             else
             {
                 for (int j = 0; j < 0x01<<levels; j++)
@@ -442,11 +396,12 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
             }
         }
     }
-    printf("Done!\n\n");
+    printf("Done eval!\n");
 }
 
 void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 {
+    printf("Counting number of nodes...\n");
     FILE *test, *test2;
     char buffer[20], buffer2[20];
 #ifdef TEST_QBDD
@@ -510,6 +465,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     }
     fclose(test);
     fclose(test2);
+    printf("Done counting!\n\n");
 }
 
 
@@ -588,19 +544,10 @@ int main()
 
         for (int i = 0; i < 0x01 << levels; i++)
         {
-#ifndef TEST_ZBDD
             if (rexdd_eval(&F, &eval, levels, Vars_1[i]) == Function_1[i][k])
             {
                 continue;
             }
-#endif
-
-#ifdef TEST_ZBDD
-            if (zbdd_eval(&F, &eval, levels, Vars_1[i]) == Function_1[i][k])
-            {
-                continue;
-            }
-#endif
             else
             {
                 printf("Eval error!\n");
