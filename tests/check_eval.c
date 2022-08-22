@@ -218,34 +218,35 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
 
 }
 
-int countNodes(rexdd_forest_t *F, rexdd_node_handle_t handle)
+void boolNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, bool count[F->M->pages->first_unalloc+1])
 {
-    int count = 0;
     if (rexdd_is_terminal(handle)) {
-        return count;
+        count[0] = 0;
     } else {
-        count = 1;
+        if (!count[handle]) {
+            count[handle] = 1;
+        }
         rexdd_node_handle_t handleL, handleH;
         handleL = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M,handle));
         handleH = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M,handle));
 
-        if (!rexdd_is_terminal(handleL) && !rexdd_is_terminal(handleH)) {
-
-            if (handleL != handleH) {
-                    count = count + countNodes(F, handleL) + countNodes(F, handleH);
-            } else {
-                count = count + countNodes(F, handleL);
-            }
-            
-        } else if (!rexdd_is_terminal(handleL) && rexdd_is_terminal(handleH)) {
-                count = count + countNodes(F, handleL);
-        } else if (rexdd_is_terminal(handleL) && !rexdd_is_terminal(handleH)) {
-                count = count + countNodes(F, handleH);
-        } else {
-            return count;
-        }
-        return count;
+        boolNodes(F, handleL, count);
+        boolNodes(F, handleH, count);
     }
+}
+
+int countNodes(rexdd_forest_t *F, rexdd_node_handle_t handle)
+{
+    int count = 0;
+    bool countNode[F->M->pages->first_unalloc+1];
+    for (uint_fast32_t i=0; i<=F->M->pages->first_unalloc+1; i++) {
+        countNode[i] = 0;
+    }
+    boolNodes(F, handle, countNode);
+    for (uint_fast32_t i=0; i<=F->M->pages->first_unalloc+1; i++) {
+        count = count + countNode[i];
+    }
+    return count;
 }
 
 void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Function_in[][0x01 << (0x01 << (levels-1))], rexdd_edge_t ptr_in[], 
@@ -331,16 +332,19 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
 
 void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 {
-    FILE *test;
-    char buffer[16];
-    snprintf(buffer, 16, "L%d_nodeFun.txt", levels);
-    test = fopen(buffer, "w+");
+    FILE *f1, *f2;
+    char buffer1[16], buffer2[16];
+    snprintf(buffer1, 16, "L%d_nodeFun.txt", levels);
+    snprintf(buffer2, 16, "L%d_funNode.txt", levels);
+    f1 = fopen(buffer1, "w+");
+    f2 = fopen(buffer2, "w+");
 
     int max_num = 0;
     for (int i=0; i<0x01<<(0x01<<levels); i++) {
         if (max_num < countNodes(&F, edges[i].target)) {
             max_num = countNodes(&F, edges[i].target);
         }
+        fprintf(f2, "%d %d\n", i, countNodes(&F, edges[i].target) + 1);
     }
     printf("max number of nodes(including terminal) for any level %d QBDD is: %d\n\n",levels, max_num+1);
 
@@ -354,9 +358,10 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     }
 
     for (int i=0; i<max_num+1; i++) {
-        fprintf(test, "%d %d\n", i+1, numFunc[i]);
+        fprintf(f1, "%d %d\n", i+1, numFunc[i]);
     }
-    fclose(test);
+    fclose(f1);
+    fclose(f2);
 }
 
 /* ================================================================================================ */
