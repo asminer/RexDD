@@ -6,76 +6,76 @@
 #include <string.h>
 
 
+void boolNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, bool count[handle+1])
+{
+    if (rexdd_is_terminal(handle)) {
+        count[0] = 0;
+    } else {
+        if (!count[handle]) {
+            count[handle] = 1;
+        }
+        rexdd_node_handle_t handleL, handleH;
+        handleL = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M,handle));
+        handleH = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M,handle));
+
+        boolNodes(F, handleL, count);
+        boolNodes(F, handleH, count);
+    }
+}
+
 void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
 {
     char label_bufferL[10];
     char label_bufferH[10];
+    bool countNode[e.target+1];
+    for (uint64_t i=0; i<=e.target+1; i++) {
+        countNode[i] = 0;
+    }
 
-    rexdd_unpacked_node_t node;
-    rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, e.target), &node);
-    fprintf(f, "\t{rank=same v%d N%llu [label = \"N%llu_%llu\", shape = circle]}\n",
-            rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, e.target)),
-            e.target,
-            e.target / REXDD_PAGE_SIZE,
-            e.target % REXDD_PAGE_SIZE);
+    boolNodes(F, e.target, countNode);
 
-    snprintf(label_bufferL, 10, "<%s,%c,%c>",
-             rexdd_rule_name[node.edge[0].label.rule],
-             node.edge[0].label.complemented ? 'c' : '_',
-             node.edge[0].label.swapped ? 's' : '_');
-    snprintf(label_bufferH, 10, "<%s,%c,%c>",
-             rexdd_rule_name[node.edge[1].label.rule],
-             node.edge[1].label.complemented ? 'c' : '_',
-             node.edge[1].label.swapped ? 's' : '_');
-    if (rexdd_is_terminal(node.edge[1].target) && rexdd_is_terminal(node.edge[0].target))
-    {
-        fprintf(f, "\t\"N%llu\" -> \"T0\" [style = dashed label = \"%s\"]\n",
-                e.target,
-                label_bufferL);
-        fprintf(f, "\t\"N%llu\" -> \"T0\" [style = solid label = \"%s\"]\n",
-                e.target,
-                label_bufferH);
-    }
-    else if (!rexdd_is_terminal(node.edge[1].target) && rexdd_is_terminal(node.edge[0].target))
-    {
-        fprintf(f, "\t\"N%llu\" -> \"T0\" [style = dashed label = \"%s\"]\n",
-                e.target,
-                label_bufferL);
-        fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = solid label = \"%s\"]\n",
-                e.target,
-                node.edge[1].target,
-                label_bufferH);
-        fprint_rexdd(f, F, node.edge[1]);
-    }
-    else if (rexdd_is_terminal(node.edge[1].target) && !rexdd_is_terminal(node.edge[0].target))
-    {
-        fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = dashed label = \"%s\"]\n",
-                e.target,
-                node.edge[0].target,
-                label_bufferL);
-        fprint_rexdd(f, F, node.edge[0]);
-        fprintf(f, "\t\"N%llu\" -> \"T0\" [style = solid label = \"%s\"]\n",
-                e.target,
-                label_bufferH);
-    }
-    else
-    {
-        fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = dashed label = \"%s\"]\n",
-                e.target,
-                node.edge[0].target,
-                label_bufferL);
-        fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = solid label = \"%s\"]\n",
-                e.target,
-                node.edge[1].target,
-                label_bufferH);
-        if (node.edge[0].target != node.edge[1].target)
-        {
-            fprint_rexdd(f, F, node.edge[0]);
-            fprint_rexdd(f, F, node.edge[1]);
-        }
-        else
-        {
-            fprint_rexdd(f, F, node.edge[1]);
+    for (uint64_t i=0; i<=e.target+1; i++) {
+        if (countNode[i]){
+            fprintf(f, "\t{rank=same v%d N%llu [label = \"N%llu_%llu\", shape = circle]}\n",
+                        rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, i)),
+                        i,
+                        i / REXDD_PAGE_SIZE,
+                        i % REXDD_PAGE_SIZE);
+
+            rexdd_unpacked_node_t node;
+            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, i), &node);
+            snprintf(label_bufferL, 10, "<%s,%c,%c>",
+                        rexdd_rule_name[node.edge[0].label.rule],
+                        node.edge[0].label.complemented ? 'c' : '_',
+                        node.edge[0].label.swapped ? 's' : '_');
+            snprintf(label_bufferH, 10, "<%s,%c,%c>",
+                        rexdd_rule_name[node.edge[1].label.rule],
+                        node.edge[1].label.complemented ? 'c' : '_',
+                        node.edge[1].label.swapped ? 's' : '_');
+            if (rexdd_is_terminal(node.edge[0].target)) {
+                fprintf(f, "\t\"N%llu\" -> \"T%llu\" [style = dashed label = \"%s\"]\n",
+                        i,
+                        rexdd_terminal_value(node.edge[0].target),
+                        label_bufferL);
+            } else {
+                fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = dashed label = \"%s\"]\n",
+                        i,
+                        node.edge[0].target,
+                        label_bufferL);
+            }
+            if (rexdd_is_terminal(node.edge[1].target)) {
+                fprintf(f, "\t\"N%llu\" -> \"T%llu\" [style = solid label = \"%s\"]\n",
+                        i,
+                        rexdd_terminal_value(node.edge[1].target),
+                        label_bufferH);
+            } else {
+                fprintf(f, "\t\"N%llu\" -> \"N%llu\" [style = solid label = \"%s\"]\n",
+                        i,
+                        node.edge[1].target,
+                        label_bufferH);
+            }
+        } else {
+            continue;
         }
     }
 }
@@ -218,33 +218,20 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
 
 }
 
-void boolNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, bool count[F->M->pages->first_unalloc+1])
-{
-    if (rexdd_is_terminal(handle)) {
-        count[0] = 0;
-    } else {
-        if (!count[handle]) {
-            count[handle] = 1;
-        }
-        rexdd_node_handle_t handleL, handleH;
-        handleL = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M,handle));
-        handleH = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M,handle));
-
-        boolNodes(F, handleL, count);
-        boolNodes(F, handleH, count);
-    }
-}
-
 int countNodes(rexdd_forest_t *F, rexdd_node_handle_t handle)
 {
     int count = 0;
-    bool countNode[F->M->pages->first_unalloc+1];
-    for (uint_fast32_t i=0; i<=F->M->pages->first_unalloc+1; i++) {
-        countNode[i] = 0;
-    }
-    boolNodes(F, handle, countNode);
-    for (uint_fast32_t i=0; i<=F->M->pages->first_unalloc+1; i++) {
-        count = count + countNode[i];
+    if (rexdd_is_terminal(handle)) {
+        count = 0;
+    } else {
+        bool countNode[handle+1];
+        for (uint64_t i=0; i<=handle+1; i++) {
+            countNode[i] = 0;
+        }
+        boolNodes(F, handle, countNode);
+        for (uint64_t i=0; i<=handle+1; i++) {
+            count = count + countNode[i];
+        }
     }
     return count;
 }
@@ -327,11 +314,12 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
             }
         }
     }
-    printf("Done!\n\n");
+    printf("Done eval!\n");
 }
 
 void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 {
+    printf("Counting number of nodes...\n");
     FILE *f1, *f2;
     char buffer1[16], buffer2[16];
     snprintf(buffer1, 16, "L%d_nodeFun.txt", levels);
@@ -362,6 +350,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     }
     fclose(f1);
     fclose(f2);
+    printf("Done counting!\n\n");
 }
 
 /* ================================================================================================ */
@@ -520,8 +509,12 @@ int main()
         printf("L%d: %d\n", i, count_nodeLvl[i-1]);
     }
 
-
-
+    // ---------------------------------Example---------------------------------
+    FILE *t;
+    t = fopen("test.gv", "w+");
+    build_gv(t, &F, ptr4[355]);
+    fclose(t);
+    // -------------------------------------------------------------------------
 
     rexdd_free_forest(&F);
 
