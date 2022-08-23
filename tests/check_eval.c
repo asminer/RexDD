@@ -321,9 +321,9 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 {
     printf("Counting number of nodes...\n");
     FILE *f1, *f2;
-    char buffer1[16], buffer2[16];
-    snprintf(buffer1, 16, "L%d_nodeFun.txt", levels);
-    snprintf(buffer2, 16, "L%d_funNode.txt", levels);
+    char buffer1[24], buffer2[24];
+    snprintf(buffer1, 24, "L%d_nodeFun_RexBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_RexBDD.txt", levels);
     f1 = fopen(buffer1, "w+");
     f2 = fopen(buffer2, "w+");
 
