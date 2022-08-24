@@ -368,8 +368,8 @@ int main()
 
     rexdd_unpacked_node_t temp;
     temp.level = 1;
-    temp.edge[0].target = rexdd_make_terminal(0);
-    temp.edge[1].target = rexdd_make_terminal(0);
+    temp.edge[0].target = rexdd_make_terminal(1);
+    temp.edge[1].target = rexdd_make_terminal(1);
     temp.edge[0].label.swapped = 0;
     temp.edge[1].label.swapped = 0;
     temp.edge[0].label.rule = rexdd_rule_X;
@@ -413,8 +413,8 @@ int main()
     printf("check eval for level %d...\n",levels);
     for (int k = 0; k < 0x01 << (0x01 << levels); k++)
     {
-        temp.edge[Vars_1[0][1]].label.complemented = Function_1[0][k];
-        temp.edge[Vars_1[1][1]].label.complemented = Function_1[1][k];
+        temp.edge[Vars_1[0][1]].label.complemented = !Function_1[0][k];
+        temp.edge[Vars_1[1][1]].label.complemented = !Function_1[1][k];
 
         rexdd_edge_t eval;
         rexdd_reduce_edge(&F, levels, l, temp, &eval);

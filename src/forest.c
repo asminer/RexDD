@@ -146,6 +146,18 @@ void rexdd_reduce_node(
     // The level difference between unpacked node and both child nodes
     uint_fast32_t ln, hn;
 
+    // If the target node of unpacked node P's child edge is terminal 1, inverse the complement bit of this child edge
+    if (rexdd_is_terminal(P->edge[0].target)
+        && rexdd_terminal_value(P->edge[0].target)) {
+            P->edge[0].label.complemented = !P->edge[0].label.complemented;
+            P->edge[0].target = rexdd_make_terminal(0);
+        }
+    if (rexdd_is_terminal(P->edge[1].target)
+        && rexdd_terminal_value(P->edge[1].target)) {
+            P->edge[1].label.complemented = !P->edge[1].label.complemented;
+            P->edge[1].target = rexdd_make_terminal(0);
+        }
+
     /* -----------------------------------------------------------------------------------------
         Constant edge: the edges <ELc, 0, c, 0>, <EHc, 0, c, 0>, <ALc, 0, c, 0>, <AHc, 0, c, 0>
         with any complement bit c can be uniformly represented by <X, 0, c, 0>
@@ -824,7 +836,7 @@ void rexdd_merge_edge(
 }
 
 /* ================================================================================================ */
-
+// #ifdef REXBDD
 void rexdd_reduce_edge(
         rexdd_forest_t          *F,
         uint_fast32_t           m,
@@ -900,6 +912,7 @@ void rexdd_reduce_edge(
         rexdd_merge_edge(F, m, p.level, l, &reduced, out);
     }
 }
+// #endif
 
 /* ================================================================================================ */
 
