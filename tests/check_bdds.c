@@ -6,9 +6,11 @@
 
 // #define TEST_QBDD
 
-#define TEST_FBDD
+// #define TEST_FBDD
 
 // #define TEST_ZBDD
+
+#define TEST_REXBDD
 
 
 void boolNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, bool count[handle+1])
@@ -118,8 +120,9 @@ void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     }
 
     fprintf(f, "\t{rank=same v0 \"T0\" [label = \"0\", shape = square]}\n");
+#ifndef TEST_REXBDD
     fprintf(f, "\t{rank=same v0 \"T1\" [label = \"1\", shape = square]}\n");
-
+#endif
 
     fprintf(f, "}");
 }
@@ -230,8 +233,9 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
     }
 
     fprintf(f, "\t{rank=same v0 \"T0\" [label = \"0\", shape = square]}\n");
+#ifndef TEST_REXBDD
     fprintf(f, "\t{rank=same v0 \"T1\" [label = \"1\", shape = square]}\n");
-
+#endif
 
     fprintf(f, "}");
 
@@ -339,9 +343,11 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
     temp.edge[1].label.swapped = 0;
 
     rexdd_edge_t eval;
-    eval.label.rule = rexdd_rule_X;
-    eval.label.complemented = 0;
-    eval.label.swapped = 0;
+    rexdd_edge_label_t l;
+    l.rule = rexdd_rule_X;
+    l.complemented = 0;
+    l.swapped = 0;
+    eval.label = l;
 
     temp.level = levels;
 
@@ -359,6 +365,10 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
 
 #ifdef TEST_ZBDD
         zbdd_reduce_edge(&F, temp, &eval);
+#endif
+
+#ifdef TEST_REXBDD
+        rexdd_reduce_edge(&F, levels, l, temp, &eval);
 #endif
 
         ptr_out[t] = eval;
@@ -387,20 +397,25 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 {
     printf("Counting number of nodes...\n");
     FILE *test, *test2;
-    char buffer[20], buffer2[20];
+    char buffer[24], buffer2[24];
 #ifdef TEST_QBDD
-    snprintf(buffer, 20, "L%d_nodeFun_QBDD.txt", levels);
-    snprintf(buffer2, 20, "L%d_funNode_QBDD.txt", levels);
+    snprintf(buffer, 24, "L%d_nodeFun_QBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_QBDD.txt", levels);
 #endif
 
 #ifdef TEST_FBDD
-    snprintf(buffer, 20, "L%d_nodeFun_FBDD.txt", levels);
-    snprintf(buffer2, 20, "L%d_funNode_FBDD.txt", levels);
+    snprintf(buffer, 24, "L%d_nodeFun_FBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_FBDD.txt", levels);
 #endif
 
 #ifdef TEST_ZBDD
-    snprintf(buffer, 20, "L%d_nodeFun_ZBDD.txt", levels);
-    snprintf(buffer2, 20, "L%d_funNode_ZBDD.txt", levels);
+    snprintf(buffer, 24, "L%d_nodeFun_ZBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_ZBDD.txt", levels);
+#endif
+
+#ifdef TEST_REXBDD
+    snprintf(buffer, 24, "L%d_nodeFun_RexBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_RexBDD.txt", levels);
 #endif
     test = fopen(buffer, "w+");
     test2 = fopen(buffer2, "w+");
@@ -429,6 +444,10 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 
 #ifdef TEST_ZBDD
     printf("max number of nodes(including terminal) for any level %d ZBDD is: %d\n\n",levels, max_num);
+#endif
+
+#ifdef TEST_REXBDD
+    printf("max number of nodes(including terminal) for any level %d RexBDD is: %d\n\n",levels, max_num);
 #endif
     int numFunc[max_num+1];
     for (int i=0; i<max_num+1; i++) {
@@ -468,15 +487,22 @@ int main()
     temp.level = 1;
     temp.edge[0].label.rule = rexdd_rule_X;
     temp.edge[1].label.rule = rexdd_rule_X;
-    temp.edge[0].label.complemented = 0;
-    temp.edge[1].label.complemented = 0;
     temp.edge[0].label.swapped = 0;
     temp.edge[1].label.swapped = 0;
+#ifndef TEST_REXBDD
+    temp.edge[0].label.complemented = 0;
+    temp.edge[1].label.complemented = 0;
+#else
+    temp.edge[0].target = rexdd_make_terminal(1);
+    temp.edge[1].target = rexdd_make_terminal(1);
+#endif
 
     rexdd_edge_t eval;
-    eval.label.rule = rexdd_rule_X;
-    eval.label.complemented = 0;
-    eval.label.swapped = 0;
+    rexdd_edge_label_t l;
+    l.rule = rexdd_rule_X;
+    l.complemented = 0;
+    l.swapped = 0;
+    eval.label = l;
 
     int levels;
     /* ==========================================================================
@@ -510,8 +536,14 @@ int main()
 
     printf("check eval for level %d...\n",levels);
     for (int k = 0; k < 0x01 << (0x01 << levels); k++) {
+#ifndef TEST_REXBDD
         temp.edge[Vars_1[0][1]].target = rexdd_make_terminal(Function_1[0][k]);
         temp.edge[Vars_1[1][1]].target = rexdd_make_terminal(Function_1[1][k]);
+#else
+        temp.edge[Vars_1[0][1]].label.complemented = !Function_1[0][k];
+        temp.edge[Vars_1[1][1]].label.complemented = !Function_1[1][k];
+#endif
+
 #ifdef TEST_QBDD
         eval.target = rexdd_insert_UT(F.UT, rexdd_nodeman_get_handle(F.M, &temp));
 #endif
@@ -522,6 +554,10 @@ int main()
 
 #ifdef TEST_ZBDD
         zbdd_reduce_edge(&F, temp, &eval);
+#endif
+
+#ifdef TEST_REXBDD
+        rexdd_reduce_edge(&F, levels, l, temp, &eval);
 #endif
 
         ptr1[k] = eval;
@@ -570,6 +606,10 @@ int main()
 
 #ifdef TEST_ZBDD
     f = fopen("ZBDD.gv", "w+");
+#endif
+
+#ifdef TEST_REXBDD
+    f = fopen("RexBDD.gv", "w+");
 #endif
     build_gv_forest(f, &F, ptr2, 16);
     fclose(f);
