@@ -6,7 +6,6 @@ set(EXES
   check_pack
   check_np
   check_ut
-  check_eval
   check_reduce
   check_bdds
 )
@@ -33,6 +32,5 @@ cmake_policy(SET CMP0110 NEW)
 add_test("Node packing test"   check_pack)
 add_test("Node page test"      check_np)
 add_test("Unique table test"   check_ut)
-add_test("Eval function test" check_eval)
 add_test("Reduce edge test" check_reduce)
-add_test("QBDD/FBDD/ZBDD test" check_bdds)
+add_test("QBDD/FBDD/ZBDD/RexBDD eval test" check_bdds)
