@@ -2,6 +2,57 @@ cmake_minimum_required(VERSION 3.19)
 
 project(RexDD VERSION 0.1)
 
+option(REXBDD "Build for RexBDD" ON)
+message("RexBDD is ${REXBDD}")
+
+option(QBDD "Build for QBDD")
+message("QBDD is ${QBDD}")
+
+option(CQBDD "Build for CQBDD")
+message("QBDD with complement bit is ${CQBDD}")
+
+option(CSQBDD "Build for CSQBDD")
+message("QBDD with complement and swap bit is ${CSQBDD}")
+
+option(FBDD "Build for FBDD")
+message("FBDD is ${FBDD}")
+
+option(CFBDD "Build for CFBDD")
+message("FBDD with complement bit is ${CFBDD}")
+
+option(CSFBDD "Build for CSFBDD")
+message("FBDD with complement and swap bit is ${CSFBDD}")
+
+option(ZBDD "Build for ZBDD")
+message("ZBDD is ${ZBDD}")
+
+option(ESRBDD "Build for ESRBDD")
+message("ESRBDD is ${ESRBDD}")
+
+option(CESRBDD "Build for CESRBDD")
+message("CESRBDD is ${CESRBDD}")
+
+if (REXBDD)
+  add_definitions(-DREXBDD)
+  message("select to build for REXBDD")
+endif()
+if (QBDD)
+  add_definitions(-DQBDD)
+  message("select to build for QBDD")
+endif()
+if (FBDD)
+  add_definitions(-DFBDD)
+  message("select to build for FBDD")
+endif()
+if (ZBDD)
+  add_definitions(-DZBDD)
+  message("select to build for ZBDD")
+endif()
+if (ESRBDD)
+  add_definitions(-DESRBDD)
+  message("select to build for ESRBDD")
+endif()
+
 if (MSVC)
   add_compile_options(/W4 /WX)
 else()
