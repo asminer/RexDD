@@ -261,7 +261,7 @@ bool rexdd_eval(
  ********************************************************************/
 
 struct rexdd_function_s {
-
+    const char* name;      // used for displaying in dot output
     rexdd_forest_t *owner;
 
     rexdd_edge_t root;
@@ -271,73 +271,35 @@ struct rexdd_function_s {
 };
 
 typedef struct rexdd_function_s     rexdd_function_t;
-typedef struct rexdd_function_s*    rexdd_function_p;
 
-/*
- *  TBD: probably don't make this inlined
+
+/****************************************************************************
  *
- *  Add a function node to its owner's list of roots.
- *
- */
-static inline void rexdd_add_to_forest_roots(rexdd_function_p f)
-{
-    if (0==f) rexdd_error(__FILE__, __LINE__, "null pointer for f\n");
-
-    // TBD.
-    // Add node f to the front of f->owner's list of roots,
-    // and update doubly-linked list pointers.
-}
-
-/*
- *  TBD: probably don't make this inlined
- *
- *  Remove a function node from its owner's list of roots,
- *  and set the owner and list pointers to null.
- *
- */
-static inline void rexdd_remove_from_forest_roots(rexdd_function_p f)
-{
-    if (0==f) rexdd_error(__FILE__, __LINE__, "null pointer for f\n");
-
-    //
-    // TBD.
-    // update f->prev, f->next, and other pointers.
-    // Might need to update f->owner's list pointer.
-
-    f->owner = 0;
-    f->prev = 0;
-    f->next = 0;
-}
-
-
-/*
  *  Initialize a function struct.
+ *  Sets everything to null.
  *
- *  TBD: probably should throw a runtime error if f is null.
  */
-static inline void rexdd_init_function(rexdd_function_p f)
+static inline void rexdd_init_function(rexdd_function_t *f)
 {
     if (0==f) rexdd_error(__FILE__, __LINE__, "null pointer for f\n");
 
+    f->name = 0;
     f->owner = 0;
-    f->prev = 0;
-    f->next = 0;
 }
 
 
-/*
- * Done with a function.
+/****************************************************************************
+ *
+ *  Done with a function.
+ *  Will remove the function from the forest's list of root nodes,
+ *  and zero out the struct.
+ *
  */
-static inline void rexdd_done_function(rexdd_function_p f)
-{
-    if (0==f) rexdd_error(__FILE__, __LINE__, "null pointer for f\n");
-
-    rexdd_remove_from_forest_roots(f);
-}
+void rexdd_done_function(rexdd_function_t *f);
 
 
-
-/*
+/****************************************************************************
+ *
  *  Build a function of a single variable,
  *  using an already initialized function struct.
  *      @param  fn      function struct, specifies forest to use
@@ -348,12 +310,13 @@ static inline void rexdd_done_function(rexdd_function_p f)
  *                      (i.e., build !v instead of v).
  */
 void rexdd_reset_as_variable(
-        rexdd_function_p    fn,
+        rexdd_function_t    *fn,
         uint32_t            v,
         bool                c);
 
 
-/*
+/****************************************************************************
+ *
  *  Initialize a function struct,
  *  and fill it with a function of a single variable.
  *      @param  fn      uninitialized function struct on input;
@@ -366,14 +329,15 @@ void rexdd_reset_as_variable(
  *                      (i.e., build !v instead of v).
  */
 void rexdd_init_as_variable(
-        rexdd_function_p    fn,
+        rexdd_function_t    *fn,
         rexdd_forest_t      *For,
         uint32_t            v,
         bool                c);
 
 
 
-/*
+/****************************************************************************
+ *
  *  If-then-else operator.
  *      @param  f       Function f, already set.
  *      @param  g       Function g, already set, in same forest as f.
@@ -384,10 +348,10 @@ void rexdd_init_as_variable(
  *                      result(x) = f(x) ? g(x) : h(x).
  */
 void rexdd_ITE(
-        const rexdd_function_p f,
-        const rexdd_function_p g,
-        const rexdd_function_p h,
-              rexdd_function_p result);
+        const rexdd_function_t *f,
+        const rexdd_function_t *g,
+        const rexdd_function_t *h,
+              rexdd_function_t *result);
 
 
 /****************************************************************************
