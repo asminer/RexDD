@@ -605,8 +605,8 @@ void rexdd_reduce_node(
     reduced->label.rule = rexdd_rule_X;
     reduced->label.complemented = 0;
     reduced->label.swapped = 0;
-    
-    
+
+
     //TBD
 
 
@@ -1022,9 +1022,9 @@ static inline void rexdd_add_to_forest_roots(rexdd_function_t *f,
     rexdd_sanity1(f, "null pointer for f\n");
     rexdd_sanity1(owner, "null pointer for owner\n");
 
+    f->owner = owner;
     // TBD.
     // Add node f to the front of owner's list of roots,
-    // update f,
     // and update doubly-linked list pointers.
 }
 
@@ -1035,6 +1035,7 @@ static inline void rexdd_add_to_forest_roots(rexdd_function_t *f,
 static inline void rexdd_remove_from_forest_roots(rexdd_function_t *f)
 {
     rexdd_sanity1(f, "null pointer for f\n");
+    if (0==f->owner) return;
 
     //
     // TBD.
@@ -1054,11 +1055,9 @@ void rexdd_done_function(rexdd_function_t *f)
 {
     rexdd_check1(f, "null pointer for f\n");
 
-    if (f->owner) {
-        rexdd_remove_from_forest_roots(f);
-        f->owner = 0;
-    }
+    rexdd_remove_from_forest_roots(f);
 
+    f->owner = 0;
     f->name = 0;
 }
 
@@ -1067,51 +1066,30 @@ void rexdd_done_function(rexdd_function_t *f)
  *
  *  Build a function of a single variable,
  *  using an already initialized function struct.
- *      @param  fn      function struct, specifies forest to use
- *                      and the function will be updated in place.
+ *      @param  fn      function struct
+ *      @param  forest  Forest to use; may be different from fn's forest
  *      @param  v       Variable level.  If 0, will build
  *                      a constant function 'false'.
  *      @param  c       If true, complement the variable
  *                      (i.e., build !v instead of v).
  */
-void rexdd_reset_as_variable(
+void rexdd_build_variable(
         rexdd_function_t    *fn,
+        rexdd_forest_t      *forest,
         uint32_t            v,
         bool                c)
 {
     rexdd_check1(fn, "null pointer for fn\n");
-    rexdd_check1(fn->owner, "null pointer for function owner\n");
+    rexdd_check1(forest, "null pointer for forest\n");
 
-    // just need to update fn->root
+    if (forest != fn->owner) {
+        rexdd_remove_from_forest_roots(fn);
+        rexdd_add_to_forest_roots(fn, forest);
+    }
+
+    // TBD: update fn->root
 }
 
-
-/****************************************************************************
- *
- *  Initialize a function struct,
- *  and fill it with a function of a single variable.
- *      @param  fn      uninitialized function struct on input;
- *                      will be initialized and filled with the
- *                      desired function.
- *      @param  For     Forest to use.
- *      @param  v       Variable level.  If 0, will build
- *                      a constant function 'false'.
- *      @param  c       If true, complement the variable
- *                      (i.e., build !v instead of v).
- */
-void rexdd_init_as_variable(
-        rexdd_function_t    *fn,
-        rexdd_forest_t      *For,
-        uint32_t            v,
-        bool                c)
-{
-    rexdd_check1(fn, "null pointer for function\n");
-    rexdd_check1(For, "null pointer for forest\n");
-
-    rexdd_add_to_forest_roots(fn, For);
-
-    // update fn->root, just like rexdd_reset_as_variable
-}
 
 
 
@@ -1127,6 +1105,9 @@ void rexdd_init_as_variable(
 //               rexdd_function_p result)
 // {
 
+        // make sure f,g,h are not null.
+        // make sure f,g,h have the same owner.
+        // if result->owner != f->owner, change it
 // }
 
 

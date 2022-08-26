@@ -302,35 +302,16 @@ void rexdd_done_function(rexdd_function_t *f);
  *
  *  Build a function of a single variable,
  *  using an already initialized function struct.
- *      @param  fn      function struct, specifies forest to use
- *                      and the function will be updated in place.
+ *      @param  fn      function struct
+ *      @param  forest  Forest to use; may be different from fn's forest
  *      @param  v       Variable level.  If 0, will build
  *                      a constant function 'false'.
  *      @param  c       If true, complement the variable
  *                      (i.e., build !v instead of v).
  */
-void rexdd_reset_as_variable(
+void rexdd_build_variable(
         rexdd_function_t    *fn,
-        uint32_t            v,
-        bool                c);
-
-
-/****************************************************************************
- *
- *  Initialize a function struct,
- *  and fill it with a function of a single variable.
- *      @param  fn      uninitialized function struct on input;
- *                      will be initialized and filled with the
- *                      desired function.
- *      @param  For     Forest to use.
- *      @param  v       Variable level.  If 0, will build
- *                      a constant function 'false'.
- *      @param  c       If true, complement the variable
- *                      (i.e., build !v instead of v).
- */
-void rexdd_init_as_variable(
-        rexdd_function_t    *fn,
-        rexdd_forest_t      *For,
+        rexdd_forest_t      *forest,
         uint32_t            v,
         bool                c);
 
