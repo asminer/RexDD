@@ -43,4 +43,4 @@ to set up debugging build directories for QBDD.
 5. To change build for another type of BDDs when there is already one 
 build directory,
 run ```rm CMakeCache.txt; rm -rf CMakeFiles``` in the same build directory, 
-then cd into rexdd and run ```cmake . --preset=debug -D*BDD``` for *BDD
+then cd into rexdd and run ```cmake . --preset=debug -D*BDD=ON``` for *BDD
