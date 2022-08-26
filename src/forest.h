@@ -276,12 +276,12 @@ typedef struct rexdd_function_s     rexdd_function_t;
 /****************************************************************************
  *
  *  Initialize a function struct.
- *  Sets everything to null.
+ *  Sets critical members to null.
  *
  */
 static inline void rexdd_init_function(rexdd_function_t *f)
 {
-    if (0==f) rexdd_error(__FILE__, __LINE__, "null pointer for f\n");
+    rexdd_check1(f, "null pointer for f\n");
 
     f->name = 0;
     f->owner = 0;
