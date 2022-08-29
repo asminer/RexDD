@@ -39,6 +39,27 @@ static inline void rexdd_init_function(rexdd_function_t *f)
 
 /****************************************************************************
  *
+ *  Evaluate a function.
+ *
+ *      @param  f           Function to evaluate
+ *      @param  values      Values for each variable.  values[n]
+ *                          will be assigned to variable x_n.
+ *                          values[0] will be ignored.
+ *                          The array must have dimension at least
+ *                          (number of forest variables) plus one.
+ *
+ *      @return             The value of the function.
+ *
+ *      TBD: in the future, maybe we have rexdd_evaluate_int
+ *      and rexdd_evaluate_float for MTBDDs?
+ *
+ */
+bool rexdd_evaluate_bool(rexdd_function_t *f, const bool* values);
+
+
+
+/****************************************************************************
+ *
  *  Done with a function.
  *  Will remove the function from the forest's list of root nodes,
  *  and zero out the struct.
