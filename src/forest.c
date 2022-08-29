@@ -147,7 +147,18 @@ void rexdd_reduce_node(
     if (rexdd_is_terminal(P->edge[1].target)
         && P->edge[1].label.rule != rexdd_rule_X
         && (rexdd_is_one(P->edge[1].label.rule) == P->edge[1].label.complemented)) {
+            P->edge[1].label.rule = rexdd_rule_X;
+        }
+#endif
+
+#if defined ZBDD || defined ESRBDD
+    if (rexdd_is_terminal(P->edge[0].target) && !rexdd_terminal_value(P->edge[0].target)
+        && P->edge[0].label.rule != rexdd_rule_X) {
             P->edge[0].label.rule = rexdd_rule_X;
+        }
+    if (rexdd_is_terminal(P->edge[1].target) && !rexdd_terminal_value(P->edge[1].target)
+        && P->edge[1].label.rule != rexdd_rule_X) {
+            P->edge[1].label.rule = rexdd_rule_X;
         }
 #endif
 
@@ -567,20 +578,25 @@ void rexdd_reduce_node(
     }
 #endif
 
-#ifdef QBDD
+
+#if defined C_QBDD || defined CS_QBDD || defined QBDD
     reduced->label.rule = rexdd_rule_X;
-    reduced->label.complemented = 0;
-    reduced->label.swapped = 0;
+
+    rexdd_normalize_node(P, reduced);
     reduced->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, P));
 #endif
 
-#ifdef FBDD
+#if defined C_FBDD || defined CS_FBDD || defined FBDD
     reduced->label.rule = rexdd_rule_X;
-    reduced->label.complemented = 0;
-    reduced->label.swapped = 0;
-    if (P->edge[0].target == P->edge[1].target) {
+
+    if (P->edge[0].target == P->edge[1].target
+        && P->edge[0].label.complemented == P->edge[1].label.complemented
+        && P->edge[0].label.swapped == P->edge[1].label.swapped) {
+        reduced->label.complemented = P->edge[0].label.complemented;
+        reduced->label.swapped = P->edge[0].label.swapped;
         reduced->target = P->edge[0].target;
     } else {
+        rexdd_normalize_node(P, reduced);
         reduced->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, P));
     }
 #endif
@@ -600,16 +616,64 @@ void rexdd_reduce_node(
         reduced->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, P));
     }
 #endif
-// #define ESRBDD
-#ifdef ESRBDD
-    reduced->label.rule = rexdd_rule_X;
+
+#if defined ESRBDD || defined CESRBDD
+    uint_fast32_t ln, hn;
+    if (rexdd_is_terminal(P->edge[0].target)) {
+        ln = P->level;
+    } else {
+        ln = P->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, P->edge[0].target));
+    }
+    if (rexdd_is_terminal(P->edge[1].target)) {
+        hn = P->level;
+    } else {
+        hn = P->level - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, P->edge[1].target));
+    }
+
     reduced->label.complemented = 0;
     reduced->label.swapped = 0;
 
+    if (P->edge[0].target == P->edge[1].target
+        && P->edge[0].label.rule == rexdd_rule_X
+        && P->edge[1].label.rule == rexdd_rule_X
+        && P->edge[0].label.complemented == P->edge[1].label.complemented) {
+        reduced->label.rule = rexdd_rule_X;
+        reduced->label.complemented = P->edge[0].label.complemented;
+        reduced->target = P->edge[1].target;
+    } else if (P->edge[1].target == rexdd_make_terminal(0) && P->edge[1].label.rule == rexdd_rule_X
+                && ((rexdd_is_EH(P->edge[0].label.rule) 
+                    && rexdd_is_one(P->edge[0].label.rule) == P->edge[1].label.complemented)
+                    || (P->edge[0].label.rule == rexdd_rule_X && ln == 1))) {
+        if (P->edge[1].label.complemented){
+            reduced->label.rule = rexdd_rule_EH1;
+        } else {
+            reduced->label.rule = rexdd_rule_EH0;
+        }
+        reduced->label.complemented = P->edge[0].label.complemented;
+        reduced->target = P->edge[0].target;
+    } else if (P->edge[0].target == rexdd_make_terminal(0) && P->edge[0].label.rule == rexdd_rule_X
+                && ((rexdd_is_EL(P->edge[1].label.rule) 
+                    && rexdd_is_one(P->edge[1].label.rule) == P->edge[0].label.complemented)
+                    || (P->edge[1].label.rule == rexdd_rule_X && hn == 1))) {
+        if (P->edge[0].label.complemented){
+            reduced->label.rule = rexdd_rule_EL1;
+        } else {
+            reduced->label.rule = rexdd_rule_EL0;
+        }
+        reduced->label.complemented = P->edge[1].label.complemented;
+        reduced->target = P->edge[1].target;
+    } else {
+        reduced->label.rule = rexdd_rule_X;
+        rexdd_normalize_node(P,reduced);
+        reduced->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, P));
+    }
 
-    //TBD
-
-
+    if (reduced->target == rexdd_make_terminal(0)) {
+        if (reduced->label.rule != rexdd_rule_X
+            && reduced->label.complemented == rexdd_is_one(reduced->label.rule)) {
+            reduced->label.rule = rexdd_rule_X;            
+            }
+    }
 #endif
 
 
@@ -861,7 +925,6 @@ void rexdd_merge_edge(
 }
 
 /* ================================================================================================ */
-// #ifdef REXBDD
 void rexdd_reduce_edge(
         rexdd_forest_t          *F,
         uint_fast32_t           m,
@@ -933,12 +996,10 @@ void rexdd_reduce_edge(
         rexdd_edge_t reduced;
 
         rexdd_reduce_node(F, &p, &reduced);
-#ifndef ESRBDD
+
         rexdd_merge_edge(F, m, p.level, l, &reduced, out);
-#endif
     }
 }
-// #endif
 
 /* ================================================================================================ */
 

@@ -112,7 +112,7 @@ void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     }
 
     fprintf(f, "\t{rank=same v0 \"T0\" [label = \"0\", shape = square]}\n");
-#ifndef REXBDD
+#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
     fprintf(f, "\t{rank=same v0 \"T1\" [label = \"1\", shape = square]}\n");
 #endif
 
@@ -162,7 +162,7 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
     rexdd_unpacked_node_t node;
     char label_bufferL[10];
     char label_bufferH[10];
-#ifndef REXBDD
+#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
     for (rexdd_node_handle_t t=1; t<=F->M->pages->first_unalloc; t++) {
 #else
     for (rexdd_node_handle_t t=1; t<F->M->pages->first_unalloc; t++) {
@@ -229,7 +229,7 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
     }
 
     fprintf(f, "\t{rank=same v0 \"T0\" [label = \"0\", shape = square]}\n");
-#ifndef REXBDD
+#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
     fprintf(f, "\t{rank=same v0 \"T1\" [label = \"1\", shape = square]}\n");
 #endif
 
@@ -356,10 +356,26 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     snprintf(buffer, 24, "L%d_nodeFun_QBDD.txt", levels);
     snprintf(buffer2, 24, "L%d_funNode_QBDD.txt", levels);
 #endif
+#ifdef C_QBDD
+    snprintf(buffer, 24, "L%d_nodeFun_CQBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_CQBDD.txt", levels);
+#endif
+#ifdef CS_QBDD
+    snprintf(buffer, 24, "L%d_nodeFun_CSQBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_CSQBDD.txt", levels);
+#endif
 
 #ifdef FBDD
     snprintf(buffer, 24, "L%d_nodeFun_FBDD.txt", levels);
     snprintf(buffer2, 24, "L%d_funNode_FBDD.txt", levels);
+#endif
+#ifdef C_FBDD
+    snprintf(buffer, 24, "L%d_nodeFun_CFBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_CFBDD.txt", levels);
+#endif
+#ifdef CS_FBDD
+    snprintf(buffer, 24, "L%d_nodeFun_CSFBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_CSFBDD.txt", levels);
 #endif
 
 #ifdef ZBDD
@@ -370,6 +386,10 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 #ifdef ESRBDD
     snprintf(buffer, 24, "L%d_nodeFun_ESRBDD.txt", levels);
     snprintf(buffer2, 24, "L%d_funNode_ESRBDD.txt", levels);
+#endif
+#ifdef CESRBDD
+    snprintf(buffer, 24, "L%d_nodeFun_CESRBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_CESRBDD.txt", levels);
 #endif
 
 #ifdef REXBDD
@@ -396,9 +416,21 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 #ifdef QBDD
     printf("max number of nodes(including terminal) for any level %d QBDD is: %d\n\n",levels, max_num);
 #endif
+#ifdef C_QBDD
+    printf("max number of nodes(including terminal) for any level %d CQBDD is: %d\n\n",levels, max_num);
+#endif
+#ifdef CS_QBDD
+    printf("max number of nodes(including terminal) for any level %d CSQBDD is: %d\n\n",levels, max_num);
+#endif
 
 #ifdef FBDD
     printf("max number of nodes(including terminal) for any level %d FBDD is: %d\n\n",levels, max_num);
+#endif
+#ifdef C_FBDD
+    printf("max number of nodes(including terminal) for any level %d CFBDD is: %d\n\n",levels, max_num);
+#endif
+#ifdef CS_FBDD
+    printf("max number of nodes(including terminal) for any level %d CSFBDD is: %d\n\n",levels, max_num);
 #endif
 
 #ifdef ZBDD
@@ -407,6 +439,9 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 
 #ifdef ESRBDD
     printf("max number of nodes(including terminal) for any level %d ESRBDD is: %d\n\n",levels, max_num);
+#endif
+#ifdef CESRBDD
+    printf("max number of nodes(including terminal) for any level %d CESRBDD is: %d\n\n",levels, max_num);
 #endif
 
 #ifdef REXBDD
@@ -548,9 +583,21 @@ int main()
 #ifdef QBDD
     f = fopen("QBDD.gv", "w+");
 #endif
+#ifdef C_QBDD
+    f = fopen("CQBDD.gv", "w+");
+#endif
+#ifdef CS_QBDD
+    f = fopen("CSQBDD.gv", "w+");
+#endif
 
 #ifdef FBDD
     f = fopen("FBDD.gv", "w+");
+#endif
+#ifdef C_FBDD
+    f = fopen("CFBDD.gv", "w+");
+#endif
+#ifdef CS_FBDD
+    f = fopen("CSFBDD.gv", "w+");
 #endif
 
 #ifdef ZBDD
@@ -559,6 +606,9 @@ int main()
 
 #ifdef ESRBDD
     f = fopen("ESRBDD.gv", "w+");
+#endif
+#ifdef CESRBDD
+    f = fopen("CESRBDD.gv", "w+");
 #endif
 
 #ifdef REXBDD
@@ -596,15 +646,21 @@ int main()
     export_funsNum(F, levels, ptr4);
 
     printf("\n=============================================================\n");
+#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
+    uint32_t max_number = F.M->pages->first_unalloc;
+#else 
+    uint32_t max_number = F.M->pages->first_unalloc-1;
+#endif
 
-    printf("Total number of nodes in the forest: %u\n", F.M->pages->first_unalloc);
+
+    printf("Total number of nodes in the forest: %u\n", max_number);
 
     int node_l;
     int count_nodeLvl[levels];
     for (int i=0; i<levels; i++) {
         count_nodeLvl[i] = 0;
     }
-    for (rexdd_node_handle_t h = 1; h<=F.M->pages->first_unalloc; h++) {
+    for (rexdd_node_handle_t h = 1; h<=max_number; h++) {
         if (!rexdd_is_terminal(h)) {
             node_l = rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, h));
             count_nodeLvl[node_l-1]++;
@@ -627,6 +683,7 @@ int main()
 
     rexdd_free_forest(&F);
 
+#ifdef EXPORT_FUNS
     FILE *out;
     out = fopen("Vars.txt", "w+");
     fprintf(out, "x1\tx2\tx3\n");
@@ -687,7 +744,7 @@ int main()
     fprintf(out,"=============================\n");
     
     fclose(out);
-    
+#endif
 
     return 0;
 }
