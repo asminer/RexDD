@@ -31,8 +31,9 @@ void rexdd_init_forest(rexdd_forest_t *F, const rexdd_forest_settings_t *s)
     rexdd_init_nodeman(F->M,0);
     F->UT = malloc(sizeof(rexdd_unique_table_t));
     rexdd_init_UT(F->UT, F->M);
-    F->roots = malloc(sizeof(rexdd_function_t));
-    rexdd_init_function(F->roots);
+
+    // Initialize list of root edges (empty)
+    F->roots = NULL;
 
 }
 
@@ -44,9 +45,6 @@ void rexdd_free_forest(rexdd_forest_t *F)
     rexdd_default_forest_settings(0, &(F->S));
     rexdd_free_UT(F->UT);
     rexdd_free_nodeman(F->M);
-
-    // remove rexdd_function_s TBD
-    rexdd_done_function(F->roots);
 }
 
 /* ================================================================================================ */
@@ -641,7 +639,7 @@ void rexdd_reduce_node(
         reduced->label.complemented = P->edge[0].label.complemented;
         reduced->target = P->edge[1].target;
     } else if (P->edge[1].target == rexdd_make_terminal(0) && P->edge[1].label.rule == rexdd_rule_X
-                && ((rexdd_is_EH(P->edge[0].label.rule) 
+                && ((rexdd_is_EH(P->edge[0].label.rule)
                     && rexdd_is_one(P->edge[0].label.rule) == P->edge[1].label.complemented)
                     || (P->edge[0].label.rule == rexdd_rule_X && ln == 1))) {
         if (P->edge[1].label.complemented){
@@ -652,7 +650,7 @@ void rexdd_reduce_node(
         reduced->label.complemented = P->edge[0].label.complemented;
         reduced->target = P->edge[0].target;
     } else if (P->edge[0].target == rexdd_make_terminal(0) && P->edge[0].label.rule == rexdd_rule_X
-                && ((rexdd_is_EL(P->edge[1].label.rule) 
+                && ((rexdd_is_EL(P->edge[1].label.rule)
                     && rexdd_is_one(P->edge[1].label.rule) == P->edge[0].label.complemented)
                     || (P->edge[1].label.rule == rexdd_rule_X && hn == 1))) {
         if (P->edge[0].label.complemented){
@@ -671,7 +669,7 @@ void rexdd_reduce_node(
     if (reduced->target == rexdd_make_terminal(0)) {
         if (reduced->label.rule != rexdd_rule_X
             && reduced->label.complemented == rexdd_is_one(reduced->label.rule)) {
-            reduced->label.rule = rexdd_rule_X;            
+            reduced->label.rule = rexdd_rule_X;
             }
     }
 #endif
@@ -1061,115 +1059,6 @@ bool rexdd_eval(
 
 
 
-
-
-
-
-/********************************************************************
- *
- *  Top-level, easy to use function interface.
- *
- ********************************************************************/
-
-
-/*
- *
- *  Helper: Add a function node to its owner's list of roots.
- *
- */
-static inline void rexdd_add_to_forest_roots(rexdd_function_t *f,
-        rexdd_forest_t *owner)
-{
-    rexdd_sanity1(f, "null pointer for f\n");
-    rexdd_sanity1(owner, "null pointer for owner\n");
-
-    f->owner = owner;
-    // TBD.
-    // Add node f to the front of owner's list of roots,
-    // and update doubly-linked list pointers.
-}
-
-/*
- *  Helper: Remove a function node from its owner's list of roots,
- *
- */
-static inline void rexdd_remove_from_forest_roots(rexdd_function_t *f)
-{
-    rexdd_sanity1(f, "null pointer for f\n");
-    if (0==f->owner) return;
-
-    //
-    // TBD.
-    // update f->prev, f->next, and other pointers.
-    // Might need to update f->owner's list pointer.
-}
-
-
-/****************************************************************************
- *
- *  Done with a function.
- *  Will remove the function from the forest's list of root nodes,
- *  and zero out the struct as needed.
- *
- */
-void rexdd_done_function(rexdd_function_t *f)
-{
-    rexdd_check1(f, "null pointer for f\n");
-
-    rexdd_remove_from_forest_roots(f);
-
-    f->owner = 0;
-    f->name = 0;
-}
-
-
-/****************************************************************************
- *
- *  Build a function of a single variable,
- *  using an already initialized function struct.
- *      @param  fn      function struct
- *      @param  forest  Forest to use; may be different from fn's forest
- *      @param  v       Variable level.  If 0, will build
- *                      a constant function 'false'.
- *      @param  c       If true, complement the variable
- *                      (i.e., build !v instead of v).
- */
-void rexdd_build_variable(
-        rexdd_function_t    *fn,
-        rexdd_forest_t      *forest,
-        uint32_t            v,
-        bool                c)
-{
-    rexdd_check1(fn, "null pointer for fn\n");
-    rexdd_check1(forest, "null pointer for forest\n");
-
-    if (forest != fn->owner) {
-        rexdd_remove_from_forest_roots(fn);
-        rexdd_add_to_forest_roots(fn, forest);
-    }
-
-    // TBD: update fn->root
-}
-
-
-
-
-/*=======================
-|| We ignore for now   ||
-=======================*/
-
-
-// void rexdd_ITE(
-//         const rexdd_function_p f,
-//         const rexdd_function_p g,
-//         const rexdd_function_p h,
-//               rexdd_function_p result)
-// {
-
-        // make sure f,g,h are not null.
-        // make sure f,g,h have the same owner.
-        // if result->owner != f->owner, change it
-// }
 
 
 /*
