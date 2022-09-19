@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+//================================Helper Function==================================
 void boolNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, bool count[handle+1])
 {
     if (rexdd_is_terminal(handle)) {
@@ -79,6 +79,7 @@ void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     }
 }
 
+// Build dot file for BDD with one root edge
 void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
 {
     fprintf(f, "digraph g\n{\n");
@@ -119,6 +120,7 @@ void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     fprintf(f, "}");
 }
 
+// Build dot file for BDDs in the forest with all root edges
 void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
 {
     fprintf(f, "digraph g\n{\n");
@@ -272,21 +274,14 @@ int countTerm(rexdd_forest_t *F, rexdd_node_handle_t handle)
     }
     return count;
 }
-
-void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Function_in[][0x01 << (0x01 << (levels-1))], rexdd_edge_t ptr_in[], 
-                                            bool Vars_out[][levels+1], bool Function_out[][0x01 << (0x01 << levels)], rexdd_edge_t ptr_out[])
+//===============================================================================
+void make_varsFuns(int levels, bool Vars_in[][levels], bool Function_in[][0x01 << (0x01 << (levels-1))],
+                     bool Vars_out[][levels+1], bool Function_out[][0x01 << (0x01 << levels)])
 {
     for (int i = 0; i < 0x01<<levels; i++)
     {
         Vars_out[i][0] = 0;
-        if (i < 0x01<<(levels-1))
-        {
-            Vars_out[i][levels] = 0;
-        }
-        else
-        {
-            Vars_out[i][levels] = 1;
-        }
+        Vars_out[i][levels] = !(i < 0x01<<(levels-1));
         for (int j = 1; j < levels; j++)
         {
             Vars_out[i][j] = Vars_in[i % (0x01<<(levels-1))][j];
@@ -300,6 +295,51 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
             }
         }
     }
+}
+
+int32_t low_funNum(int levels, bool Function[0x01 << levels], 
+                    bool Function_low[][0x01 << (0x01 << (levels-1))])
+{
+    int32_t low=0;
+    for (int32_t k=0; k<0x01<<(0x01<<(levels-1)); k++) {
+        for (int32_t i=0; i<0x01 << (levels-1); i++){
+            if (Function[i]==Function_low[i][k]){
+                if (i==((0x01<<(levels-1))-1)) {
+                    low = k;
+                }
+                continue;
+            } else {
+                break;
+            }
+        }
+    }
+    return low;
+}
+
+int32_t high_funNum(int levels, bool Function[0x01 << levels], 
+                    bool Function_high[][0x01 << (0x01 << (levels-1))])
+{
+    int32_t high=0;
+    for (int32_t k=0; k<0x01<<(0x01<<(levels-1)); k++) {
+        for (int32_t i=0x01<<(levels-1); i<0x01<<(levels); i++){
+            if (Function[i]==Function_high[i%(0x01<<(levels-1))][k]){
+                if (i==((0x01<<levels)-1)) {
+                    high = k;
+                }
+                continue;
+            } else {
+                break;
+            }
+        }
+    }
+    return high;
+}
+
+void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Function_in[][0x01 << (0x01 << (levels-1))], rexdd_edge_t ptr_in[], 
+                                            bool Vars_out[][levels+1], bool Function_out[][0x01 << (0x01 << levels)], rexdd_edge_t ptr_out[])
+{
+    make_varsFuns(levels, Vars_in, Function_in, Vars_out, Function_out);
+
     rexdd_unpacked_node_t temp;
     temp.level = 1;
     temp.edge[0].label.rule = rexdd_rule_X;
@@ -680,7 +720,144 @@ int main()
     build_gv(t, &F, ptr4[4982]);
     fclose(t);
     // -------------------------------------------------------------------------
+    
+    /* ==========================================================================
+     *      Level 5 test AL AH 
+     * ==========================================================================*/
+    printf("\n=============================================================\n");
+    printf("\n======================Testing PushUpAll======================\n");
+    levels = 5;
+    printf("Testing Level Five...\n");
+    bool Vars_5[0x01<<levels][levels+1];
+    bool Function_5[0x01<<levels][0x01<<(0x01<<levels)];
+    make_varsFuns(levels, Vars_4, Function_4, Vars_5, Function_5);
 
+    // test all 80 cases: swap, complement, rules, target_nodes
+    bool test_function[0x01<<levels];
+    int c_incoming, s_incoming;
+    rexdd_rule_t rules[4];
+    rules[0] = rexdd_rule_AL0;
+    rules[1] = rexdd_rule_AL1;
+    rules[2] = rexdd_rule_AH0;
+    rules[3] = rexdd_rule_AH1;
+    rexdd_node_handle_t l2_target[5];
+    l2_target[0] = ptr2[2].target;
+    l2_target[1] = ptr2[3].target;
+    l2_target[2] = ptr2[4].target;
+    l2_target[3] = ptr2[5].target;
+    l2_target[4] = ptr2[6].target;
+    rexdd_edge_t temp_ALL;
+    int32_t lowNum, highNum;
+
+    rexdd_unpacked_node_t l2_unpacked_target, l5_unpacked_root;
+    rexdd_edge_t reduced_long, reduced_short;
+    rexdd_edge_label_t l5_incoming_label;
+    l5_incoming_label.complemented = 0;
+    l5_incoming_label.swapped = 0;
+    l5_incoming_label.rule = rexdd_rule_X;
+    l5_unpacked_root.level = levels;
+
+    char buffer_err[36];
+    int pass_count = 0, err_count = 0;
+
+    for (c_incoming=0; c_incoming<2; c_incoming++) {
+        for (s_incoming=0; s_incoming<2; s_incoming++) {
+            for (int i=0; i<4; i++) {
+                for (int j=0; j<5; j++) {
+                    // initial the incoming edge to level 2 nodes
+                    temp_ALL.label.complemented = c_incoming;
+                    temp_ALL.label.swapped = s_incoming;
+                    temp_ALL.label.rule = rules[i];
+                    temp_ALL.target = l2_target[j];
+                    // get its evaluated function and low/high function number
+                    for (uint16_t k=0; k<0x01<<levels; k++) {
+                        test_function[k] = rexdd_eval(&F, &temp_ALL, levels, Vars_5[k]);
+                    }
+                    lowNum = low_funNum(levels, test_function, Function_4);
+                    highNum = high_funNum(levels, test_function, Function_4);
+                    //build unreduced rexdd rooted level 5
+                    l5_unpacked_root.edge[0] = ptr4[lowNum];
+                    l5_unpacked_root.edge[1] = ptr4[highNum];
+
+                    //reduce long ALL edge
+                    rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.M, temp_ALL.target), &l2_unpacked_target);
+                    rexdd_reduce_edge(&F,levels,temp_ALL.label,l2_unpacked_target,&reduced_long);
+                    //check if reduced has the same function
+                    for (uint16_t ll=0; ll<0x01<<levels; ll++) {
+                        if (test_function[ll] != rexdd_eval(&F, &reduced_long, levels, Vars_5[ll])){
+                            printf("/*reduced long edge change the function*/\n");
+                            break;
+                        }
+                    }
+
+                    //reduce short edge to root at level 5
+                    rexdd_reduce_edge(&F,levels, l5_incoming_label, l5_unpacked_root, &reduced_short);
+                    //check if reduced has the same function
+                    for (uint16_t ss=0; ss<0x01<<levels; ss++) {
+                        if (test_function[ss] != rexdd_eval(&F, &reduced_short, levels, Vars_5[ss])){
+                            printf("/*reduced short edge change the function*/\n");
+                            break;
+                        }
+                    }
+
+                    if (!rexdd_edges_are_equal(&reduced_long, &reduced_short)) {
+                        err_count++;
+                        printf("->ERROR%d: c: %d; s: %d; rule: %d; target: %d\n",
+                                err_count, c_incoming, s_incoming, i, j);
+                        FILE *out_err;
+                        
+                        snprintf(buffer_err, 36, "ERR%dL_%d_H_%d_long.gv",err_count, lowNum,highNum);
+                        out_err = fopen(buffer_err, "w+");
+                        build_gv(out_err,&F,reduced_long);
+                        fclose(out_err);
+
+                        snprintf(buffer_err, 36, "ERR%dL_%d_H_%d_short.gv",err_count, lowNum,highNum);
+                        out_err = fopen(buffer_err, "w+");
+                        build_gv(out_err,&F,reduced_short);
+                        fclose(out_err);
+                    } else {
+                        pass_count++;
+                        FILE *out_eq;
+                        
+                        snprintf(buffer_err, 36, "PASS%d_L_%d_H_%d_long.gv", pass_count, lowNum,highNum);
+                        out_eq = fopen(buffer_err, "w+");
+                        build_gv(out_eq,&F,reduced_long);
+                        fclose(out_eq);
+
+                        snprintf(buffer_err, 36, "PASS%d_L_%d_H_%d_short.gv", pass_count, lowNum,highNum);
+                        out_eq = fopen(buffer_err, "w+");
+                        build_gv(out_eq,&F,reduced_short);
+                        fclose(out_eq);
+                        printf("PASS%d: c: %d; s: %d; rule: %d; target: %d\n",
+                                pass_count, c_incoming, s_incoming, i, j);
+
+                        continue;
+                    }
+                }
+
+            }
+        }
+    }
+    printf("Done!\n");
+
+
+
+    // test error
+    // rexdd_edge_t test_v5, test_reduced_long;
+    // test_v5.label.complemented = 0;
+    // test_v5.label.swapped  = 1;
+    // test_v5.label.rule = rexdd_rule_AL0;
+    // test_v5.target = l2_target[2];
+    // rexdd_unpacked_node_t unpacked_v2;
+    // rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.M, test_v5.target), &unpacked_v2);
+    // rexdd_reduce_edge(&F,levels,test_v5.label,unpacked_v2,&test_reduced_long);
+
+    // FILE *out_test;
+    // out_test = fopen("test_long.gv", "w+");
+    // build_gv(out_test,&F, test_reduced_long);
+    // fclose(out_test);
+
+    // ---------------------------------Free------------------------------------
     rexdd_free_forest(&F);
 
 #ifdef EXPORT_FUNS
