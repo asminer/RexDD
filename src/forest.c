@@ -847,9 +847,9 @@ void rexdd_merge_edge(
                 ||
                 (rexdd_is_AH(l.rule) && reduced->label.rule == rexdd_rule_X && reduced_skip>0)) {
         // Push up all
-        bool flag = 0;
-        if (rexdd_is_AH(l.rule)) flag = 1;
+        bool flag = rexdd_is_AH(l.rule);
 
+        /* Build the node at +1 level and normalize it    */
         rexdd_unpacked_node_t new_p;
         new_p.level = n+1;
         new_p.edge[!flag] = *reduced;
@@ -858,66 +858,77 @@ void rexdd_merge_edge(
                 rexdd_is_one(l.rule),
                 0,
                 rexdd_make_terminal(0));     // terminal node
+
+        rexdd_edge_t temp;
+        temp.label.rule = rexdd_rule_X;
+        temp.target = rexdd_make_terminal(0);
+        rexdd_normalize_node(&new_p, &temp);
+        
         rexdd_node_handle_t handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
         handle_new_p = rexdd_insert_UT(F->UT, handle_new_p);
+        temp.target = handle_new_p;
+
+        /* Repeat building the nodes up */
         for (uint32_t i=n+2; i<=m; i++) {
             new_p.level = i;
             new_p.edge[!flag] = *reduced;
-            rexdd_set_edge(&new_p.edge[flag],
-                rexdd_rule_X,
-                0,
-                0,
-                handle_new_p);
-                handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
-                handle_new_p = rexdd_insert_UT(F->UT, handle_new_p);
+            new_p.edge[flag] = temp;
+            
+            rexdd_normalize_node(&new_p, &temp);
+            handle_new_p = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, &new_p));
+            temp.target = handle_new_p;
         }
-        rexdd_set_edge(out,
-                rexdd_rule_X,
-                0,
-                0,
-                handle_new_p);
+        out->label = temp.label;
+        out->target = temp.target;
 
     } else if ((rexdd_is_AL(l.rule) && reduced->label.rule != rexdd_rule_X)
                 ||
                 (rexdd_is_AH(l.rule) && reduced->label.rule != rexdd_rule_X)) {
         // Push up all
-        bool flag = 0;
-        if (rexdd_is_AH(l.rule)) flag = 1;
+        bool flag = rexdd_is_AH(l.rule);
 
+        /* Build the node with same child reduced edges and normalize it    */
         rexdd_unpacked_node_t new_p;
         new_p.level = n+1;
         new_p.edge[0] = *reduced;
         new_p.edge[1] = *reduced;
+        rexdd_edge_t temp1;
+        temp1.label.rule = rexdd_rule_X;
+        temp1.target = rexdd_make_terminal(0);
+        rexdd_normalize_node(&new_p, &temp1);
+
         rexdd_node_handle_t handle_new_p1 = rexdd_nodeman_get_handle(F->M, &new_p);
         handle_new_p1 = rexdd_insert_UT(F->UT, handle_new_p1);
+        temp1.target = handle_new_p1;
 
+        /* Build the unpacked node at the +1 level with one edge to terminal, 
+           it may be reduced or not. So we call rexdd_reduce_node           */
         rexdd_set_edge(&new_p.edge[flag],
                 rexdd_rule_X,
                 rexdd_is_one(l.rule),
                 0,
                 rexdd_make_terminal(0));     // terminal node
-        rexdd_node_handle_t handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
-        handle_new_p = rexdd_insert_UT(F->UT, handle_new_p);
+        new_p.edge[!flag] = *reduced;
+        rexdd_edge_t temp;
+        temp.label.rule = rexdd_rule_X;
+        temp.target = rexdd_make_terminal(0);
+
+        rexdd_reduce_node(F,&new_p, &temp); 
+        rexdd_node_handle_t handle_new_p = temp.target;
+
+        /* Repeat building the nodes up */
         for (uint32_t i=n+2; i<=m; i++) {
             new_p.level = i;
-            rexdd_set_edge(&new_p.edge[flag],
-                rexdd_rule_X,
-                0,
-                0,
-                handle_new_p);
-            rexdd_set_edge(&new_p.edge[!flag],
-                rexdd_rule_X,
-                0,
-                0,
-                handle_new_p1);
-            handle_new_p = rexdd_nodeman_get_handle(F->M, &new_p);
-            handle_new_p = rexdd_insert_UT(F->UT, handle_new_p);
+            new_p.edge[flag] = temp;
+            new_p.edge[!flag] = temp1;
+            temp.label.rule = rexdd_rule_X;
+
+            rexdd_normalize_node(&new_p, &temp);
+            handle_new_p = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, &new_p));
+            temp.target = handle_new_p;
         }
-        rexdd_set_edge(out,
-                rexdd_rule_X,
-                0,
-                0,
-                handle_new_p);
+        out->label = temp.label;
+        out->target = temp.target;
 
     }
 }
