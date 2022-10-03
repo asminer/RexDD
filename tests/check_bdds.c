@@ -26,7 +26,7 @@ void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
 {
     char label_bufferL[10];
     char label_bufferH[10];
-    bool countNode[e.target+1];
+    bool *countNode = malloc((e.target+1)*sizeof(bool));
     for (uint64_t i=0; i<=e.target+1; i++) {
         countNode[i] = 0;
     }
@@ -77,6 +77,7 @@ void fprint_rexdd(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
             continue;
         }
     }
+    free(countNode);
 }
 
 // Build dot file for BDD with one root edge
@@ -245,7 +246,7 @@ int countNodes(rexdd_forest_t *F, rexdd_node_handle_t handle)
     if (rexdd_is_terminal(handle)) {
         count = 0;
     } else {
-        bool countNode[handle+1];
+        bool *countNode = malloc((handle+1)*sizeof(bool)); //[handle+1];
         for (uint64_t i=0; i<=handle+1; i++) {
             countNode[i] = 0;
         }
@@ -253,6 +254,7 @@ int countNodes(rexdd_forest_t *F, rexdd_node_handle_t handle)
         for (uint64_t i=0; i<=handle+1; i++) {
             count = count + countNode[i];
         }
+        free(countNode);
     }
     return count;
 }
@@ -335,6 +337,260 @@ int32_t high_funNum(int levels, bool Function[0x01 << levels],
     return high;
 }
 
+static char skip_whitespce(FILE *fin)
+{
+    for (;;) {
+        char c = fgetc(fin);
+        if (EOF == c) {
+            exit(0);
+        }
+        if ('\n' == c) continue;
+        if (' ' == c) continue;
+        if ('\t' == c) continue;
+        if ('\r' == c) continue;
+        if (':' == c) continue;
+        if (',' == c) continue;
+        if ('>' == c) continue;
+
+        return c;
+    }
+}
+
+int expect_int(FILE *fin)
+{
+    char c = skip_whitespce(fin);
+    if ((c > '9') || (c < '0')) exit(0);
+    ungetc(c, fin);
+    int u;
+    fscanf(fin, "%d", &u);
+    return u;
+}
+
+uint64_t expect_uint64(FILE *fin)
+{
+    char c = skip_whitespce(fin);
+    if ((c > '9') || (c < '0')) exit(0);
+    ungetc(c, fin);
+    uint64_t u;
+    fscanf(fin, "%llu", &u);
+    return u;
+}
+
+rexdd_rule_t expect_rule(FILE *fin)
+{
+    char c = skip_whitespce(fin);
+    rexdd_rule_t rule = rexdd_rule_X;
+    if (c == 'X') {
+        rule = rexdd_rule_X;
+    } else if (c == 'E') {
+        char d = fgetc(fin);
+        if (d == 'L') {
+            if (fgetc(fin) == '0') {
+                rule = rexdd_rule_EL0;
+            } else {
+                rule = rexdd_rule_EL1;
+            }
+        } else if (d == 'H') {
+            if (fgetc(fin) == '0') {
+                rule = rexdd_rule_EH0;
+            } else {
+                rule = rexdd_rule_EH1;
+            }
+        }
+    } else if (c == 'A') {
+        char d = fgetc(fin);
+        if (d == 'L') {
+            if (fgetc(fin) == '0') {
+                rule = rexdd_rule_AL0;
+            } else {
+                rule = rexdd_rule_AL1;
+            }
+        } else if (d == 'H') {
+            if (fgetc(fin) == '0') {
+                rule = rexdd_rule_AH0;
+            } else {
+                rule = rexdd_rule_AH1;
+            }
+        }
+    }
+    return rule;
+}
+
+rexdd_edge_t expect_edge(FILE *fin, rexdd_node_handle_t *unique_handles) {
+    rexdd_edge_t edge;
+    edge.label.rule = expect_rule(fin);
+    edge.label.complemented = (skip_whitespce(fin) == '1');
+    edge.label.swapped = (skip_whitespce(fin) == '1');
+    char c = skip_whitespce(fin);
+    if (c == 'T'){
+        if (skip_whitespce(fin) == '0') {
+            edge.target = rexdd_make_terminal(0);
+        } else {
+            edge.target = rexdd_make_terminal(1);
+        }
+    } else {
+        ungetc(c,fin);
+        fscanf(fin, "%llu", &edge.target);
+        edge.target = *(unique_handles + edge.target - 1);
+    }
+    return edge;
+}
+
+void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
+{
+    FILE *fout;
+    fout = fopen("temp_forest.txt", "w+");
+    fprintf(fout, "type ");
+    // ifdef TBD for other types
+#ifdef FBDD
+    fprintf(fout, "FBDD\n");
+#elif defined QBDD
+    fprintf(fout, "QBDD\n");
+#elif defined ZBDD
+    fprintf(fout, "ZBDD\n");
+#elif defined CFBDD
+    fprintf(fout, "CFBDD\n");
+#elif defined CZDD
+    fprintf(fout, "CZBDD\n");
+#elif defined CSFDD
+    fprintf(fout, "CSFBDD\n");
+#elif defined CSZDD
+    fprintf(fout, "CSZDD\n");
+#elif defined ESRBDD
+    fprintf(fout, "ESRBDD\n");
+#elif defined CESRBDD
+    fprintf(fout, "CESRBDD\n");
+#else
+    fprintf(fout, "REXBDD\n");
+#endif
+    fprintf(fout, "lvls %d\n", F->S.num_levels);
+    uint64_t max_handle = 0;
+    uint_fast32_t p, n;
+
+    for (p=0; p<F->M->pages_size; p++) {
+        const rexdd_nodepage_t *page = F->M->pages+p;
+        for (n=0; n<page->first_unalloc; n++) {
+            if (rexdd_is_packed_in_use(page->chunk+n)) {
+                max_handle ++;
+            }
+        } // for n
+    } // for p
+    fprintf(fout, "maxh %llu\n", max_handle);
+    rexdd_unpacked_node_t temp;
+    for (p=0; p<F->M->pages_size; p++) {
+        const rexdd_nodepage_t *page = F->M->pages+p;
+        for (n=0; n<page->first_unalloc; n++) {
+            if (rexdd_is_packed_in_use(page->chunk+n)) {
+                rexdd_unpack_low_edge(page->chunk+n, &temp.edge[0].label);
+                rexdd_unpack_high_edge(page->chunk+n, &temp.edge[1].label);
+                temp.edge[0].target = rexdd_unpack_low_child(page->chunk+n);
+                temp.edge[1].target = rexdd_unpack_high_child(page->chunk+n);
+                unsigned long long node_id = p*REXDD_PAGE_SIZE+n+1;
+                fprintf(fout, "node %llu L %u: 0:<%s,%d,%d", 
+                    // handle starts from 1
+                    node_id, rexdd_unpack_level(page->chunk+n),
+                    rexdd_rule_name[temp.edge[0].label.rule],
+                    temp.edge[0].label.complemented,
+                    temp.edge[0].label.swapped);
+                if (rexdd_is_terminal(temp.edge[0].target)) {
+                    fprintf(fout, ",T%llu>,", rexdd_terminal_value(temp.edge[0].target));
+                } else {
+                    fprintf(fout, ",%llu>,", temp.edge[0].target);
+                }
+                fprintf(fout, "1:<%s,%d,%d", 
+                        rexdd_rule_name[temp.edge[1].label.rule],
+                        temp.edge[1].label.complemented,
+                        temp.edge[1].label.swapped);
+                if (rexdd_is_terminal(temp.edge[1].target)) {
+                    fprintf(fout, ",T%llu>\n", rexdd_terminal_value(temp.edge[1].target));
+                } else {
+                    fprintf(fout, ",%llu>\n", temp.edge[1].target);
+                }
+            }
+        } // for n
+    } // for p
+    
+    // wirte number of iterations that checked eval so far
+    fprintf(fout, "root %llu:\n", t);
+    for (uint64_t i=0; i<t; i++) {
+        fprintf(fout, "<%s,%d,%d",
+                rexdd_rule_name[edges[i].label.rule],
+                edges[i].label.complemented,
+                edges[i].label.swapped);
+        if (rexdd_is_terminal(edges[i].target)) {
+            fprintf(fout, ",T%llu>\n", rexdd_terminal_value(edges[i].target));
+        } else {
+            fprintf(fout, ",%llu>\n", edges[i].target);
+        }
+    }
+
+    fclose(fout);
+}
+
+void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
+{
+    FILE *fin;
+    fin = fopen("temp_forest.txt", "r");
+
+    char type[10];
+    int level;
+    uint64_t handles;
+    // get the type, levels and max number of nodes to decide something
+    fscanf (fin, " type %s lvls %d maxh %llu", type, &level, &handles);
+    F->S.num_levels = level;
+    fclose(fin);
+
+    // array to store unique handle 
+    rexdd_node_handle_t *unique_handles = malloc(handles*sizeof(rexdd_node_handle_t));
+    uint64_t loc = 0;
+
+    fin = fopen("temp_forest.txt", "r");
+    
+    // temp unpacked node, root edge
+    rexdd_unpacked_node_t node;
+    while (!feof(fin))
+    {
+        char buffer[4];
+        buffer[0] = skip_whitespce(fin);
+        for (int i=1; i<4; i++) {
+            buffer[i] = skip_whitespce(fin);
+        }
+        if (buffer[0] == 'n' && buffer[1] == 'o' && buffer[2] == 'd' && buffer[3] == 'e'){
+            // build the node at location
+            loc = expect_uint64(fin) - 1;
+            char c = skip_whitespce(fin);
+            if (c == 'L') {
+                // set node's level
+                node.level = expect_int(fin);
+                // set low edge
+                if (skip_whitespce(fin) == '0' && skip_whitespce(fin) == '<') {
+                    // set node's edges
+                    node.edge[0] = expect_edge(fin, unique_handles);
+                    if (skip_whitespce(fin) == '1' && skip_whitespce(fin) == '<') {
+                        node.edge[1] = expect_edge(fin, unique_handles);
+                    }
+                }
+            }
+            // insert this node into unique table and put its handle in the array
+            *(unique_handles + loc) = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&node));
+
+        } else if (buffer[0] == 'r' && buffer[1] == 'o' && buffer[2] == 'o' && buffer[3] == 't') {
+            t = expect_uint64(fin);
+            printf ("number of roots: %llu\n", t);
+            for (uint64_t i=0; i<t; i++) {
+                if (skip_whitespce(fin) == '<') {
+                    edges[i] = expect_edge(fin, unique_handles);
+                }
+                // printf ("root: %d, %d, %d, %llu\n", root.label.rule, root.label.complemented, root.label.swapped, root.target);
+            }
+            break;
+        }
+    }
+    free(unique_handles);
+
+    fclose(fin);
+}
+
 void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Function_in[][0x01 << (0x01 << (levels-1))], rexdd_edge_t ptr_in[], 
                                             bool Vars_out[][levels+1], bool Function_out[][0x01 << (0x01 << levels)], rexdd_edge_t ptr_out[])
 {
@@ -359,7 +615,8 @@ void check_eval(rexdd_forest_t F, int levels, bool Vars_in[][levels], bool Funct
     temp.level = levels;
 
     printf("check eval for level %d...\n", levels);
-    for (int t=0; t<0x01<<(0x01<<levels); t++) {
+    unsigned long t;
+    for (t=0; t<0x01UL<<(0x01<<levels); t++) {
         temp.edge[0] = ptr_in[t / (0x01<<(0x01<<(levels-1)))];
         temp.edge[1] = ptr_in[t % (0x01<<(0x01<<(levels-1)))];
 
@@ -441,7 +698,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 
     int max_num = 0;
     int num_term = 0;
-    for (int i=0; i<0x01<<(0x01<<levels); i++) {
+    for (unsigned long i=0; i<0x01UL<<(0x01<<levels); i++) {
         if (countTerm(&F,edges[i].target) == 0 || countTerm(&F,edges[i].target) == 1) {
             num_term = 1;
         } else {
@@ -451,7 +708,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
         if (max_num < num_nodes) {
             max_num = num_nodes;
         }
-        fprintf(test2, "%d %d\n", i, num_nodes);
+        // fprintf(test2, "%lu %d\n", i, num_nodes);
     }
 #ifdef QBDD
     printf("max number of nodes(including terminal) for any level %d QBDD is: %d\n\n",levels, max_num);
@@ -492,7 +749,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
         numFunc[i] = 0;
     }
 
-    for (int i=0; i<0x01<<(0x01<<levels); i++) {
+    for (unsigned long i=0; i<0x01UL<<(0x01<<levels); i++) {
         if (countTerm(&F,edges[i].target) == 0 || countTerm(&F,edges[i].target) == 1) {
             num_term = 1;
         } else {
@@ -509,6 +766,10 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     printf("Done counting!\n\n");
 }
 
+
+
+//=================================================================================
+//=================================================================================
 
 int main()
 {
@@ -659,6 +920,8 @@ int main()
 
     export_funsNum(F, levels, ptr2);
 
+    save(&F, ptr2, 0x01<<(0x01<<levels));
+
     /* ==========================================================================
      *      Building the vars for level three nodes
      * ==========================================================================*/
@@ -685,181 +948,252 @@ int main()
 
     export_funsNum(F, levels, ptr4);
 
+    /* ==========================================================================
+     *      Building the vars for level five nodes
+     * ==========================================================================*/
+    // levels = 5;
+    // printf("Testing Level Four...\n");
+    // // the number of rows(int) and columns(unsigned long) 
+    // int rows = 0x01<<levels;
+    // unsigned long cols = 0x01UL<<(0x01<<levels);
+    // bool Vars_5[rows][levels+1];
+    // bool Function_5[rows][cols];
+    
+    // // where to store the 2^32 root edges
+    // rexdd_edge_t *ptr5 = malloc(cols * sizeof(rexdd_edge_t));
+
+    // make_varsFuns(levels, Vars_4, Function_4, Vars_5, Function_5);
+
+    // temp.level = 1;
+    // temp.edge[0].label.rule = rexdd_rule_X;
+    // temp.edge[1].label.rule = rexdd_rule_X;
+    // temp.edge[0].label.complemented = 0;
+    // temp.edge[1].label.complemented = 0;
+    // temp.edge[0].label.swapped = 0;
+    // temp.edge[1].label.swapped = 0;
+
+    // temp.level = levels;
+
+    // l.rule = rexdd_rule_X;
+    // l.complemented = 0;
+    // l.swapped = 0;
+    // eval.label = l;
+
+
+    // printf("check eval for level %d...\n", levels);
+    // unsigned long t;
+    // for (t=0; t<0x01UL<<(0x01<<levels); t++) {
+    //     temp.edge[0] = ptr4[t / (0x01<<(0x01<<(levels-1)))];
+    //     temp.edge[1] = ptr4[t % (0x01<<(0x01<<(levels-1)))];
+
+    //     rexdd_reduce_edge(&F, levels, l, temp, &eval);
+
+    //     ptr5[t] = eval;
+    //     // count number of nodes and write it into file
+
+    //     for (int i=0; i<0x01<<levels; i++){
+    //         if (rexdd_eval(&F, &eval, levels, Vars_5[i]) == Function_5[i][t])
+    //         {
+    //             continue;
+    //         }
+    //         else
+    //         {
+    //             for (int j = 0; j < 0x01<<levels; j++)
+    //             {
+    //                 printf("\t%d", Function_5[j][t]);
+    //             }
+    //             printf("\n");
+    //             rexdd_check1(0, "Eval error!");
+    //             break;
+    //         }
+    //     }
+    //     // save the forest and root edges every 2^29
+    //     if (t%(0x01<<((0x01<<levels)-3))){
+    //         save(&F,ptr5,t);
+    //     }
+    // }
+    // printf("Done eval!\n");
+
+    // export_funsNum(F, levels, ptr5);
+
+
+    /* ==========================================================================
+     *      Summary of the forest
+     * ==========================================================================*/
     printf("\n=============================================================\n");
-#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
-    uint32_t max_number = F.M->pages->first_unalloc;
-#else 
-    uint32_t max_number = F.M->pages->first_unalloc-1;
-#endif
-
-
-    printf("Total number of nodes in the forest: %u\n", max_number);
-
-    int node_l;
-    int count_nodeLvl[levels];
-    for (int i=0; i<levels; i++) {
+    uint64_t count_nodeLvl[levels+1];
+    for (int i=0; i<=levels; i++) {
         count_nodeLvl[i] = 0;
     }
-    for (rexdd_node_handle_t h = 1; h<=max_number; h++) {
-        if (!rexdd_is_terminal(h)) {
-            node_l = rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, h));
-            count_nodeLvl[node_l-1]++;
-        } else {
-            continue;
-        }
-    }
+    uint64_t max_number = 0;
+    uint_fast64_t p, n;
+    for (p=0; p<F.M->pages_size; p++) {
+        const rexdd_nodepage_t *page = F.M->pages+p;
+        for (n=0; n<page->first_unalloc; n++) {
+            if (rexdd_is_packed_in_use(page->chunk+n)) {
+                count_nodeLvl[rexdd_unpack_level(page->chunk+n)]++;
+                max_number ++;
+            }
+        } // for n
+    } // for p
+#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
+    max_number = max_number + 2;
+#else 
+    max_number = max_number + 1;
+#endif
+
+    printf("Total number of nodes in the forest: %llu\n", max_number);
 
     printf("number of nodes at each level in the forest\n");
-    for (uint_fast32_t i=1; i<F.S.num_levels; i++) {
-        printf("L%d: %d\n", i, count_nodeLvl[i-1]);
+    for (int i=1; i<=levels; i++) {
+        printf("L%d: %llu\n", i, count_nodeLvl[i]);
     }
-
-    // ---------------------------------Example---------------------------------
-    FILE *t;
-    t = fopen("test.gv", "w+");
-    build_gv(t, &F, ptr4[4982]);
-    fclose(t);
-    // -------------------------------------------------------------------------
     
     /* ==========================================================================
      *      Level 5 test AL AH 
      * ==========================================================================*/
-    printf("\n=============================================================\n");
-    printf("\n======================Testing PushUpAll======================\n");
-    levels = 5;
-    printf("Testing Level Five...\n");
-    bool Vars_5[0x01<<levels][levels+1];
-    bool Function_5[0x01<<levels][0x01<<(0x01<<levels)];
-    make_varsFuns(levels, Vars_4, Function_4, Vars_5, Function_5);
+    // printf("\n=============================================================\n");
+    // printf("\n======================Testing PushUpAll======================\n");
+    // levels = 5;
+    // printf("Testing Level Five...\n");
+    // bool Vars_5[0x01<<levels][levels+1];
+    // bool Function_5[0x01<<levels][0x01<<(0x01<<levels)];
+    // make_varsFuns(levels, Vars_4, Function_4, Vars_5, Function_5);
 
-    // test all 80 cases: swap, complement, rules, target_nodes
-    bool test_function[0x01<<levels];
-    int c_incoming, s_incoming;
-    rexdd_rule_t rules[4];
-    rules[0] = rexdd_rule_AL0;
-    rules[1] = rexdd_rule_AL1;
-    rules[2] = rexdd_rule_AH0;
-    rules[3] = rexdd_rule_AH1;
-    rexdd_node_handle_t l2_target[5];
-    l2_target[0] = ptr2[2].target;
-    l2_target[1] = ptr2[3].target;
-    l2_target[2] = ptr2[4].target;
-    l2_target[3] = ptr2[5].target;
-    l2_target[4] = ptr2[6].target;
-    rexdd_edge_t temp_ALL;
-    int32_t lowNum, highNum;
+    // // test all 80 cases: swap, complement, rules, target_nodes
+    // bool test_function[0x01<<levels];
+    // int c_incoming, s_incoming;
+    // rexdd_rule_t rules[4];
+    // rules[0] = rexdd_rule_AL0;
+    // rules[1] = rexdd_rule_AL1;
+    // rules[2] = rexdd_rule_AH0;
+    // rules[3] = rexdd_rule_AH1;
+    // rexdd_node_handle_t l2_target[5];
+    // l2_target[0] = ptr2[2].target;
+    // l2_target[1] = ptr2[3].target;
+    // l2_target[2] = ptr2[4].target;
+    // l2_target[3] = ptr2[5].target;
+    // l2_target[4] = ptr2[6].target;
+    // rexdd_edge_t temp_ALL;
+    // int32_t lowNum, highNum;
 
-    rexdd_unpacked_node_t l2_unpacked_target, l5_unpacked_root;
-    rexdd_edge_t reduced_long, reduced_short;
-    rexdd_edge_label_t l5_incoming_label;
-    l5_incoming_label.complemented = 0;
-    l5_incoming_label.swapped = 0;
-    l5_incoming_label.rule = rexdd_rule_X;
-    l5_unpacked_root.level = levels;
+    // rexdd_unpacked_node_t l2_unpacked_target, l5_unpacked_root;
+    // rexdd_edge_t reduced_long, reduced_short;
+    // rexdd_edge_label_t l5_incoming_label;
+    // l5_incoming_label.complemented = 0;
+    // l5_incoming_label.swapped = 0;
+    // l5_incoming_label.rule = rexdd_rule_X;
+    // l5_unpacked_root.level = levels;
 
-    char buffer_err[36];
-    int pass_count = 0, err_count = 0;
+    // // char buffer_err[36];
+    // int pass_count = 0, err_count = 0;
 
-    for (c_incoming=0; c_incoming<2; c_incoming++) {
-        for (s_incoming=0; s_incoming<2; s_incoming++) {
-            for (int i=0; i<4; i++) {
-                for (int j=0; j<5; j++) {
-                    // initial the incoming edge to level 2 nodes
-                    temp_ALL.label.complemented = c_incoming;
-                    temp_ALL.label.swapped = s_incoming;
-                    temp_ALL.label.rule = rules[i];
-                    temp_ALL.target = l2_target[j];
-                    // get its evaluated function and low/high function number
-                    for (uint16_t k=0; k<0x01<<levels; k++) {
-                        test_function[k] = rexdd_eval(&F, &temp_ALL, levels, Vars_5[k]);
-                    }
-                    lowNum = low_funNum(levels, test_function, Function_4);
-                    highNum = high_funNum(levels, test_function, Function_4);
-                    //build unreduced rexdd rooted level 5
-                    l5_unpacked_root.edge[0] = ptr4[lowNum];
-                    l5_unpacked_root.edge[1] = ptr4[highNum];
+    // for (c_incoming=0; c_incoming<2; c_incoming++) {
+    //     for (s_incoming=0; s_incoming<2; s_incoming++) {
+    //         for (int i=0; i<4; i++) {
+    //             for (int j=0; j<5; j++) {
+    //                 // initial the incoming edge to level 2 nodes
+    //                 temp_ALL.label.complemented = c_incoming;
+    //                 temp_ALL.label.swapped = s_incoming;
+    //                 temp_ALL.label.rule = rules[i];
+    //                 temp_ALL.target = l2_target[j];
+    //                 // get its evaluated function and low/high function number
+    //                 for (uint16_t k=0; k<0x01<<levels; k++) {
+    //                     test_function[k] = rexdd_eval(&F, &temp_ALL, levels, Vars_5[k]);
+    //                 }
+    //                 lowNum = low_funNum(levels, test_function, Function_4);
+    //                 highNum = high_funNum(levels, test_function, Function_4);
+    //                 //build unreduced rexdd rooted level 5
+    //                 l5_unpacked_root.edge[0] = ptr4[lowNum];
+    //                 l5_unpacked_root.edge[1] = ptr4[highNum];
 
-                    //reduce long ALL edge
-                    rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.M, temp_ALL.target), &l2_unpacked_target);
-                    rexdd_reduce_edge(&F,levels,temp_ALL.label,l2_unpacked_target,&reduced_long);
-                    //check if reduced has the same function
-                    for (uint16_t ll=0; ll<0x01<<levels; ll++) {
-                        if (test_function[ll] != rexdd_eval(&F, &reduced_long, levels, Vars_5[ll])){
-                            printf("/*reduced long edge change the function*/\n");
-                            break;
-                        }
-                    }
+    //                 //reduce long ALL edge
+    //                 rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.M, temp_ALL.target), &l2_unpacked_target);
+    //                 rexdd_reduce_edge(&F,levels,temp_ALL.label,l2_unpacked_target,&reduced_long);
+    //                 //check if reduced has the same function
+    //                 for (uint16_t ll=0; ll<0x01<<levels; ll++) {
+    //                     if (test_function[ll] != rexdd_eval(&F, &reduced_long, levels, Vars_5[ll])){
+    //                         printf("/*reduced long edge change the function*/\n");
+    //                         break;
+    //                     }
+    //                 }
 
-                    //reduce short edge to root at level 5
-                    rexdd_reduce_edge(&F,levels, l5_incoming_label, l5_unpacked_root, &reduced_short);
-                    //check if reduced has the same function
-                    for (uint16_t ss=0; ss<0x01<<levels; ss++) {
-                        if (test_function[ss] != rexdd_eval(&F, &reduced_short, levels, Vars_5[ss])){
-                            printf("/*reduced short edge change the function*/\n");
-                            break;
-                        }
-                    }
+    //                 //reduce short edge to root at level 5
+    //                 rexdd_reduce_edge(&F,levels, l5_incoming_label, l5_unpacked_root, &reduced_short);
+    //                 //check if reduced has the same function
+    //                 for (uint16_t ss=0; ss<0x01<<levels; ss++) {
+    //                     if (test_function[ss] != rexdd_eval(&F, &reduced_short, levels, Vars_5[ss])){
+    //                         printf("/*reduced short edge change the function*/\n");
+    //                         break;
+    //                     }
+    //                 }
 
-                    if (!rexdd_edges_are_equal(&reduced_long, &reduced_short)) {
-                        err_count++;
-                        printf("->ERROR%d: c: %d; s: %d; rule: %d; target: %d\n",
-                                err_count, c_incoming, s_incoming, i, j);
-                        FILE *out_err;
+    //                 if (!rexdd_edges_are_equal(&reduced_long, &reduced_short)) {
+    //                     err_count++;
+    //                     printf("->ERROR%d: c: %d; s: %d; rule: %d; target: %d\n",
+    //                             err_count, c_incoming, s_incoming, i, j);
+    //                     // FILE *out_err;
                         
-                        snprintf(buffer_err, 36, "ERR%dL_%d_H_%d_long.gv",err_count, lowNum,highNum);
-                        out_err = fopen(buffer_err, "w+");
-                        build_gv(out_err,&F,reduced_long);
-                        fclose(out_err);
+    //                     // snprintf(buffer_err, 36, "ERR%dL_%d_H_%d_long.gv",err_count, lowNum,highNum);
+    //                     // out_err = fopen(buffer_err, "w+");
+    //                     // build_gv(out_err,&F,reduced_long);
+    //                     // fclose(out_err);
 
-                        snprintf(buffer_err, 36, "ERR%dL_%d_H_%d_short.gv",err_count, lowNum,highNum);
-                        out_err = fopen(buffer_err, "w+");
-                        build_gv(out_err,&F,reduced_short);
-                        fclose(out_err);
-                    } else {
-                        pass_count++;
-                        FILE *out_eq;
+    //                     // snprintf(buffer_err, 36, "ERR%dL_%d_H_%d_short.gv",err_count, lowNum,highNum);
+    //                     // out_err = fopen(buffer_err, "w+");
+    //                     // build_gv(out_err,&F,reduced_short);
+    //                     // fclose(out_err);
+    //                 } else {
+    //                     pass_count++;
+    //                     printf("PASS%d: c: %d; s: %d; rule: %d; target: %d\n",
+    //                             pass_count, c_incoming, s_incoming, i, j);
+    //                     // FILE *out_eq;
                         
-                        snprintf(buffer_err, 36, "PASS%d_L_%d_H_%d_long.gv", pass_count, lowNum,highNum);
-                        out_eq = fopen(buffer_err, "w+");
-                        build_gv(out_eq,&F,reduced_long);
-                        fclose(out_eq);
+    //                     // snprintf(buffer_err, 36, "PASS%d_L_%d_H_%d_long.gv", pass_count, lowNum,highNum);
+    //                     // out_eq = fopen(buffer_err, "w+");
+    //                     // build_gv(out_eq,&F,reduced_long);
+    //                     // fclose(out_eq);
 
-                        snprintf(buffer_err, 36, "PASS%d_L_%d_H_%d_short.gv", pass_count, lowNum,highNum);
-                        out_eq = fopen(buffer_err, "w+");
-                        build_gv(out_eq,&F,reduced_short);
-                        fclose(out_eq);
-                        printf("PASS%d: c: %d; s: %d; rule: %d; target: %d\n",
-                                pass_count, c_incoming, s_incoming, i, j);
+    //                     // snprintf(buffer_err, 36, "PASS%d_L_%d_H_%d_short.gv", pass_count, lowNum,highNum);
+    //                     // out_eq = fopen(buffer_err, "w+");
+    //                     // build_gv(out_eq,&F,reduced_short);
+    //                     // fclose(out_eq);
+                        
 
-                        continue;
-                    }
-                }
+    //                     continue;
+    //                 }
+    //             }
 
-            }
-        }
-    }
-    printf("Done!\n");
-
-
-
-    // test error
-    // rexdd_edge_t test_v5, test_reduced_long;
-    // test_v5.label.complemented = 0;
-    // test_v5.label.swapped  = 1;
-    // test_v5.label.rule = rexdd_rule_AL0;
-    // test_v5.target = l2_target[2];
-    // rexdd_unpacked_node_t unpacked_v2;
-    // rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F.M, test_v5.target), &unpacked_v2);
-    // rexdd_reduce_edge(&F,levels,test_v5.label,unpacked_v2,&test_reduced_long);
-
-    // FILE *out_test;
-    // out_test = fopen("test_long.gv", "w+");
-    // build_gv(out_test,&F, test_reduced_long);
-    // fclose(out_test);
+    //         }
+    //     }
+    // }
+    // printf("Done!\n");
 
     // ---------------------------------Free------------------------------------
-    rexdd_free_forest(&F);
 
+    uint64_t test_num = 0x01<<(0x01<<4);
+    save(&F, ptr4, test_num);
+
+    FILE *t;
+    t = fopen("test_save.gv", "w+");
+    build_gv(t, &F, ptr4[4982]);
+    fclose(t);
+
+    rexdd_free_forest(&F);
+    
+    rexdd_forest_t F_read;
+    uint64_t ite = 0;
+    F_read.S.num_levels = 5;
+    rexdd_init_forest(&F_read,&(F_read.S));
+    rexdd_edge_t ptr_read[0x01<<(0x01<<4)];
+    read(&F_read,ptr_read, ite);
+    t = fopen("test_read.gv", "w+");
+    build_gv(t, &F_read, ptr_read[4982]);
+    fclose(t);
+
+    /* ==========================================================================
+     *      Export functions-variables table
+     * ==========================================================================*/
 #ifdef EXPORT_FUNS
     FILE *out;
     out = fopen("Vars.txt", "w+");
