@@ -951,71 +951,86 @@ int main()
     /* ==========================================================================
      *      Building the vars for level five nodes
      * ==========================================================================*/
-    // levels = 5;
-    // printf("Testing Level Four...\n");
-    // // the number of rows(int) and columns(unsigned long) 
-    // int rows = 0x01<<levels;
-    // unsigned long cols = 0x01UL<<(0x01<<levels);
-    // bool Vars_5[rows][levels+1];
-    // bool Function_5[rows][cols];
+    levels = 5;
+    printf("Testing Level Five...\n");
+    int rows = 0x01<<levels;
+    unsigned long cols = 0x01UL<<(0x01<<levels);
+    bool Vars_5[rows][levels+1];
     
-    // // where to store the 2^32 root edges
-    // rexdd_edge_t *ptr5 = malloc(cols * sizeof(rexdd_edge_t));
+    // where to store the 2^32 root edges 64GB
+    rexdd_edge_t *ptr5 = malloc(cols * sizeof(rexdd_edge_t));
 
-    // make_varsFuns(levels, Vars_4, Function_4, Vars_5, Function_5);
+    for (int i = 0; i < 0x01<<levels; i++)
+    {
+        Vars_5[i][0] = 0;
+        Vars_5[i][levels] = !(i < 0x01<<(levels-1));
+        for (int j = 1; j < levels; j++)
+        {
+            Vars_5[i][j] = Vars_4[i % (0x01<<(levels-1))][j];
+        }
+    }
 
-    // temp.level = 1;
-    // temp.edge[0].label.rule = rexdd_rule_X;
-    // temp.edge[1].label.rule = rexdd_rule_X;
-    // temp.edge[0].label.complemented = 0;
-    // temp.edge[1].label.complemented = 0;
-    // temp.edge[0].label.swapped = 0;
-    // temp.edge[1].label.swapped = 0;
+    temp.level = 1;
+    temp.edge[0].label.rule = rexdd_rule_X;
+    temp.edge[1].label.rule = rexdd_rule_X;
+    temp.edge[0].label.complemented = 0;
+    temp.edge[1].label.complemented = 0;
+    temp.edge[0].label.swapped = 0;
+    temp.edge[1].label.swapped = 0;
 
-    // temp.level = levels;
+    temp.level = levels;
 
-    // l.rule = rexdd_rule_X;
-    // l.complemented = 0;
-    // l.swapped = 0;
-    // eval.label = l;
+    l.rule = rexdd_rule_X;
+    l.complemented = 0;
+    l.swapped = 0;
+    eval.label = l;
 
 
-    // printf("check eval for level %d...\n", levels);
-    // unsigned long t;
-    // for (t=0; t<0x01UL<<(0x01<<levels); t++) {
-    //     temp.edge[0] = ptr4[t / (0x01<<(0x01<<(levels-1)))];
-    //     temp.edge[1] = ptr4[t % (0x01<<(0x01<<(levels-1)))];
+    printf("check eval for level %d...\n", levels);
+    bool eval_real;
+    unsigned long t;
+    for (t=0; t<0x01UL<<(0x01<<levels); t++) {
+        temp.edge[0] = ptr4[t / (0x01<<(0x01<<(levels-1)))];
+        temp.edge[1] = ptr4[t % (0x01<<(0x01<<(levels-1)))];
 
-    //     rexdd_reduce_edge(&F, levels, l, temp, &eval);
+        rexdd_reduce_edge(&F, levels, l, temp, &eval);
 
-    //     ptr5[t] = eval;
-    //     // count number of nodes and write it into file
+        ptr5[t] = eval;
+        // count number of nodes and write it into file
 
-    //     for (int i=0; i<0x01<<levels; i++){
-    //         if (rexdd_eval(&F, &eval, levels, Vars_5[i]) == Function_5[i][t])
-    //         {
-    //             continue;
-    //         }
-    //         else
-    //         {
-    //             for (int j = 0; j < 0x01<<levels; j++)
-    //             {
-    //                 printf("\t%d", Function_5[j][t]);
-    //             }
-    //             printf("\n");
-    //             rexdd_check1(0, "Eval error!");
-    //             break;
-    //         }
-    //     }
-    //     // save the forest and root edges every 2^29
-    //     if (t%(0x01<<((0x01<<levels)-3))){
-    //         save(&F,ptr5,t);
-    //     }
-    // }
-    // printf("Done eval!\n");
+        for (int i=0; i<0x01<<levels; i++){
+            // avoid creating large Function_5
+            if (i<0x01<<(levels-1)) {
+                eval_real = Function_4[i%(0x01<<(levels-1))][t/(0x01<<(0x01<<(levels-1)))];
+            } else {
+                eval_real = Function_4[i%(0x01<<(levels-1))][t%(0x01<<(0x01<<(levels-1)))];
+            }
+            if (rexdd_eval(&F, &eval, levels, Vars_5[i]) == eval_real)
+            {
+                continue;
+            }
+            else
+            {
+                printf("error on function: %lu\n", t);
+                f = fopen("error_function.gv", "w+");
+                build_gv(f, &F,ptr5[t]);
+                fclose(f);
 
-    // export_funsNum(F, levels, ptr5);
+                printf("\n");
+                rexdd_check1(0, "Eval error!");
+                break;
+            }
+        }
+        // save the forest and root edges every 2^29
+        if (t%(0x01<<((0x01<<levels)-3))==1){
+            save(&F,ptr5,t);
+        }
+    }
+    printf("Done eval!\n");
 
+    export_funsNum(F, levels, ptr5);
+
+    free(ptr5);
 
     /* ==========================================================================
      *      Summary of the forest
@@ -1037,6 +1052,7 @@ int main()
         } // for n
     } // for p
 #if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
+    // since they have 2 terminal nodes
     max_number = max_number + 2;
 #else 
     max_number = max_number + 1;
@@ -1169,27 +1185,39 @@ int main()
     // }
     // printf("Done!\n");
 
+    /* ==========================================================================
+     *      Uncomment to test check-pointing below
+     * ==========================================================================*/
+    // uint64_t test_num = 0x01<<(0x01<<4);
+    // save(&F, ptr4, test_num);
+
+    // FILE *t;
+    // t = fopen("test_save.gv", "w+");
+    // build_gv(t, &F, ptr4[4982]);
+    // fclose(t);
+
     // ---------------------------------Free------------------------------------
-
-    uint64_t test_num = 0x01<<(0x01<<4);
-    save(&F, ptr4, test_num);
-
-    FILE *t;
-    t = fopen("test_save.gv", "w+");
-    build_gv(t, &F, ptr4[4982]);
-    fclose(t);
-
     rexdd_free_forest(&F);
+    // ---------------------------------Free------------------------------------
     
-    rexdd_forest_t F_read;
-    uint64_t ite = 0;
-    F_read.S.num_levels = 5;
-    rexdd_init_forest(&F_read,&(F_read.S));
-    rexdd_edge_t ptr_read[0x01<<(0x01<<4)];
-    read(&F_read,ptr_read, ite);
-    t = fopen("test_read.gv", "w+");
-    build_gv(t, &F_read, ptr_read[4982]);
-    fclose(t);
+    // rexdd_forest_t F_read;
+    // uint64_t ite = 0;
+    // F_read.S.num_levels = 5;
+    // rexdd_init_forest(&F_read,&(F_read.S));
+    // rexdd_edge_t ptr_read[0x01<<(0x01<<4)];
+    // read(&F_read,ptr_read, ite);
+    // t = fopen("test_read.gv", "w+");
+    // build_gv(t, &F_read, ptr_read[4982]);
+    // fclose(t);
+    // for (int i=0; i<0x01<<(0x01<<4); i++){
+    //     if (rexdd_edges_are_equal(&(ptr4[i]), &(ptr_read[i]))) {
+    //         continue;
+    //     } else {
+    //         printf("check_pointing error\n");
+    //         break;
+    //     }
+    // }        
+    // printf("check_pointing done\n");
 
     /* ==========================================================================
      *      Export functions-variables table
