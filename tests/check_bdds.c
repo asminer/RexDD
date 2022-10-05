@@ -247,11 +247,11 @@ int countNodes(rexdd_forest_t *F, rexdd_node_handle_t handle)
         count = 0;
     } else {
         bool *countNode = malloc((handle+1)*sizeof(bool)); //[handle+1];
-        for (uint64_t i=0; i<=handle+1; i++) {
+        for (uint64_t i=0; i<handle+1; i++) {
             countNode[i] = 0;
         }
         boolNodes(F, handle, countNode);
-        for (uint64_t i=0; i<=handle+1; i++) {
+        for (uint64_t i=0; i<handle+1; i++) {
             count = count + countNode[i];
         }
         free(countNode);
