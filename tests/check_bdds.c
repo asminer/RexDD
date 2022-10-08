@@ -1031,10 +1031,10 @@ int main()
             }
         }
         // save the forest and root edges every 2^29
-        if (t%(0x01<<((0x01<<levels)-8))==1){
+        if (t%(0x01<<((0x01<<levels)-3))==1){
             save(&F,ptr5,t);
         }
-        if (t%(0x01<<((0x01<<levels)-10))==1){
+        if (t%(0x01<<((0x01<<levels)-9))==1){
             FILE *pf;
             pf = fopen("progress.txt","w+");
             fprintf(pf,"The progress is %lu / %lu", t, 0x01UL<<(0x01<<levels));
