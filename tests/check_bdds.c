@@ -439,7 +439,11 @@ rexdd_edge_t expect_edge(FILE *fin, rexdd_node_handle_t *unique_handles) {
 void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
 {
     FILE *fout;
-    fout = fopen("temp_forest.txt", "w+");
+    if (fopen("temp_forest.txt", "r") == NULL){
+        fout = fopen("temp_forest.txt", "w+");
+    } else {
+        fout = fopen("temp_forest_new.txt", "w+");
+    }
     fprintf(fout, "type ");
     // ifdef TBD for other types
 #ifdef FBDD
@@ -523,8 +527,13 @@ void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
             fprintf(fout, ",%llu>\n", edges[i].target);
         }
     }
-
+    
     fclose(fout);
+
+    if (fopen("temp_forest_new.txt", "r") != NULL) {
+        remove("temp_forest.txt");
+        rename("temp_forest_new.txt", "temp_forest.txt");
+    }
 }
 
 void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
@@ -1022,8 +1031,14 @@ int main()
             }
         }
         // save the forest and root edges every 2^29
-        if (t%(0x01<<((0x01<<levels)-3))==1){
+        if (t%(0x01<<((0x01<<levels)-8))==1){
             save(&F,ptr5,t);
+        }
+        if (t%(0x01<<((0x01<<levels)-10))==1){
+            FILE *pf;
+            pf = fopen("progress.txt","w+");
+            fprintf(pf,"The progress is %lu / %lu", t, 0x01UL<<(0x01<<levels));
+            fclose(pf);
         }
     }
     printf("Done eval!\n");
