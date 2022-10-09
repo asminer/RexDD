@@ -467,11 +467,16 @@ rexdd_edge_t expect_edge(FILE *fin, rexdd_node_handle_t *unique_handles) {
 void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
 {
     FILE *fout;
-    if (fopen("temp_forest.txt", "r") == NULL){
-        fout = fopen("temp_forest.txt", "w+");
-    } else {
-        fout = fopen("temp_forest_new.txt", "w+");
+    // if (fopen("temp_forest.txt", "r") == NULL){
+    //     fout = fopen("temp_forest.txt", "w+");
+    // } else {
+    //     fout = fopen("temp_forest_new.txt", "w+");
+    // }
+    if (fopen("temp_forest.txt.gz", "r") != NULL) {
+        fout = popen("mv -f temp_forest.txt.gz ../", "r");
     }
+    fout = fopen("temp_forest.txt", "w+");
+
     fprintf(fout, "type ");
     // ifdef TBD for other types
 #ifdef FBDD
@@ -558,10 +563,12 @@ void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     
     fclose(fout);
 
-    if (fopen("temp_forest_new.txt", "r") != NULL) {
-        remove("temp_forest.txt");
-        rename("temp_forest_new.txt", "temp_forest.txt");
-    }
+    // if (fopen("temp_forest_new.txt", "r") != NULL) {
+    //     remove("temp_forest.txt");
+    //     rename("temp_forest_new.txt", "temp_forest.txt");
+    // }
+    fout = popen("gzip temp_forest.txt", "r");
+    pclose(fout);
 }
 
 void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
@@ -785,6 +792,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     for (int i=0; i<max_num+1; i++) {
         numFunc[i] = 0;
     }
+    FILE *fount;
 
     for (unsigned long i=0; i<0x01UL<<(0x01<<levels); i++) {
         if (countTerm(&F,edges[i].target) == 0 || countTerm(&F,edges[i].target) == 1) {
@@ -793,7 +801,13 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
             num_term = countTerm(&F,edges[i].target);
         }
         numFunc[countNodes(&F,edges[i].target) + num_term]++;
+        if (i%(0x01UL<<((0x01<<levels)-9))==1) {
+            fount = fopen("count_nodes_progress.txt","w+");
+            fprintf(fount, "Count number progress is %lu / %lu",i,0x01UL<<(0x01<<levels));
+        }
     }
+    fprintf(fount, "\nDone level %d", levels);
+    fclose(fount);
 
     for (int i=1; i<max_num+1; i++) {
         fprintf(test, "%d %d\n", i, numFunc[i]);
@@ -957,7 +971,7 @@ int main()
 
     export_funsNum(F, levels, ptr2);
 
-    save(&F, ptr2, 0x01<<(0x01<<levels));
+    // save(&F, ptr2, 0x01<<(0x01<<levels));
 
     /* ==========================================================================
      *      Building the vars for level three nodes
