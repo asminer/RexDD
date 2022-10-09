@@ -240,21 +240,49 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
 
 }
 
+void handleNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, rexdd_node_handle_t *nodes)
+{
+    if (rexdd_is_terminal(handle)) {
+        nodes[0] = 0;
+    } else {
+        bool flag = 0;
+        for (int i=1; i<1<<5;i++) {
+            if (nodes[i] == handle){
+                flag = 1;
+                break;
+            } else if (nodes[i] == 0){
+                nodes[i] = handle;
+                break;
+            }
+        }
+        if (!flag) {
+            rexdd_node_handle_t handleL, handleH;
+            handleL = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M,handle));
+            handleH = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M,handle));
+
+            handleNodes(F, handleL, nodes);
+            handleNodes(F, handleH, nodes);
+        }
+
+    }
+}
+
 int countNodes(rexdd_forest_t *F, rexdd_node_handle_t handle)
 {
+    rexdd_node_handle_t nodes[1<<5];
+    for (int i=0; i<1<<5; i++) {
+        nodes[i]=0;
+    }
     int count = 0;
     if (rexdd_is_terminal(handle)) {
         count = 0;
     } else {
-        bool *countNode = malloc((handle+1)*sizeof(bool)); //[handle+1];
-        for (uint64_t i=0; i<handle+1; i++) {
-            countNode[i] = 0;
+        handleNodes(F,handle,nodes);
+        for (int i=1; i<1<<5; i++) {
+            if (nodes[i]!=0) {
+                count++;
+            }
         }
-        boolNodes(F, handle, countNode);
-        for (uint64_t i=0; i<handle+1; i++) {
-            count = count + countNode[i];
-        }
-        free(countNode);
     }
     return count;
 }
@@ -924,7 +952,7 @@ int main()
 #ifdef REXBDD
     f = fopen("RexBDD.gv", "w+");
 #endif
-    build_gv_forest(f, &F, ptr2, 16);
+    // build_gv_forest(f, &F, ptr2, 16);
     fclose(f);
 
     export_funsNum(F, levels, ptr2);
