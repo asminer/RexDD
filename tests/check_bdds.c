@@ -472,10 +472,38 @@ void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     // } else {
     //     fout = fopen("temp_forest_new.txt", "w+");
     // }
-    if (fopen("temp_forest.txt.gz", "r") != NULL) {
-        fout = popen("mv -f temp_forest.txt.gz ../", "r");
+    char gz[64], mv[80], temptxt[64], gz_temp[64], type[8];
+
+#ifdef FBDD
+    snprintf(type,8,"FBDD");
+#elif defined QBDD
+    snprintf(type,8,"QBDD");
+#elif defined ZBDD
+    snprintf(type,8,"ZBDD");
+#elif defined C_FBDD
+    snprintf(type,8,"C_FBDD");
+#elif defined C_QBDD
+    snprintf(type,8,"C_QBDD");
+#elif defined CS_FBDD
+    snprintf(type,8,"CS_FBDD");
+#elif defined CS_QBDD
+    snprintf(type,8,"CS_QBDD");
+#elif defined ESRBDD
+    snprintf(type,8,"ESRBDD");
+#elif defined CESRBDD
+    snprintf(type,8,"CESRBDD");
+#else
+    snprintf(type,8,"RexBDD");
+#endif
+    snprintf(gz, 64, "/vol/vms/lcdeng/temp_forest_%s.txt.gz", type);
+    snprintf(mv, 80, "mv -f /vol/vms/lcdeng/temp_forest_%s.txt.gz /vol/vms/lcdeng/backup", type);
+    snprintf(temptxt, 64, "/vol/vms/lcdeng/temp_forest_%s.txt", type);
+    snprintf(gz_temp, 64, "gzip /vol/vms/lcdeng/temp_forest_%s.txt",type);
+
+    if (fopen(gz, "r") != NULL) {
+        fout = popen(mv, "r");
     }
-    fout = fopen("temp_forest.txt", "w+");
+    fout = fopen(temptxt, "w+");
 
     fprintf(fout, "type ");
     // ifdef TBD for other types
@@ -485,14 +513,14 @@ void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     fprintf(fout, "QBDD\n");
 #elif defined ZBDD
     fprintf(fout, "ZBDD\n");
-#elif defined CFBDD
+#elif defined C_FBDD
     fprintf(fout, "CFBDD\n");
-#elif defined CZDD
-    fprintf(fout, "CZBDD\n");
-#elif defined CSFDD
+#elif defined C_QDD
+    fprintf(fout, "CQBDD\n");
+#elif defined CS_FDD
     fprintf(fout, "CSFBDD\n");
-#elif defined CSZDD
-    fprintf(fout, "CSZDD\n");
+#elif defined CS_QDD
+    fprintf(fout, "CSQDD\n");
 #elif defined ESRBDD
     fprintf(fout, "ESRBDD\n");
 #elif defined CESRBDD
@@ -567,7 +595,7 @@ void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     //     remove("temp_forest.txt");
     //     rename("temp_forest_new.txt", "temp_forest.txt");
     // }
-    fout = popen("gzip temp_forest.txt", "r");
+    fout = popen(gz_temp, "r");
     pclose(fout);
 }
 
