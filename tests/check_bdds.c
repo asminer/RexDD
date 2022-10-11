@@ -768,20 +768,43 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     test = fopen(buffer, "w+");
     test2 = fopen(buffer2, "w+");
 
+    FILE *fount;
     int max_num = 0;
     int num_term = 0;
+    int numFunc[33];
+    for (int i=0; i<33; i++) {
+        numFunc[i] = 0;
+    }
     for (unsigned long i=0; i<0x01UL<<(0x01<<levels); i++) {
-        if (countTerm(&F,edges[i].target) == 0 || countTerm(&F,edges[i].target) == 1) {
+        int terms = countTerm(&F,edges[i].target);
+        if (terms == 0 || terms == 1) {
             num_term = 1;
         } else {
-            num_term = countTerm(&F,edges[i].target);
+            num_term = terms;
         }
-        int num_nodes = countNodes(&F, edges[i].target) + num_term;
+        int num_nodes = countNodes(&F,edges[i].target) + num_term;
+        numFunc[num_nodes]++;
         if (max_num < num_nodes) {
             max_num = num_nodes;
         }
+        if (i%(0x01UL<<((0x01<<levels)-9))==1) {
+            fount = fopen("count_nodes_progress.txt","w+");
+            fprintf(fount, "Count number progress is %lu / %lu",i,0x01UL<<(0x01<<levels));
+            fclose(fount);
+        }
         // fprintf(test2, "%lu %d\n", i, num_nodes);
     }
+    fount = fopen("count_nodes_progress.txt","w+");
+    fprintf(fount, "\nDone level %d", levels);
+    fclose(fount);
+
+    for (int i=1; i<33; i++) {
+        fprintf(test, "%d %d\n", i, numFunc[i]);
+    }
+
+    fclose(test);
+    fclose(test2);
+    printf("Done counting!\n\n");
 #ifdef QBDD
     printf("max number of nodes(including terminal) for any level %d QBDD is: %d\n\n",levels, max_num);
 #endif
@@ -816,33 +839,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 #ifdef REXBDD
     printf("max number of nodes(including terminal) for any level %d RexBDD is: %d\n\n",levels, max_num);
 #endif
-    int numFunc[max_num+1];
-    for (int i=0; i<max_num+1; i++) {
-        numFunc[i] = 0;
-    }
-    FILE *fount;
 
-    for (unsigned long i=0; i<0x01UL<<(0x01<<levels); i++) {
-        if (countTerm(&F,edges[i].target) == 0 || countTerm(&F,edges[i].target) == 1) {
-            num_term = 1;
-        } else {
-            num_term = countTerm(&F,edges[i].target);
-        }
-        numFunc[countNodes(&F,edges[i].target) + num_term]++;
-        if (i%(0x01UL<<((0x01<<levels)-9))==1) {
-            fount = fopen("count_nodes_progress.txt","w+");
-            fprintf(fount, "Count number progress is %lu / %lu",i,0x01UL<<(0x01<<levels));
-        }
-    }
-    fprintf(fount, "\nDone level %d", levels);
-    fclose(fount);
-
-    for (int i=1; i<max_num+1; i++) {
-        fprintf(test, "%d %d\n", i, numFunc[i]);
-    }
-    fclose(test);
-    fclose(test2);
-    printf("Done counting!\n\n");
 }
 
 
