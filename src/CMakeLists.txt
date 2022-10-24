@@ -3,6 +3,7 @@ set(SOURCES
   error.c
   forest.c
   functions.c
+  helpers.c
   nodeman.c
   nodepage.c
   unique.c
