@@ -12,12 +12,12 @@ int countDistinct(rexdd_edge_t buffer[], unsigned long long size, rexdd_edge_t p
     FILE *fcount;
     ptr[0] = buffer[0];
     for (i=1; i<size; i++) {
-        for (j=0; j<i; j++) {
-            if (rexdd_edges_are_equal( &buffer[i], &buffer[j])){
+        for (j=0; j<count; j++) {
+            if (rexdd_edges_are_equal( &buffer[i], &ptr[j])){
                 break;
             }
         }
-        if (i==j) {
+        if (count==j) {
             ptr[count] = buffer[i];
             count++;
         }
