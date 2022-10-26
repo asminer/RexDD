@@ -113,7 +113,7 @@ void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     }
 
     fprintf(f, "\t{rank=same v0 \"T0\" [label = \"0\", shape = square]}\n");
-#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
+#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD || defined S_QBDD || defined S_FBDD
     fprintf(f, "\t{rank=same v0 \"T1\" [label = \"1\", shape = square]}\n");
 #endif
 
@@ -164,7 +164,7 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
     rexdd_unpacked_node_t node;
     char label_bufferL[10];
     char label_bufferH[10];
-#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
+#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD || defined S_QBDD || defined S_FBDD
     for (rexdd_node_handle_t t=1; t<=F->M->pages->first_unalloc; t++) {
 #else
     for (rexdd_node_handle_t t=1; t<F->M->pages->first_unalloc; t++) {
@@ -231,7 +231,7 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
     }
 
     fprintf(f, "\t{rank=same v0 \"T0\" [label = \"0\", shape = square]}\n");
-#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD
+#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD || defined S_QBDD || defined S_FBDD
     fprintf(f, "\t{rank=same v0 \"T1\" [label = \"1\", shape = square]}\n");
 #endif
 
@@ -424,6 +424,10 @@ void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     snprintf(type,8,"C_FBDD");
 #elif defined C_QBDD
     snprintf(type,8,"C_QBDD");
+#elif defined S_FBDD
+    snprintf(type,8,"S_FBDD");
+#elif defined S_QBDD
+    snprintf(type,8,"S_QBDD");
 #elif defined CS_FBDD
     snprintf(type,8,"CS_FBDD");
 #elif defined CS_QBDD
@@ -444,9 +448,9 @@ void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
         fout = popen(mv, "r");
     }
     fout = fopen(temptxt, "w+");
+    // fout = fopen(type, "w+");
 
     fprintf(fout, "type ");
-    // ifdef TBD for other types
 #ifdef FBDD
     fprintf(fout, "FBDD\n");
 #elif defined QBDD
@@ -457,6 +461,10 @@ void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     fprintf(fout, "CFBDD\n");
 #elif defined C_QDD
     fprintf(fout, "CQBDD\n");
+#elif defined S_FBDD
+    fprintf(fout, "SFBDD\n");
+#elif defined S_QDD
+    fprintf(fout, "SQBDD\n");
 #elif defined CS_FDD
     fprintf(fout, "CSFBDD\n");
 #elif defined CS_QDD
@@ -555,6 +563,10 @@ void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     snprintf(type_,8,"C_FBDD");
 #elif defined C_QBDD
     snprintf(type_,8,"C_QBDD");
+#elif defined S_FBDD
+    snprintf(type_,8,"S_FBDD");
+#elif defined S_QBDD
+    snprintf(type_,8,"S_QBDD");
 #elif defined CS_FBDD
     snprintf(type_,8,"CS_FBDD");
 #elif defined CS_QBDD
@@ -575,7 +587,7 @@ void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
         fin = popen(gunzip, "r");
     }
     fin = fopen(temptxt, "r");
-    // fin = fopen("temp_forest.txt", "r");
+    // fin = fopen(type_, "r");
 
     char type[10];
     int level;
@@ -590,6 +602,7 @@ void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     uint64_t loc = 0;
 
     fin = fopen(temptxt, "r");
+    // fin = fopen(type_, "r");
     
     // temp unpacked node, root edge
     rexdd_unpacked_node_t node;
@@ -651,6 +664,10 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     snprintf(buffer, 24, "L%d_nodeFun_CQBDD.txt", levels);
     snprintf(buffer2, 24, "L%d_funNode_CQBDD.txt", levels);
 #endif
+#ifdef S_QBDD
+    snprintf(buffer, 24, "L%d_nodeFun_SQBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_SQBDD.txt", levels);
+#endif
 #ifdef CS_QBDD
     snprintf(buffer, 24, "L%d_nodeFun_CSQBDD.txt", levels);
     snprintf(buffer2, 24, "L%d_funNode_CSQBDD.txt", levels);
@@ -663,6 +680,10 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 #ifdef C_FBDD
     snprintf(buffer, 24, "L%d_nodeFun_CFBDD.txt", levels);
     snprintf(buffer2, 24, "L%d_funNode_CFBDD.txt", levels);
+#endif
+#ifdef S_FBDD
+    snprintf(buffer, 24, "L%d_nodeFun_SFBDD.txt", levels);
+    snprintf(buffer2, 24, "L%d_funNode_SFBDD.txt", levels);
 #endif
 #ifdef CS_FBDD
     snprintf(buffer, 24, "L%d_nodeFun_CSFBDD.txt", levels);
@@ -733,6 +754,9 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 #ifdef C_QBDD
     printf("max number of nodes(including terminal) for any level %d CQBDD is: %d\n\n",levels, max_num);
 #endif
+#ifdef S_QBDD
+    printf("max number of nodes(including terminal) for any level %d SQBDD is: %d\n\n",levels, max_num);
+#endif
 #ifdef CS_QBDD
     printf("max number of nodes(including terminal) for any level %d CSQBDD is: %d\n\n",levels, max_num);
 #endif
@@ -742,6 +766,9 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 #endif
 #ifdef C_FBDD
     printf("max number of nodes(including terminal) for any level %d CFBDD is: %d\n\n",levels, max_num);
+#endif
+#ifdef S_FBDD
+    printf("max number of nodes(including terminal) for any level %d SFBDD is: %d\n\n",levels, max_num);
 #endif
 #ifdef CS_FBDD
     printf("max number of nodes(including terminal) for any level %d CSFBDD is: %d\n\n",levels, max_num);

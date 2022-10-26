@@ -99,6 +99,17 @@ void rexdd_normalize_node(
         rexdd_edge_com(&(P->edge[0]));
         rexdd_edge_com(&(P->edge[1]));
     }
+#elif defined S_QBDD || defined S_FBDD
+    if (P->edge[0].target != P->edge[1].target) {
+        out->label.swapped = P->edge[0].target > P->edge[1].target;
+    } else if (P->edge[0].label.swapped != P->edge[1].label.swapped) {
+        out->label.swapped = P->edge[0].label.swapped > P->edge[1].label.swapped;
+    } else {
+        out->label.swapped = P->edge[0].label.rule > P->edge[1].label.rule;
+    }
+    if (out->label.swapped) {
+        rexdd_node_sw (P);
+    }
 #else // QBDD || FBDD || ZBDD || ESRBDD
 
 #endif
@@ -577,14 +588,14 @@ void rexdd_reduce_node(
 #endif
 
 
-#if defined C_QBDD || defined CS_QBDD || defined QBDD
+#if defined C_QBDD || defined CS_QBDD || defined QBDD || defined S_QBDD
     reduced->label.rule = rexdd_rule_X;
 
     rexdd_normalize_node(P, reduced);
     reduced->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, P));
 #endif
 
-#if defined C_FBDD || defined CS_FBDD || defined FBDD
+#if defined C_FBDD || defined CS_FBDD || defined FBDD || defined S_FBDD
     reduced->label.rule = rexdd_rule_X;
 
     if (P->edge[0].target == P->edge[1].target

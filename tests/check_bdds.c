@@ -266,7 +266,7 @@ int main()
     f = fopen("RexBDD.gv", "w+");
 #endif
     // build_gv_forest(f, &F, ptr2, 16);
-    fclose(f);
+    // fclose(f);
 
     export_funsNum(F, levels, ptr2);
 
@@ -339,38 +339,38 @@ int main()
     printf("check eval for level %d...\n", levels);
     bool eval_real;
     unsigned long t;
-    uint64_t check_point = 0;
+//     uint64_t check_point = 0;
 
-    char gz[64], type_[8];
+//     char gz[64], type_[8];
 
-#ifdef FBDD
-    snprintf(type_,8,"FBDD");
-#elif defined QBDD
-    snprintf(type_,8,"QBDD");
-#elif defined ZBDD
-    snprintf(type_,8,"ZBDD");
-#elif defined C_FBDD
-    snprintf(type_,8,"C_FBDD");
-#elif defined C_QBDD
-    snprintf(type_,8,"C_QBDD");
-#elif defined CS_FBDD
-    snprintf(type_,8,"CS_FBDD");
-#elif defined CS_QBDD
-    snprintf(type_,8,"CS_QBDD");
-#elif defined ESRBDD
-    snprintf(type_,8,"ESRBDD");
-#elif defined CESRBDD
-    snprintf(type_,8,"CESRBDD");
-#else
-    snprintf(type_,8,"RexBDD");
-#endif
+// #ifdef FBDD
+//     snprintf(type_,8,"FBDD");
+// #elif defined QBDD
+//     snprintf(type_,8,"QBDD");
+// #elif defined ZBDD
+//     snprintf(type_,8,"ZBDD");
+// #elif defined C_FBDD
+//     snprintf(type_,8,"C_FBDD");
+// #elif defined C_QBDD
+//     snprintf(type_,8,"C_QBDD");
+// #elif defined CS_FBDD
+//     snprintf(type_,8,"CS_FBDD");
+// #elif defined CS_QBDD
+//     snprintf(type_,8,"CS_QBDD");
+// #elif defined ESRBDD
+//     snprintf(type_,8,"ESRBDD");
+// #elif defined CESRBDD
+//     snprintf(type_,8,"CESRBDD");
+// #else
+//     snprintf(type_,8,"RexBDD");
+// #endif
 
-    snprintf(gz, 64, "/vol/vms/lcdeng/temp_forest_%s.txt.gz", type_);
+//     snprintf(gz, 64, "/vol/vms/lcdeng/temp_forest_%s.txt.gz", type_);
 
-    if (fopen(gz, "r") != NULL) {
-        read(&F,ptr5,check_point);
-    }
-    for (t=check_point; t<0x01UL<<(0x01<<levels); t++) {
+//     if (fopen(gz, "r") != NULL) {
+//         read(&F,ptr5,check_point);
+//     }
+    for (t=0; t<0x01UL<<(0x01<<levels); t++) {
         temp.edge[0] = ptr4[t / (0x01<<(0x01<<(levels-1)))];
         temp.edge[1] = ptr4[t % (0x01<<(0x01<<(levels-1)))];
 
@@ -403,7 +403,7 @@ int main()
             }
         }
         // save the forest and root edges every 2^29
-        if (t%(0x01<<((0x01<<levels)-3))==1){
+        if ((t%(0x01<<((0x01<<levels)-3))==1) || (t == (0x01UL<<(0x01<<levels))-1)){
             save(&F,ptr5,t);
         }
         if (t%(0x01<<((0x01<<levels)-9))==1){
@@ -594,7 +594,7 @@ int main()
     // rexdd_edge_t ptr_read[0x01<<(0x01<<4)];
     // read(&F_read,ptr_read, ite);
     // t = fopen("test_read.gv", "w+");
-    // build_gv(t, &F_read, ptr_read[4982]);
+    // build_gv(t, &F_read, ptr_read[56227]);
     // fclose(t);
     // for (int i=0; i<0x01<<(0x01<<4); i++){
     //     if (rexdd_edges_are_equal(&(ptr4[i]), &(ptr_read[i]))) {
