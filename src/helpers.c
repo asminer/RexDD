@@ -245,7 +245,7 @@ void handleNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, rexdd_node_handl
         nodes[0] = 0;
     } else {
         bool flag = 0;
-        for (int i=1; i<1<<5;i++) {
+        for (int i=1; i<1<<(F->S.num_levels);i++) {
             if (nodes[i] == handle){
                 flag = 1;
                 break;
@@ -269,7 +269,7 @@ void handleNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, rexdd_node_handl
 int countNodes(rexdd_forest_t *F, rexdd_node_handle_t handle)
 {
     rexdd_node_handle_t nodes[1<<5];
-    for (int i=0; i<1<<5; i++) {
+    for (int i=0; i<1<<(F->S.num_levels); i++) {
         nodes[i]=0;
     }
     int count = 0;
@@ -304,7 +304,7 @@ int countTerm(rexdd_forest_t *F, rexdd_node_handle_t handle)
     return count;
 }
 
-static char skip_whitespce(FILE *fin)
+char skip_whitespace(FILE *fin)
 {
     for (;;) {
         char c = fgetc(fin);
@@ -325,7 +325,7 @@ static char skip_whitespce(FILE *fin)
 
 int expect_int(FILE *fin)
 {
-    char c = skip_whitespce(fin);
+    char c = skip_whitespace(fin);
     if ((c > '9') || (c < '0')) exit(0);
     ungetc(c, fin);
     int u;
@@ -335,7 +335,7 @@ int expect_int(FILE *fin)
 
 uint64_t expect_uint64(FILE *fin)
 {
-    char c = skip_whitespce(fin);
+    char c = skip_whitespace(fin);
     if ((c > '9') || (c < '0')) exit(0);
     ungetc(c, fin);
     uint64_t u;
@@ -345,7 +345,7 @@ uint64_t expect_uint64(FILE *fin)
 
 rexdd_rule_t expect_rule(FILE *fin)
 {
-    char c = skip_whitespce(fin);
+    char c = skip_whitespace(fin);
     rexdd_rule_t rule = rexdd_rule_X;
     if (c == 'X') {
         rule = rexdd_rule_X;
@@ -387,11 +387,11 @@ rexdd_edge_t expect_edge(FILE *fin, rexdd_node_handle_t *unique_handles)
 {
     rexdd_edge_t edge;
     edge.label.rule = expect_rule(fin);
-    edge.label.complemented = (skip_whitespce(fin) == '1');
-    edge.label.swapped = (skip_whitespce(fin) == '1');
-    char c = skip_whitespce(fin);
+    edge.label.complemented = (skip_whitespace(fin) == '1');
+    edge.label.swapped = (skip_whitespace(fin) == '1');
+    char c = skip_whitespace(fin);
     if (c == 'T'){
-        if (skip_whitespce(fin) == '0') {
+        if (skip_whitespace(fin) == '0') {
             edge.target = rexdd_make_terminal(0);
         } else {
             edge.target = rexdd_make_terminal(1);
@@ -404,78 +404,26 @@ rexdd_edge_t expect_edge(FILE *fin, rexdd_node_handle_t *unique_handles)
     return edge;
 }
 
-void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
+/* save forest *F and root edges *edges into file *fout, fclose not included
+   After this, mv and gzip may be needed to manage the storage space */
+void save(FILE *fout, rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
 {
-    FILE *fout;
-    // if (fopen("temp_forest.txt", "r") == NULL){
-    //     fout = fopen("temp_forest.txt", "w+");
-    // } else {
-    //     fout = fopen("temp_forest_new.txt", "w+");
+
+    // char gz[64], mv[80], temptxt[64], gz_temp[64];
+
+    // snprintf(gz, 64, "/vol/vms/lcdeng/temp_forest_%s.txt.gz", TYPE);
+    // snprintf(mv, 80, "mv -f /vol/vms/lcdeng/temp_forest_%s.txt.gz /vol/vms/lcdeng/backup", TYPE);
+    // snprintf(temptxt, 64, "/vol/vms/lcdeng/temp_forest_%s.txt", TYPE);
+    // snprintf(gz_temp, 64, "gzip /vol/vms/lcdeng/temp_forest_%s.txt",TYPE);
+
+    // if (fopen(gz, "r") != NULL) {
+    //     fout = popen(mv, "r");
     // }
-    char gz[64], mv[80], temptxt[64], gz_temp[64], type[8];
+    // fout = fopen(temptxt, "w+");
+    // // fout = fopen(type, "w+");
 
-#ifdef FBDD
-    snprintf(type,8,"FBDD");
-#elif defined QBDD
-    snprintf(type,8,"QBDD");
-#elif defined ZBDD
-    snprintf(type,8,"ZBDD");
-#elif defined C_FBDD
-    snprintf(type,8,"C_FBDD");
-#elif defined C_QBDD
-    snprintf(type,8,"C_QBDD");
-#elif defined S_FBDD
-    snprintf(type,8,"S_FBDD");
-#elif defined S_QBDD
-    snprintf(type,8,"S_QBDD");
-#elif defined CS_FBDD
-    snprintf(type,8,"CS_FBDD");
-#elif defined CS_QBDD
-    snprintf(type,8,"CS_QBDD");
-#elif defined ESRBDD
-    snprintf(type,8,"ESRBDD");
-#elif defined CESRBDD
-    snprintf(type,8,"CESRBDD");
-#else
-    snprintf(type,8,"RexBDD");
-#endif
-    snprintf(gz, 64, "/vol/vms/lcdeng/temp_forest_%s.txt.gz", type);
-    snprintf(mv, 80, "mv -f /vol/vms/lcdeng/temp_forest_%s.txt.gz /vol/vms/lcdeng/backup", type);
-    snprintf(temptxt, 64, "/vol/vms/lcdeng/temp_forest_%s.txt", type);
-    snprintf(gz_temp, 64, "gzip /vol/vms/lcdeng/temp_forest_%s.txt",type);
+    fprintf(fout, "type %s\n", TYPE);
 
-    if (fopen(gz, "r") != NULL) {
-        fout = popen(mv, "r");
-    }
-    fout = fopen(temptxt, "w+");
-    // fout = fopen(type, "w+");
-
-    fprintf(fout, "type ");
-#ifdef FBDD
-    fprintf(fout, "FBDD\n");
-#elif defined QBDD
-    fprintf(fout, "QBDD\n");
-#elif defined ZBDD
-    fprintf(fout, "ZBDD\n");
-#elif defined C_FBDD
-    fprintf(fout, "CFBDD\n");
-#elif defined C_QDD
-    fprintf(fout, "CQBDD\n");
-#elif defined S_FBDD
-    fprintf(fout, "SFBDD\n");
-#elif defined S_QDD
-    fprintf(fout, "SQBDD\n");
-#elif defined CS_FDD
-    fprintf(fout, "CSFBDD\n");
-#elif defined CS_QDD
-    fprintf(fout, "CSQDD\n");
-#elif defined ESRBDD
-    fprintf(fout, "ESRBDD\n");
-#elif defined CESRBDD
-    fprintf(fout, "CESRBDD\n");
-#else
-    fprintf(fout, "REXBDD\n");
-#endif
     fprintf(fout, "lvls %d\n", F->S.num_levels);
     uint64_t max_handle = 0;
     uint_fast32_t p, n;
@@ -536,57 +484,23 @@ void save(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
             fprintf(fout, ",%llu>\n", edges[i].target);
         }
     }
-    
-    fclose(fout);
-
-    // if (fopen("temp_forest_new.txt", "r") != NULL) {
-    //     remove("temp_forest.txt");
-    //     rename("temp_forest_new.txt", "temp_forest.txt");
-    // }
-    fout = popen(gz_temp, "r");
-    pclose(fout);
 }
 
-void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
+/*  Read forest and root edges from file *fin into *F and *edges*/
+void read(FILE *fin, rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
 {
-    FILE *fin;
+    // FILE *fin;
 
-    char gz[64], gunzip[80], temptxt[64], gz_temp[64], type_[8];
+    // char gz[64], gunzip[80], temptxt[64], gz_temp[64];
 
-#ifdef FBDD
-    snprintf(type_,8,"FBDD");
-#elif defined QBDD
-    snprintf(type_,8,"QBDD");
-#elif defined ZBDD
-    snprintf(type_,8,"ZBDD");
-#elif defined C_FBDD
-    snprintf(type_,8,"C_FBDD");
-#elif defined C_QBDD
-    snprintf(type_,8,"C_QBDD");
-#elif defined S_FBDD
-    snprintf(type_,8,"S_FBDD");
-#elif defined S_QBDD
-    snprintf(type_,8,"S_QBDD");
-#elif defined CS_FBDD
-    snprintf(type_,8,"CS_FBDD");
-#elif defined CS_QBDD
-    snprintf(type_,8,"CS_QBDD");
-#elif defined ESRBDD
-    snprintf(type_,8,"ESRBDD");
-#elif defined CESRBDD
-    snprintf(type_,8,"CESRBDD");
-#else
-    snprintf(type_,8,"RexBDD");
-#endif
-
-    snprintf(gz, 64, "/vol/vms/lcdeng/temp_forest_%s.txt.gz", type_);
-    snprintf(gunzip, 80, "gunzip /vol/vms/lcdeng/temp_forest_%s.txt.gz", type_);
-    snprintf(temptxt, 64, "/vol/vms/lcdeng/temp_forest_%s.txt", type_);
-    snprintf(gz_temp, 64, "gzip /vol/vms/lcdeng/temp_forest_%s.txt",type_);
-    if (fopen(gz, "r") != NULL) {
-        fin = popen(gunzip, "r");
-    }
-    fin = fopen(temptxt, "r");
+    // snprintf(gz, 64, "/vol/vms/lcdeng/temp_forest_%s.txt.gz", TYPE);
+    // snprintf(gunzip, 80, "gunzip /vol/vms/lcdeng/temp_forest_%s.txt.gz", TYPE);
+    // snprintf(temptxt, 64, "/vol/vms/lcdeng/temp_forest_%s.txt", TYPE);
+    // snprintf(gz_temp, 64, "gzip /vol/vms/lcdeng/temp_forest_%s.txt",TYPE);
+    // if (fopen(gz, "r") != NULL) {
+    //     fin = popen(gunzip, "r");
+    // }
+    // fin = fopen(temptxt, "r");
     // fin = fopen(type_, "r");
 
     char type[10];
@@ -601,30 +515,27 @@ void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     rexdd_node_handle_t *unique_handles = malloc(handles*sizeof(rexdd_node_handle_t));
     uint64_t loc = 0;
 
-    fin = fopen(temptxt, "r");
-    // fin = fopen(type_, "r");
-    
     // temp unpacked node, root edge
     rexdd_unpacked_node_t node;
     while (!feof(fin))
     {
         char buffer[4];
-        buffer[0] = skip_whitespce(fin);
+        buffer[0] = skip_whitespace(fin);
         for (int i=1; i<4; i++) {
-            buffer[i] = skip_whitespce(fin);
+            buffer[i] = skip_whitespace(fin);
         }
         if (buffer[0] == 'n' && buffer[1] == 'o' && buffer[2] == 'd' && buffer[3] == 'e'){
             // build the node at location
             loc = expect_uint64(fin) - 1;
-            char c = skip_whitespce(fin);
+            char c = skip_whitespace(fin);
             if (c == 'L') {
                 // set node's level
                 node.level = expect_int(fin);
                 // set low edge
-                if (skip_whitespce(fin) == '0' && skip_whitespce(fin) == '<') {
+                if (skip_whitespace(fin) == '0' && skip_whitespace(fin) == '<') {
                     // set node's edges
                     node.edge[0] = expect_edge(fin, unique_handles);
-                    if (skip_whitespce(fin) == '1' && skip_whitespce(fin) == '<') {
+                    if (skip_whitespace(fin) == '1' && skip_whitespace(fin) == '<') {
                         node.edge[1] = expect_edge(fin, unique_handles);
                     }
                 }
@@ -636,7 +547,7 @@ void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
             t = expect_uint64(fin);
             printf ("number of roots: %llu\n", t);
             for (uint64_t i=0; i<t; i++) {
-                if (skip_whitespce(fin) == '<') {
+                if (skip_whitespace(fin) == '<') {
                     edges[i] = expect_edge(fin, unique_handles);
                 }
                 // printf ("root: %d, %d, %d, %llu\n", root.label.rule, root.label.complemented, root.label.swapped, root.target);
@@ -646,9 +557,9 @@ void read(rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     }
     free(unique_handles);
 
-    fclose(fin);
-    fin = popen(gz_temp, "r");
-    pclose(fin);
+    // fclose(fin);
+    // fin = popen(gz_temp, "r");
+    // pclose(fin);
 }
 
 void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
@@ -656,58 +567,9 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     printf("Counting number of nodes...\n");
     FILE *test, *test2;
     char buffer[24], buffer2[24];
-#ifdef QBDD
-    snprintf(buffer, 24, "L%d_nodeFun_QBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_QBDD.txt", levels);
-#endif
-#ifdef C_QBDD
-    snprintf(buffer, 24, "L%d_nodeFun_CQBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_CQBDD.txt", levels);
-#endif
-#ifdef S_QBDD
-    snprintf(buffer, 24, "L%d_nodeFun_SQBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_SQBDD.txt", levels);
-#endif
-#ifdef CS_QBDD
-    snprintf(buffer, 24, "L%d_nodeFun_CSQBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_CSQBDD.txt", levels);
-#endif
+    snprintf(buffer, 24, "L%d_nodeFun_%s.txt", levels, TYPE);
+    snprintf(buffer2, 24, "L%d_funNode_%s.txt", levels, TYPE);
 
-#ifdef FBDD
-    snprintf(buffer, 24, "L%d_nodeFun_FBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_FBDD.txt", levels);
-#endif
-#ifdef C_FBDD
-    snprintf(buffer, 24, "L%d_nodeFun_CFBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_CFBDD.txt", levels);
-#endif
-#ifdef S_FBDD
-    snprintf(buffer, 24, "L%d_nodeFun_SFBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_SFBDD.txt", levels);
-#endif
-#ifdef CS_FBDD
-    snprintf(buffer, 24, "L%d_nodeFun_CSFBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_CSFBDD.txt", levels);
-#endif
-
-#ifdef ZBDD
-    snprintf(buffer, 24, "L%d_nodeFun_ZBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_ZBDD.txt", levels);
-#endif
-
-#ifdef ESRBDD
-    snprintf(buffer, 24, "L%d_nodeFun_ESRBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_ESRBDD.txt", levels);
-#endif
-#ifdef CESRBDD
-    snprintf(buffer, 24, "L%d_nodeFun_CESRBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_CESRBDD.txt", levels);
-#endif
-
-#ifdef REXBDD
-    snprintf(buffer, 24, "L%d_nodeFun_RexBDD.txt", levels);
-    snprintf(buffer2, 24, "L%d_funNode_RexBDD.txt", levels);
-#endif
     test = fopen(buffer, "w+");
     test2 = fopen(buffer2, "w+");
 
@@ -748,46 +610,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     fclose(test);
     fclose(test2);
     printf("Done counting!\n\n");
-#ifdef QBDD
-    printf("max number of nodes(including terminal) for any level %d QBDD is: %d\n\n",levels, max_num);
-#endif
-#ifdef C_QBDD
-    printf("max number of nodes(including terminal) for any level %d CQBDD is: %d\n\n",levels, max_num);
-#endif
-#ifdef S_QBDD
-    printf("max number of nodes(including terminal) for any level %d SQBDD is: %d\n\n",levels, max_num);
-#endif
-#ifdef CS_QBDD
-    printf("max number of nodes(including terminal) for any level %d CSQBDD is: %d\n\n",levels, max_num);
-#endif
-
-#ifdef FBDD
-    printf("max number of nodes(including terminal) for any level %d FBDD is: %d\n\n",levels, max_num);
-#endif
-#ifdef C_FBDD
-    printf("max number of nodes(including terminal) for any level %d CFBDD is: %d\n\n",levels, max_num);
-#endif
-#ifdef S_FBDD
-    printf("max number of nodes(including terminal) for any level %d SFBDD is: %d\n\n",levels, max_num);
-#endif
-#ifdef CS_FBDD
-    printf("max number of nodes(including terminal) for any level %d CSFBDD is: %d\n\n",levels, max_num);
-#endif
-
-#ifdef ZBDD
-    printf("max number of nodes(including terminal) for any level %d ZBDD is: %d\n\n",levels, max_num);
-#endif
-
-#ifdef ESRBDD
-    printf("max number of nodes(including terminal) for any level %d ESRBDD is: %d\n\n",levels, max_num);
-#endif
-#ifdef CESRBDD
-    printf("max number of nodes(including terminal) for any level %d CESRBDD is: %d\n\n",levels, max_num);
-#endif
-
-#ifdef REXBDD
-    printf("max number of nodes(including terminal) for any level %d RexBDD is: %d\n\n",levels, max_num);
-#endif
+    printf("max number of nodes(including terminal) for any level %d %s is: %d\n\n",levels, TYPE, max_num);
 
 }
 
@@ -800,145 +623,145 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 
 
 
-/****************************************************************************
- * Helper: write an edge in dot format.
- * The source node, and the ->, should have been written already.
- *
- *  @param  out     File stream to write to
- *  @param  e       edge
- *  @param  solid   if true, write a solid edge; otherwise dashed.
- */
-static void write_dot_edge(FILE* out, rexdd_edge_t e, bool solid)
-{
-    char label[128];
-    unsigned j, commas;
+// /****************************************************************************
+//  * Helper: write an edge in dot format.
+//  * The source node, and the ->, should have been written already.
+//  *
+//  *  @param  out     File stream to write to
+//  *  @param  e       edge
+//  *  @param  solid   if true, write a solid edge; otherwise dashed.
+//  */
+// static void write_dot_edge(FILE* out, rexdd_edge_t e, bool solid)
+// {
+//     char label[128];
+//     unsigned j, commas;
 
-    if (rexdd_is_terminal(e.target)) {
-        fprintf(out, "T%d", rexdd_terminal_value(e.target));
-    } else {
-        fprintf(out, "N%x_%x",
-            rexdd_nonterminal_handle(e.target) / REXDD_PAGE_SIZE,
-            rexdd_nonterminal_handle(e.target) % REXDD_PAGE_SIZE
-        );
-    }
-    if (solid) {
-        fprintf(out, " [style=solid,  ");
-    } else {
-        fprintf(out, " [style=dashed, ");
-    }
+//     if (rexdd_is_terminal(e.target)) {
+//         fprintf(out, "T%d", rexdd_terminal_value(e.target));
+//     } else {
+//         fprintf(out, "N%x_%x",
+//             rexdd_nonterminal_handle(e.target) / REXDD_PAGE_SIZE,
+//             rexdd_nonterminal_handle(e.target) % REXDD_PAGE_SIZE
+//         );
+//     }
+//     if (solid) {
+//         fprintf(out, " [style=solid,  ");
+//     } else {
+//         fprintf(out, " [style=dashed, ");
+//     }
 
-    commas = 0;
-    rexdd_snprint_edge(label, 128, e);
-    fprintf(out, "label=\"");
-    for (j=0; j<128; j++) {
-        if (0 == label[j]) break;
-        if (',' != label[j]) {
-            fputc(label[j], out);
-            continue;
-        }
-        ++commas;
-        if (commas < 2) {
-            fputc(',', out);
-            continue;
-        }
-        fputc('>', out);
-        break;
-    }
-    fprintf(out, "\"];\n");
-}
+//     commas = 0;
+//     rexdd_snprint_edge(label, 128, e);
+//     fprintf(out, "label=\"");
+//     for (j=0; j<128; j++) {
+//         if (0 == label[j]) break;
+//         if (',' != label[j]) {
+//             fputc(label[j], out);
+//             continue;
+//         }
+//         ++commas;
+//         if (commas < 2) {
+//             fputc(',', out);
+//             continue;
+//         }
+//         fputc('>', out);
+//         break;
+//     }
+//     fprintf(out, "\"];\n");
+// }
 
-/****************************************************************************
- *
- *  Create a dot file for the forest,
- *  with the given root edge.
- *      TBD: use forest roots instead
- *      TBD: allow names to be attached to functions
- *      TBD: only display root edges with names?
- *      TBD: only display nodes reachable from a root edge?
- *
- *      @param  out         Output stream to write to
- *      @param  F           Forest to use.
- *
- *      @param  e           Root edge, for now.
- *
- */
-void rexdd_export_dot(FILE* out, const rexdd_forest_t *F, rexdd_edge_t e)
-{
-    unsigned i;
-    rexdd_check1(F, "Null forest in rexdd_export_dot");
+// /****************************************************************************
+//  *
+//  *  Create a dot file for the forest,
+//  *  with the given root edge.
+//  *      TBD: use forest roots instead
+//  *      TBD: allow names to be attached to functions
+//  *      TBD: only display root edges with names?
+//  *      TBD: only display nodes reachable from a root edge?
+//  *
+//  *      @param  out         Output stream to write to
+//  *      @param  F           Forest to use.
+//  *
+//  *      @param  e           Root edge, for now.
+//  *
+//  */
+// void rexdd_export_dot(FILE* out, const rexdd_forest_t *F, rexdd_edge_t e)
+// {
+//     unsigned i;
+//     rexdd_check1(F, "Null forest in rexdd_export_dot");
 
-    fprintf(out, "//\n// Automatically generated by rexdd_export_dot\n//\n");
-    fprintf(out, "digraph g {\n");
-    fprintf(out, "    rankdir=TB;\n\n");
+//     fprintf(out, "//\n// Automatically generated by rexdd_export_dot\n//\n");
+//     fprintf(out, "digraph g {\n");
+//     fprintf(out, "    rankdir=TB;\n\n");
 
-    fprintf(out, "// Levels.\n\n");
+//     fprintf(out, "// Levels.\n\n");
 
-    fprintf(out, "    node [shape=none];\n");
-    fprintf(out, "    v0[label=\"\"];\n");
-    for (i=0; i<= F->S.num_levels+1; i++) {
-        fprintf(out, "    v%u[label=\"x%u\"];\n", i, i);
-    }
-    fprintf(out, "    v%u[label=\"\"];\n\n", F->S.num_levels+1);
+//     fprintf(out, "    node [shape=none];\n");
+//     fprintf(out, "    v0[label=\"\"];\n");
+//     for (i=0; i<= F->S.num_levels+1; i++) {
+//         fprintf(out, "    v%u[label=\"x%u\"];\n", i, i);
+//     }
+//     fprintf(out, "    v%u[label=\"\"];\n\n", F->S.num_levels+1);
 
-    for (i=0; i<= F->S.num_levels; i++) {
-        fprintf(out, "    v%u -> v%u [style=invis];\n", i+1, i);
-    }
+//     for (i=0; i<= F->S.num_levels; i++) {
+//         fprintf(out, "    v%u -> v%u [style=invis];\n", i+1, i);
+//     }
 
-    fprintf(out, "\n// Terminal nodes\n\n");
+//     fprintf(out, "\n// Terminal nodes\n\n");
 
-    fprintf(out, "    { rank=same; v0 T0[shape=rect, label=\"0\"]; }\n");
+//     fprintf(out, "    { rank=same; v0 T0[shape=rect, label=\"0\"]; }\n");
 
-    fprintf(out, "\n// Nonerminal nodes\n\n");
+//     fprintf(out, "\n// Nonerminal nodes\n\n");
 
-    fprintf(out, "    node [shape=circle];\n");
+//     fprintf(out, "    node [shape=circle];\n");
 
-    //
-    // Declare all nodes before writing outgoing edges
-    //
-    uint_fast32_t p, n;
-    for (p=0; p<F->M->pages_size; p++) {
-        const rexdd_nodepage_t *page = F->M->pages+p;
-        for (n=0; n<page->first_unalloc; n++) {
-            if (rexdd_is_packed_in_use(page->chunk+n)) {
-                fprintf(out, "    { rank=same; v%u N%x_%x[label=\"N%x_%x\"]; }\n",
-                        rexdd_unpack_level(page->chunk+n), p, n, p, n);
-            }
-        } // for n
-    } // for p
-    fprintf(out, "\n");
+//     //
+//     // Declare all nodes before writing outgoing edges
+//     //
+//     uint_fast32_t p, n;
+//     for (p=0; p<F->M->pages_size; p++) {
+//         const rexdd_nodepage_t *page = F->M->pages+p;
+//         for (n=0; n<page->first_unalloc; n++) {
+//             if (rexdd_is_packed_in_use(page->chunk+n)) {
+//                 fprintf(out, "    { rank=same; v%u N%x_%x[label=\"N%x_%x\"]; }\n",
+//                         rexdd_unpack_level(page->chunk+n), p, n, p, n);
+//             }
+//         } // for n
+//     } // for p
+//     fprintf(out, "\n");
 
-    //
-    // Traverse again, to write edges
-    //
-    rexdd_unpacked_node_t node;
-    char label[128];
-    unsigned commas, j;
+//     //
+//     // Traverse again, to write edges
+//     //
+//     rexdd_unpacked_node_t node;
+//     char label[128];
+//     unsigned commas, j;
 
-    for (p=0; p<F->M->pages_size; p++) {
-        const rexdd_nodepage_t *page = F->M->pages+p;
-        for (n=0; n<page->first_unalloc; n++) {
-            if (rexdd_is_packed_in_use(page->chunk+n)) {
-                rexdd_packed_to_unpacked(page->chunk+n, &node);
+//     for (p=0; p<F->M->pages_size; p++) {
+//         const rexdd_nodepage_t *page = F->M->pages+p;
+//         for (n=0; n<page->first_unalloc; n++) {
+//             if (rexdd_is_packed_in_use(page->chunk+n)) {
+//                 rexdd_packed_to_unpacked(page->chunk+n, &node);
 
-                for (i=0; i<2; i++) {
-                    fprintf(out, "    N%x_%x -> ", p, n);
-                    write_dot_edge(out, node.edge[i], i);
-                } // for i
+//                 for (i=0; i<2; i++) {
+//                     fprintf(out, "    N%x_%x -> ", p, n);
+//                     write_dot_edge(out, node.edge[i], i);
+//                 } // for i
 
 
-            } // node is in use
-        } // for n
-    } // for p
-    fprintf(out, "\n");
+//             } // node is in use
+//         } // for n
+//     } // for p
+//     fprintf(out, "\n");
 
-    // Root edge
+//     // Root edge
 
-    fprintf(out, "\n// Root edges\n\n");
+//     fprintf(out, "\n// Root edges\n\n");
 
-    fprintf(out, "    { rank=same; v%u root[shape=none, label=\"r\"]; }\n",
-        F->S.num_levels+1
-    );
-    fprintf(out, "    r -> ");
-    write_dot_edge(out, e, true);
-    fprintf(out, "}\n");
-}
+//     fprintf(out, "    { rank=same; v%u root[shape=none, label=\"r\"]; }\n",
+//         F->S.num_levels+1
+//     );
+//     fprintf(out, "    r -> ");
+//     write_dot_edge(out, e, true);
+//     fprintf(out, "}\n");
+// }

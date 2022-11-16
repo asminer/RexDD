@@ -8,6 +8,7 @@ set(EXES
   check_ut
   check_reduce
   check_bdds
+  check_bench_marks
 )
 
 foreach(testexe ${EXES})
@@ -34,3 +35,4 @@ add_test("Node page test"      check_np)
 add_test("Unique table test"   check_ut)
 add_test("Reduce edge test" check_reduce)
 add_test("QBDD/FBDD/ZBDD/RexBDD eval test" check_bdds)
+add_test("Benchmarks test"  check_bench_marks)

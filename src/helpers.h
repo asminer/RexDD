@@ -1,6 +1,31 @@
 
 #include "forest.h"
 
+#ifdef FBDD
+#   define TYPE "FBDD"
+#elif defined QBDD
+#   define TYPE "QBDD"
+#elif defined ZBDD
+#   define TYPE "ZBDD"
+#elif defined C_FBDD
+#   define TYPE "C_FBDD"
+#elif defined C_QBDD
+#   define TYPE "C_QBDD"
+#elif defined S_FBDD
+#   define TYPE "S_FBDD"
+#elif defined S_QBDD
+#   define TYPE "S_QBDD"
+#elif defined CS_FBDD
+#   define TYPE "CS_FBDD"
+#elif defined CS_QBDD
+#   define TYPE "CS_QBDD"
+#elif defined ESRBDD
+#   define TYPE "ESRBDD"
+#elif defined CESRBDD
+#   define TYPE "CESRBDD"
+#else
+#   define TYPE "RexBDD"
+#endif
 
 /****************************************************************************
  *
@@ -97,6 +122,8 @@ int countTerm(
 /****************************************************************************
  *  Helper functions for check-pointing and reading
  ****************************************************************************/
+// skip white space
+char skip_whitespace(FILE *fin);
 // expect int and uint64
 int expect_int(FILE *fin);
 uint64_t expect_uint64(FILE *fin);
@@ -112,6 +139,7 @@ rexdd_edge_t expect_edge(FILE *fin, rexdd_node_handle_t *unique_handles);
  * 
  */
 void save(
+        FILE *fout,
         rexdd_forest_t *F,
         rexdd_edge_t edges[],
         uint64_t t);
@@ -123,6 +151,7 @@ void save(
  * 
  */
 void read(
+        FILE *fin,
         rexdd_forest_t *F,
         rexdd_edge_t edges[],
         uint64_t t);
@@ -145,35 +174,35 @@ void export_funsNum(
 
 
 
-/****************************************************************************
- * Helper: write an edge in dot format.
- * The source node, and the ->, should have been written already.
- *
- *  @param  out     File stream to write to
- *  @param  e       edge
- *  @param  solid   if true, write a solid edge; otherwise dashed.
- */
-static void write_dot_edge(
-        FILE* out,
-        rexdd_edge_t e,
-        bool solid);
+// /****************************************************************************
+//  * Helper: write an edge in dot format.
+//  * The source node, and the ->, should have been written already.
+//  *
+//  *  @param  out     File stream to write to
+//  *  @param  e       edge
+//  *  @param  solid   if true, write a solid edge; otherwise dashed.
+//  */
+// static void write_dot_edge(
+//         FILE* out,
+//         rexdd_edge_t e,
+//         bool solid);
 
-/****************************************************************************
- *
- *  Create a dot file for the forest,
- *  with the given root edge.
- *      TBD: use forest roots instead
- *      TBD: allow names to be attached to functions
- *      TBD: only display root edges with names?
- *      TBD: only display nodes reachable from a root edge?
- *
- *      @param  out         Output stream to write to
- *      @param  F           Forest to use.
- *
- *      @param  e           Root edge, for now.
- *
- */
-void rexdd_export_dot(
-        FILE* out,
-        const rexdd_forest_t *F,
-        rexdd_edge_t e);
+// /****************************************************************************
+//  *
+//  *  Create a dot file for the forest,
+//  *  with the given root edge.
+//  *      TBD: use forest roots instead
+//  *      TBD: allow names to be attached to functions
+//  *      TBD: only display root edges with names?
+//  *      TBD: only display nodes reachable from a root edge?
+//  *
+//  *      @param  out         Output stream to write to
+//  *      @param  F           Forest to use.
+//  *
+//  *      @param  e           Root edge, for now.
+//  *
+//  */
+// void rexdd_export_dot(
+//         FILE* out,
+//         const rexdd_forest_t *F,
+//         rexdd_edge_t e);
