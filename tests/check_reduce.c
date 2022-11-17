@@ -1,4 +1,5 @@
 #include "forest.h"
+#include "helpers.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,7 +48,7 @@ unsigned long check_reduce(
     initial.label.complemented = 0;
     initial.label.swapped = 0;
     initial.target = rexdd_make_terminal(3); // only for rexdd check reduce
-    unsigned long index, count=0;
+    unsigned long index, count=0, count_err=0;
     unsigned long long i;
     FILE *fcount;
     for (i=0; i<size; i++){
@@ -57,7 +58,14 @@ unsigned long check_reduce(
                 // continue;
             } else {
                 // output error information
-                printf("reduce bug!\n");
+                count_err++;
+                printf("reduce bug! %lu\n", count_err);
+                fcount = fopen("reduced.gv", "w+");
+                build_gv(fcount, F, buffer[i]);
+                fclose(fcount);
+                fcount = fopen("reduced_theSame.gv", "w+");
+                build_gv(fcount, F, ptr[index]);
+                fclose(fcount);
                 break;
             }
         } else {
@@ -66,7 +74,7 @@ unsigned long check_reduce(
         }
         if (i%500==1 || i == size-1) {
             fcount = fopen("count_edges_progress.txt","w+");
-            fprintf(fcount, "Count number progress is %lu / %lu",i,size);
+            fprintf(fcount, "Count number progress is %llu / %llu",i,size);
             fclose(fcount);
         }
     }
@@ -354,77 +362,76 @@ int main()
     }
 
 /*=================================================================================*/
-    printf("Testing Level Five...\n");
-    levels = 5;
-    n_edge = 0;
-    bool Vars_5[0x01<<levels][levels+1];
-    make_vars(levels, Vars_4, Vars_5);
+    // printf("Testing Level Five...\n");
+    // levels = 5;
+    // n_edge = 0;
+    // bool Vars_5[0x01<<levels][levels+1];
+    // make_vars(levels, Vars_4, Vars_5);
 
-    unsigned long cols = 0x01UL<<(0x01<<levels);
-    rexdd_edge_t *ptr5 = malloc(cols * sizeof(rexdd_edge_t));
-    for (unsigned long i=0; i< 0x01UL << (0x01 << levels); i++) {
-        ptr5[i] = initial;
-    }
-    unsigned long long num_buffer5 = (1ULL<<34) + 18;
-    rexdd_edge_t *buffer5 = malloc(num_buffer5 * sizeof(rexdd_edge_t));
+    // unsigned long cols = 0x01UL<<(0x01<<levels);
+    // rexdd_edge_t *ptr5 = malloc(cols * sizeof(rexdd_edge_t));
+    // for (unsigned long i=0; i< 0x01UL << (0x01 << levels); i++) {
+    //     ptr5[i] = initial;
+    // }
+    // unsigned long long num_buffer5 = (1ULL<<34) + 18;
+    // rexdd_edge_t *buffer5 = malloc(num_buffer5 * sizeof(rexdd_edge_t));
 
-    Temp.level = levels;
-    unsigned long count_L5 = 0;
-    rexdd_edge_label_t l;
-    rexdd_edge_t reduced;
-    FILE *pf;
-    for (c_incoming=0; c_incoming<2; c_incoming++) {
-        for (s_incoming=0; s_incoming<2; s_incoming++) {
-            Incoming.rule = rexdd_rule_X;
-            Incoming.complemented = c_incoming;
-            Incoming.swapped = s_incoming;
-            l = Incoming;
-            for (int i=0; i<1<<16; i++) {
-                for (int j = 0; j <1<<16; j++) {
-                    Temp.edge[0] = ptr4[i];
-                    Temp.edge[1] = ptr4[j];
+    // Temp.level = levels;
+    // rexdd_edge_label_t l;
+    // rexdd_edge_t reduced;
+    // FILE *pf;
+    // for (c_incoming=0; c_incoming<2; c_incoming++) {
+    //     for (s_incoming=0; s_incoming<2; s_incoming++) {
+    //         Incoming.rule = rexdd_rule_X;
+    //         Incoming.complemented = c_incoming;
+    //         Incoming.swapped = s_incoming;
+    //         l = Incoming;
+    //         for (int i=0; i<1<<16; i++) {
+    //             for (int j = 0; j <1<<16; j++) {
+    //                 Temp.edge[0] = ptr4[i];
+    //                 Temp.edge[1] = ptr4[j];
 
-                    rexdd_reduce_edge(&F, levels, l, Temp, &reduced);
+    //                 rexdd_reduce_edge(&F, levels, l, Temp, &reduced);
 
-                    buffer5[n_edge] = reduced;
-                    n_edge++;
-                    if (n_edge%(0x01<<((0x01<<levels)-9))==1 || 
-                        n_edge == num_buffer5){
-                        pf = fopen("progress_reduce.txt","w+");
-                        fprintf(pf,"The progress is %llu / %llu", n_edge, num_buffer5);
-                        fclose(pf);
-                    }
-                }
-            }
-        }
-        for (rexdd_rule_t r=0; r<9; r++){
-            Incoming.rule = r;
-            Incoming.swapped = 0;
-            Incoming.complemented = c_incoming;
-            l = Incoming;
+    //                 buffer5[n_edge] = reduced;
+    //                 n_edge++;
+    //                 if (n_edge%(0x01<<((0x01<<levels)-9))==1 || 
+    //                     n_edge == num_buffer5){
+    //                     pf = fopen("progress_reduce.txt","w+");
+    //                     fprintf(pf,"The progress is %llu / %llu", n_edge, num_buffer5);
+    //                     fclose(pf);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     for (rexdd_rule_t r=0; r<9; r++){
+    //         Incoming.rule = r;
+    //         Incoming.swapped = 0;
+    //         Incoming.complemented = c_incoming;
+    //         l = Incoming;
 
-            rexdd_reduce_edge(&F, levels, l, term, &reduced);
-            buffer5[n_edge] = reduced;
-            n_edge++;
-            if (n_edge%(0x01<<((0x01<<levels)-9))==1 || 
-                n_edge == num_buffer5){
-                pf = fopen("progress_reduce.txt","w+");
-                fprintf(pf,"The progress is %llu / %llu", n_edge, num_buffer5);
-                fclose(pf);
-            }
-        }
-    }
+    //         rexdd_reduce_edge(&F, levels, l, term, &reduced);
+    //         buffer5[n_edge] = reduced;
+    //         n_edge++;
+    //         if (n_edge%(0x01<<((0x01<<levels)-9))==1 || 
+    //             n_edge == num_buffer5){
+    //             pf = fopen("progress_reduce.txt","w+");
+    //             fprintf(pf,"The progress is %llu / %llu", n_edge, num_buffer5);
+    //             fclose(pf);
+    //         }
+    //     }
+    // }
 
-    if (check_reduce(&F, levels, Vars_5, buffer5, num_buffer5, ptr5) != 0x01UL << (0x01 << levels)) {
-        printf("Level five check failed\n");
-    } else {
-        printf("level five reduced edge: %lu\n", 0x01UL << (0x01 << levels));
+    // if (check_reduce(&F, levels, Vars_5, buffer5, num_buffer5, ptr5) != 0x01UL << (0x01 << levels)) {
+    //     printf("Level five check failed\n");
+    // } else {
+    //     printf("level five reduced edge: %lu\n", 0x01UL << (0x01 << levels));
 
-        printf("\nDone!\n");
-    }
+    //     printf("\nDone!\n");
+    // }
 
-    free(buffer5);
-    free(ptr5);
+    // free(buffer5);
+    // free(ptr5);
     rexdd_free_forest(&F);
 
     return 0;

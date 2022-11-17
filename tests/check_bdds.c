@@ -237,6 +237,9 @@ int main()
 #ifdef C_QBDD
     f = fopen("CQBDD.gv", "w+");
 #endif
+#ifdef S_QBDD
+    f = fopen("SQBDD.gv", "w+");
+#endif
 #ifdef CS_QBDD
     f = fopen("CSQBDD.gv", "w+");
 #endif
@@ -246,6 +249,9 @@ int main()
 #endif
 #ifdef C_FBDD
     f = fopen("CFBDD.gv", "w+");
+#endif
+#ifdef S_FBDD
+    f = fopen("SFBDD.gv", "w+");
 #endif
 #ifdef CS_FBDD
     f = fopen("CSFBDD.gv", "w+");
@@ -282,6 +288,12 @@ int main()
     rexdd_edge_t ptr3[0x01<<(0x01<<levels)];
 
     check_eval(F, 3, Vars_2, Function_2, ptr2, Vars_3, Function_3, ptr3);
+    build_gv_forest(f, &F, ptr3, 256);
+    fclose(f);
+
+    f = fopen("saved_BDD.txt", "w+");
+    save(f,&F, ptr3, 0x01<<(0x01<<levels));
+    fclose(f);
 
     export_funsNum(F, levels, ptr3);
 
@@ -298,126 +310,130 @@ int main()
 
     export_funsNum(F, levels, ptr4);
 
+    // f = fopen("saved_BDD.txt", "w+");
+    // save(f,&F, ptr4, 0x01<<(0x01<<levels));
+    // fclose(f);
+
     /* ==========================================================================
      *      Building the vars for level five nodes
      * ==========================================================================*/
-    levels = 5;
-    printf("Testing Level Five...\n");
-    int rows = 0x01<<levels;
-    unsigned long cols = 0x01UL<<(0x01<<levels);
-    bool Vars_5[rows][levels+1];
+//     levels = 5;
+//     printf("Testing Level Five...\n");
+//     int rows = 0x01<<levels;
+//     unsigned long cols = 0x01UL<<(0x01<<levels);
+//     bool Vars_5[rows][levels+1];
     
-    // where to store the 2^32 root edges 64GB
-    rexdd_edge_t *ptr5 = malloc(cols * sizeof(rexdd_edge_t));
+//     // where to store the 2^32 root edges 64GB
+//     rexdd_edge_t *ptr5 = malloc(cols * sizeof(rexdd_edge_t));
 
-    for (int i = 0; i < 0x01<<levels; i++)
-    {
-        Vars_5[i][0] = 0;
-        Vars_5[i][levels] = !(i < 0x01<<(levels-1));
-        for (int j = 1; j < levels; j++)
-        {
-            Vars_5[i][j] = Vars_4[i % (0x01<<(levels-1))][j];
-        }
-    }
-
-    temp.level = 1;
-    temp.edge[0].label.rule = rexdd_rule_X;
-    temp.edge[1].label.rule = rexdd_rule_X;
-    temp.edge[0].label.complemented = 0;
-    temp.edge[1].label.complemented = 0;
-    temp.edge[0].label.swapped = 0;
-    temp.edge[1].label.swapped = 0;
-
-    temp.level = levels;
-
-    l.rule = rexdd_rule_X;
-    l.complemented = 0;
-    l.swapped = 0;
-    eval.label = l;
-
-
-    printf("check eval for level %d...\n", levels);
-    bool eval_real;
-    unsigned long t;
-//     uint64_t check_point = 0;
-
-//     char gz[64], type_[8];
-
-// #ifdef FBDD
-//     snprintf(type_,8,"FBDD");
-// #elif defined QBDD
-//     snprintf(type_,8,"QBDD");
-// #elif defined ZBDD
-//     snprintf(type_,8,"ZBDD");
-// #elif defined C_FBDD
-//     snprintf(type_,8,"C_FBDD");
-// #elif defined C_QBDD
-//     snprintf(type_,8,"C_QBDD");
-// #elif defined CS_FBDD
-//     snprintf(type_,8,"CS_FBDD");
-// #elif defined CS_QBDD
-//     snprintf(type_,8,"CS_QBDD");
-// #elif defined ESRBDD
-//     snprintf(type_,8,"ESRBDD");
-// #elif defined CESRBDD
-//     snprintf(type_,8,"CESRBDD");
-// #else
-//     snprintf(type_,8,"RexBDD");
-// #endif
-
-//     snprintf(gz, 64, "/vol/vms/lcdeng/temp_forest_%s.txt.gz", type_);
-
-//     if (fopen(gz, "r") != NULL) {
-//         read(&F,ptr5,check_point);
+//     for (int i = 0; i < 0x01<<levels; i++)
+//     {
+//         Vars_5[i][0] = 0;
+//         Vars_5[i][levels] = !(i < 0x01<<(levels-1));
+//         for (int j = 1; j < levels; j++)
+//         {
+//             Vars_5[i][j] = Vars_4[i % (0x01<<(levels-1))][j];
+//         }
 //     }
-    for (t=0; t<0x01UL<<(0x01<<levels); t++) {
-        temp.edge[0] = ptr4[t / (0x01<<(0x01<<(levels-1)))];
-        temp.edge[1] = ptr4[t % (0x01<<(0x01<<(levels-1)))];
 
-        rexdd_reduce_edge(&F, levels, l, temp, &eval);
+//     temp.level = 1;
+//     temp.edge[0].label.rule = rexdd_rule_X;
+//     temp.edge[1].label.rule = rexdd_rule_X;
+//     temp.edge[0].label.complemented = 0;
+//     temp.edge[1].label.complemented = 0;
+//     temp.edge[0].label.swapped = 0;
+//     temp.edge[1].label.swapped = 0;
 
-        ptr5[t] = eval;
-        // count number of nodes and write it into file
+//     temp.level = levels;
 
-        for (int i=0; i<0x01<<levels; i++){
-            // avoid creating large Function_5
-            if (i<0x01<<(levels-1)) {
-                eval_real = Function_4[i%(0x01<<(levels-1))][t/(0x01<<(0x01<<(levels-1)))];
-            } else {
-                eval_real = Function_4[i%(0x01<<(levels-1))][t%(0x01<<(0x01<<(levels-1)))];
-            }
-            if (rexdd_eval(&F, &eval, levels, Vars_5[i]) == eval_real)
-            {
-                continue;
-            }
-            else
-            {
-                printf("error on function: %lu\n", t);
-                f = fopen("error_function.gv", "w+");
-                build_gv(f, &F,ptr5[t]);
-                fclose(f);
+//     l.rule = rexdd_rule_X;
+//     l.complemented = 0;
+//     l.swapped = 0;
+//     eval.label = l;
 
-                printf("\n");
-                rexdd_check1(0, "Eval error!");
-                break;
-            }
-        }
-        // save the forest and root edges every 2^29
-        if ((t%(0x01<<((0x01<<levels)-3))==1) || (t == (0x01UL<<(0x01<<levels))-1)){
-            save(&F,ptr5,t);
-        }
-        if (t%(0x01<<((0x01<<levels)-9))==1){
-            FILE *pf;
-            pf = fopen("progress.txt","w+");
-            fprintf(pf,"The progress is %lu / %lu", t, 0x01UL<<(0x01<<levels));
-            fclose(pf);
-        }
-    }
-    printf("Done eval!\n");
 
-    export_funsNum(F, levels, ptr5);
+//     printf("check eval for level %d...\n", levels);
+//     bool eval_real;
+//     unsigned long t;
+// //     uint64_t check_point = 0;
 
-    free(ptr5);
+// //     char gz[64], type_[8];
+
+// // #ifdef FBDD
+// //     snprintf(type_,8,"FBDD");
+// // #elif defined QBDD
+// //     snprintf(type_,8,"QBDD");
+// // #elif defined ZBDD
+// //     snprintf(type_,8,"ZBDD");
+// // #elif defined C_FBDD
+// //     snprintf(type_,8,"C_FBDD");
+// // #elif defined C_QBDD
+// //     snprintf(type_,8,"C_QBDD");
+// // #elif defined CS_FBDD
+// //     snprintf(type_,8,"CS_FBDD");
+// // #elif defined CS_QBDD
+// //     snprintf(type_,8,"CS_QBDD");
+// // #elif defined ESRBDD
+// //     snprintf(type_,8,"ESRBDD");
+// // #elif defined CESRBDD
+// //     snprintf(type_,8,"CESRBDD");
+// // #else
+// //     snprintf(type_,8,"RexBDD");
+// // #endif
+
+// //     snprintf(gz, 64, "/vol/vms/lcdeng/temp_forest_%s.txt.gz", type_);
+
+// //     if (fopen(gz, "r") != NULL) {
+// //         read(&F,ptr5,check_point);
+// //     }
+//     for (t=0; t<0x01UL<<(0x01<<levels); t++) {
+//         temp.edge[0] = ptr4[t / (0x01<<(0x01<<(levels-1)))];
+//         temp.edge[1] = ptr4[t % (0x01<<(0x01<<(levels-1)))];
+
+//         rexdd_reduce_edge(&F, levels, l, temp, &eval);
+
+//         ptr5[t] = eval;
+//         // count number of nodes and write it into file
+
+//         for (int i=0; i<0x01<<levels; i++){
+//             // avoid creating large Function_5
+//             if (i<0x01<<(levels-1)) {
+//                 eval_real = Function_4[i%(0x01<<(levels-1))][t/(0x01<<(0x01<<(levels-1)))];
+//             } else {
+//                 eval_real = Function_4[i%(0x01<<(levels-1))][t%(0x01<<(0x01<<(levels-1)))];
+//             }
+//             if (rexdd_eval(&F, &eval, levels, Vars_5[i]) == eval_real)
+//             {
+//                 continue;
+//             }
+//             else
+//             {
+//                 printf("error on function: %lu\n", t);
+//                 f = fopen("error_function.gv", "w+");
+//                 build_gv(f, &F,ptr5[t]);
+//                 fclose(f);
+
+//                 printf("\n");
+//                 rexdd_check1(0, "Eval error!");
+//                 break;
+//             }
+//         }
+//         // save the forest and root edges every 2^29
+//         if ((t%(0x01<<((0x01<<levels)-3))==1) || (t == (0x01UL<<(0x01<<levels))-1)){
+//             save(&F,ptr5,t);
+//         }
+//         if (t%(0x01<<((0x01<<levels)-9))==1){
+//             FILE *pf;
+//             pf = fopen("progress.txt","w+");
+//             fprintf(pf,"The progress is %lu / %lu", t, 0x01UL<<(0x01<<levels));
+//             fclose(pf);
+//         }
+//     }
+//     printf("Done eval!\n");
+
+//     export_funsNum(F, levels, ptr5);
+
+//     free(ptr5);
 
     /* ==========================================================================
      *      Summary of the forest

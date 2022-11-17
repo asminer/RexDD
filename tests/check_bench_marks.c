@@ -40,6 +40,11 @@ unsigned long long read_num_roots(
             printf ("number of roots: %llu\n", t);
             break;
         }
+        // if don't detect the keywork, unget char of buffer
+        ungetc(buffer[3],fin);
+        ungetc(buffer[2],fin);
+        ungetc(buffer[1],fin);
+
     }
     return t;
 }
@@ -88,6 +93,134 @@ void read_qbdds(
                     }
                 }
             }
+            // check if this node conforms to the format of type BDDs (for benchmarks, mostly QBDDs)
+            // if there are skip edges: skip to terminal or sikp to nonterminal
+            uint_fast32_t low_lvl, high_lvl;
+            if (rexdd_is_terminal(node.edge[0].target)) {
+                low_lvl = 0;
+            } else {
+                low_lvl = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, node.edge[0].target));
+            }
+            if (rexdd_is_terminal(node.edge[1].target)) {
+                high_lvl = 0;
+            } else {
+                high_lvl = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, node.edge[1].target));
+            }
+            // check for low edge
+            if (low_lvl == 0 && node.level != 1) {
+                rexdd_unpacked_node_t skip_node;
+                rexdd_node_handle_t skip_node_handle;
+                // initialize the first level 1 skip node
+                skip_node.level = 1;
+                skip_node.edge[0].label.complemented = 0;
+                skip_node.edge[0].label.swapped = 0;
+                skip_node.edge[0].label.rule = rexdd_rule_X;
+                skip_node.edge[0].target = node.edge[0].target;
+                skip_node.edge[1].label.complemented = 0;
+                skip_node.edge[1].label.swapped = 0;
+                skip_node.edge[1].label.rule = rexdd_rule_X;
+                skip_node.edge[1].target = node.edge[0].target;
+                // insert the new level 1 node in unique table
+                skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
+                // complete the skip nodes from level 2 to node.level-1
+                if (node.level == 2) {
+                    node.edge[0].target = skip_node_handle;
+                } else {
+                    uint_fast32_t i;
+                    for (i=2; i<node.level; i++){
+                        skip_node.level = i;
+                        skip_node.edge[0].target = skip_node_handle;
+                        skip_node.edge[1].target = skip_node_handle;
+                        skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
+                    }
+                    node.edge[0].target = skip_node_handle;
+                }
+                
+            } else if (low_lvl != 0 && node.level - low_lvl > 1) {
+                rexdd_unpacked_node_t skip_node;
+                rexdd_node_handle_t skip_node_handle;
+                skip_node.level = low_lvl+1;
+                skip_node.edge[0].label.complemented = 0;
+                skip_node.edge[0].label.swapped = 0;
+                skip_node.edge[0].label.rule = rexdd_rule_X;
+                skip_node.edge[0].target = node.edge[0].target;
+                skip_node.edge[1].label.complemented = 0;
+                skip_node.edge[1].label.swapped = 0;
+                skip_node.edge[1].label.rule = rexdd_rule_X;
+                skip_node.edge[1].target = node.edge[0].target;
+
+                skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
+                if (node.level - low_lvl == 2) {
+                    node.edge[0].target = skip_node_handle;
+                } else {
+                    uint_fast32_t i;
+                    for (i=2; i<node.level - low_lvl; i++){
+                        skip_node.level = low_lvl + i;
+                        skip_node.edge[0].target = skip_node_handle;
+                        skip_node.edge[1].target = skip_node_handle;
+                        skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
+                    }
+                    node.edge[0].target = skip_node_handle;
+                }
+            }
+            // check for high edge
+            if (high_lvl == 0 && node.level != 1) {
+                rexdd_unpacked_node_t skip_node;
+                rexdd_node_handle_t skip_node_handle;
+                // initialize the first level 1 skip node
+                skip_node.level = 1;
+                skip_node.edge[0].label.complemented = 0;
+                skip_node.edge[0].label.swapped = 0;
+                skip_node.edge[0].label.rule = rexdd_rule_X;
+                skip_node.edge[0].target = node.edge[1].target;
+                skip_node.edge[1].label.complemented = 0;
+                skip_node.edge[1].label.swapped = 0;
+                skip_node.edge[1].label.rule = rexdd_rule_X;
+                skip_node.edge[1].target = node.edge[1].target;
+                // insert the new level 1 node in unique table
+                skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
+                // complete the skip nodes from level 2 to node.level-1
+                if (node.level == 2) {
+                    node.edge[1].target = skip_node_handle;
+                } else {
+                    uint_fast32_t i;
+                    for (i=2; i<node.level; i++){
+                        skip_node.level = i;
+                        skip_node.edge[0].target = skip_node_handle;
+                        skip_node.edge[1].target = skip_node_handle;
+                        skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
+                    }
+                    node.edge[1].target = skip_node_handle;
+                }
+                
+            } else if (high_lvl != 0 && node.level - high_lvl > 1) {
+                rexdd_unpacked_node_t skip_node;
+                rexdd_node_handle_t skip_node_handle;
+                skip_node.level = high_lvl+1;
+                skip_node.edge[0].label.complemented = 0;
+                skip_node.edge[0].label.swapped = 0;
+                skip_node.edge[0].label.rule = rexdd_rule_X;
+                skip_node.edge[0].target = node.edge[1].target;
+                skip_node.edge[1].label.complemented = 0;
+                skip_node.edge[1].label.swapped = 0;
+                skip_node.edge[1].label.rule = rexdd_rule_X;
+                skip_node.edge[1].target = node.edge[1].target;
+
+                skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
+                if (node.level - high_lvl == 2) {
+                    node.edge[1].target = skip_node_handle;
+                } else {
+                    uint_fast32_t i;
+                    for (i=2; i<node.level - high_lvl; i++){
+                        skip_node.level = high_lvl + i;
+                        skip_node.edge[0].target = skip_node_handle;
+                        skip_node.edge[1].target = skip_node_handle;
+                        skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
+                    }
+                    node.edge[1].target = skip_node_handle;
+                }
+            }
+
 
             *(unique_handles + loc) = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&node));
 
@@ -159,12 +292,20 @@ rexdd_edge_t reduce_bdds(
     if (p.level == 1) {
         rexdd_reduce_edge(F, 1, l, p, &reduced);
     } else {
-        rexdd_unpacked_node_t new_p, lch, hch;
+        rexdd_unpacked_node_t new_p, lch;
         new_p.level = p.level;
-        rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M,p.edge[0].target), &lch);
-        rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M,p.edge[1].target), &hch);
-        new_p.edge[0] = reduce_bdds(F, m-1, p.edge[0].label, lch);
-        new_p.edge[1] = reduce_bdds(F, m-1, p.edge[1].label, hch);
+        if (p.edge[0].target == p.edge[1].target) {
+            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M,p.edge[0].target), &lch);
+            new_p.edge[0] = reduce_bdds(F, m-1, p.edge[0].label, lch);
+            new_p.edge[1] = new_p.edge[0];
+        } else {
+            rexdd_unpacked_node_t hch;
+            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M,p.edge[0].target), &lch);
+            rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M,p.edge[1].target), &hch);
+            new_p.edge[0] = reduce_bdds(F, m-1, p.edge[0].label, lch);
+            new_p.edge[1] = reduce_bdds(F, m-1, p.edge[1].label, hch);
+        }
+        // printf("\treducing level %u\n", m);
         rexdd_reduce_edge(F, m, l, new_p, &reduced);
     }
     return reduced;
@@ -173,16 +314,24 @@ rexdd_edge_t reduce_bdds(
 // parameter of file path if needed TBD
 int main(int argc, const char* const* argv)
 {
+    const char* infile = 0;
+    if (argc > 2) {
+        printf("Too many input files.\n");
+        return 1;
+    } else if (argc == 1) {
+        printf("Please specify an input file\n");
+        return 0;
+    } else {
+        infile = argv[1];
+    }
+    // assuming the input file is not compressed
     FILE *fin;
-    // char file_name[64];     // the input file name
-    // fin = fopen("THE_INPUT_FILE","r");    // fclose in the function read_qbdds
-    fin = fopen("saved_BDD.txt", "r");
+    fin = fopen(infile, "r");
     unsigned long long t = read_num_roots(fin), i;
-    rexdd_forest_t F_in;
-    // if the number of roots is too big, it may need to malloc
-    rexdd_edge_t edges[t], reduced;
     fclose(fin);
-    fin = fopen("saved_BDD.txt", "r");
+    rexdd_forest_t F_in;
+    rexdd_edge_t edges[t], reduced;
+    fin = fopen(infile, "r");   // fclose in the function read_qbdds
     read_qbdds(fin, &F_in, edges, t);
 
     unsigned long long count = 0;
@@ -198,6 +347,7 @@ int main(int argc, const char* const* argv)
     // reduce the BDDs
     rexdd_unpacked_node_t p_root;
     for (i=0; i<t; i++) {
+        printf("reducing root %llu\n",i);
         rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F_in.M, edges[i].target), &p_root);
         reduced = reduce_bdds(
                     &F_in,
