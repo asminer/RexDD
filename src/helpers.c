@@ -404,6 +404,27 @@ rexdd_edge_t expect_edge(FILE *fin, rexdd_node_handle_t *unique_handles)
     return edge;
 }
 
+rexdd_edge_t expect_reduced_edge(FILE *fin, rexdd_edge_t *reduced_edges)
+{
+    rexdd_edge_t edge;
+    edge.label.rule = expect_rule(fin);
+    edge.label.complemented = (skip_whitespace(fin) == '1');
+    edge.label.swapped = (skip_whitespace(fin) == '1');
+    char c = skip_whitespace(fin);
+    if (c == 'T'){
+        if (skip_whitespace(fin) == '0') {
+            edge.target = rexdd_make_terminal(0);
+        } else {
+            edge.target = rexdd_make_terminal(1);
+        }
+    } else {
+        ungetc(c,fin);
+        fscanf(fin, "%llu", &edge.target);
+        edge = *(reduced_edges + edge.target - 1);
+    }
+    return edge;
+}
+
 /* save forest *F and root edges *edges into file *fout, fclose not included
    After this, mv and gzip may be needed to manage the storage space */
 void save(FILE *fout, rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)

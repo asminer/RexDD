@@ -131,6 +131,8 @@ uint64_t expect_uint64(FILE *fin);
 rexdd_rule_t expect_rule(FILE *fin);
 // expect an edge
 rexdd_edge_t expect_edge(FILE *fin, rexdd_node_handle_t *unique_handles);
+//expect a reduced edge
+rexdd_edge_t expect_reduced_edge(FILE *fin, rexdd_edge_t *reduced_edges);
 
 /****************************************************************************
  *

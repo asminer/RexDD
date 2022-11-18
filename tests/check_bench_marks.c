@@ -5,24 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// mark the nonterminal nodes from root in the forest *F. This is used for counting the number of nodes
-void mark_nodes(
-                rexdd_forest_t *F, 
-                rexdd_node_handle_t root)
-{
-    if (!rexdd_is_terminal(root)) {
-        if (!rexdd_is_packed_marked(rexdd_get_packed_for_handle(F->M, root))) {
-            rexdd_mark_packed(rexdd_get_packed_for_handle(F->M,root));
-        }
-        rexdd_node_handle_t low, high;
-        low = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, root));
-        high = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, root));
-        mark_nodes(F, low);
-        mark_nodes(F, high);
-    }
-    
-}
-
 // read the number of roots from file *fin, this is used to declar the size of root edges.
 unsigned long long read_num_roots(
                 FILE *fin)
@@ -60,8 +42,13 @@ void read_qbdds(
     int level;
     uint64_t handles;
     rexdd_forest_settings_t s;
-    rexdd_node_handle_t *unique_handles;
+    // rexdd_node_handle_t *unique_handles;
+    rexdd_edge_t *reduced_edges;
     uint64_t loc = 0;
+    rexdd_edge_label_t l;
+    l.complemented = 0;
+    l.swapped = 0;
+    l.rule = rexdd_rule_X;
     
     rexdd_unpacked_node_t node;
     while (!feof(fin))
@@ -79,7 +66,8 @@ void read_qbdds(
             rexdd_init_forest(F, &s);
         } else if (buffer[0] == 'm' && buffer[1] == 'a' && buffer[2] == 'x' && buffer[3] == 'h'){
             handles = expect_uint64(fin);
-            unique_handles = malloc(handles*sizeof(rexdd_node_handle_t));
+            // unique_handles = malloc(handles*sizeof(rexdd_node_handle_t));
+            reduced_edges = malloc(handles*sizeof(rexdd_edge_t));
         } else if (buffer[0] == 'n' && buffer[1] == 'o' && buffer[2] == 'd' && buffer[3] == 'e'){
 
             loc = expect_uint64(fin) - 1;
@@ -87,142 +75,17 @@ void read_qbdds(
             if (c == 'L') {
                 node.level = expect_int(fin);
                 if (skip_whitespace(fin) == '0' && skip_whitespace(fin) == '<') {
-                    node.edge[0] = expect_edge(fin, unique_handles);
+                    node.edge[0] = expect_reduced_edge(fin, reduced_edges);
                     if (skip_whitespace(fin) == '1' && skip_whitespace(fin) == '<') {
-                        node.edge[1] = expect_edge(fin, unique_handles);
+                        node.edge[1] = expect_reduced_edge(fin, reduced_edges);
                     }
-                }
-            }
-            // check if this node conforms to the format of type BDDs (for benchmarks, mostly QBDDs)
-            // if there are skip edges: skip to terminal or sikp to nonterminal
-            uint_fast32_t low_lvl, high_lvl;
-            if (rexdd_is_terminal(node.edge[0].target)) {
-                low_lvl = 0;
-            } else {
-                low_lvl = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, node.edge[0].target));
-            }
-            if (rexdd_is_terminal(node.edge[1].target)) {
-                high_lvl = 0;
-            } else {
-                high_lvl = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, node.edge[1].target));
-            }
-            // check for low edge
-            if (low_lvl == 0 && node.level != 1) {
-                rexdd_unpacked_node_t skip_node;
-                rexdd_node_handle_t skip_node_handle;
-                // initialize the first level 1 skip node
-                skip_node.level = 1;
-                skip_node.edge[0].label.complemented = 0;
-                skip_node.edge[0].label.swapped = 0;
-                skip_node.edge[0].label.rule = rexdd_rule_X;
-                skip_node.edge[0].target = node.edge[0].target;
-                skip_node.edge[1].label.complemented = 0;
-                skip_node.edge[1].label.swapped = 0;
-                skip_node.edge[1].label.rule = rexdd_rule_X;
-                skip_node.edge[1].target = node.edge[0].target;
-                // insert the new level 1 node in unique table
-                skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
-                // complete the skip nodes from level 2 to node.level-1
-                if (node.level == 2) {
-                    node.edge[0].target = skip_node_handle;
-                } else {
-                    uint_fast32_t i;
-                    for (i=2; i<node.level; i++){
-                        skip_node.level = i;
-                        skip_node.edge[0].target = skip_node_handle;
-                        skip_node.edge[1].target = skip_node_handle;
-                        skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
-                    }
-                    node.edge[0].target = skip_node_handle;
-                }
-                
-            } else if (low_lvl != 0 && node.level - low_lvl > 1) {
-                rexdd_unpacked_node_t skip_node;
-                rexdd_node_handle_t skip_node_handle;
-                skip_node.level = low_lvl+1;
-                skip_node.edge[0].label.complemented = 0;
-                skip_node.edge[0].label.swapped = 0;
-                skip_node.edge[0].label.rule = rexdd_rule_X;
-                skip_node.edge[0].target = node.edge[0].target;
-                skip_node.edge[1].label.complemented = 0;
-                skip_node.edge[1].label.swapped = 0;
-                skip_node.edge[1].label.rule = rexdd_rule_X;
-                skip_node.edge[1].target = node.edge[0].target;
-
-                skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
-                if (node.level - low_lvl == 2) {
-                    node.edge[0].target = skip_node_handle;
-                } else {
-                    uint_fast32_t i;
-                    for (i=2; i<node.level - low_lvl; i++){
-                        skip_node.level = low_lvl + i;
-                        skip_node.edge[0].target = skip_node_handle;
-                        skip_node.edge[1].target = skip_node_handle;
-                        skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
-                    }
-                    node.edge[0].target = skip_node_handle;
-                }
-            }
-            // check for high edge
-            if (high_lvl == 0 && node.level != 1) {
-                rexdd_unpacked_node_t skip_node;
-                rexdd_node_handle_t skip_node_handle;
-                // initialize the first level 1 skip node
-                skip_node.level = 1;
-                skip_node.edge[0].label.complemented = 0;
-                skip_node.edge[0].label.swapped = 0;
-                skip_node.edge[0].label.rule = rexdd_rule_X;
-                skip_node.edge[0].target = node.edge[1].target;
-                skip_node.edge[1].label.complemented = 0;
-                skip_node.edge[1].label.swapped = 0;
-                skip_node.edge[1].label.rule = rexdd_rule_X;
-                skip_node.edge[1].target = node.edge[1].target;
-                // insert the new level 1 node in unique table
-                skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
-                // complete the skip nodes from level 2 to node.level-1
-                if (node.level == 2) {
-                    node.edge[1].target = skip_node_handle;
-                } else {
-                    uint_fast32_t i;
-                    for (i=2; i<node.level; i++){
-                        skip_node.level = i;
-                        skip_node.edge[0].target = skip_node_handle;
-                        skip_node.edge[1].target = skip_node_handle;
-                        skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
-                    }
-                    node.edge[1].target = skip_node_handle;
-                }
-                
-            } else if (high_lvl != 0 && node.level - high_lvl > 1) {
-                rexdd_unpacked_node_t skip_node;
-                rexdd_node_handle_t skip_node_handle;
-                skip_node.level = high_lvl+1;
-                skip_node.edge[0].label.complemented = 0;
-                skip_node.edge[0].label.swapped = 0;
-                skip_node.edge[0].label.rule = rexdd_rule_X;
-                skip_node.edge[0].target = node.edge[1].target;
-                skip_node.edge[1].label.complemented = 0;
-                skip_node.edge[1].label.swapped = 0;
-                skip_node.edge[1].label.rule = rexdd_rule_X;
-                skip_node.edge[1].target = node.edge[1].target;
-
-                skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
-                if (node.level - high_lvl == 2) {
-                    node.edge[1].target = skip_node_handle;
-                } else {
-                    uint_fast32_t i;
-                    for (i=2; i<node.level - high_lvl; i++){
-                        skip_node.level = high_lvl + i;
-                        skip_node.edge[0].target = skip_node_handle;
-                        skip_node.edge[1].target = skip_node_handle;
-                        skip_node_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&skip_node));
-                    }
-                    node.edge[1].target = skip_node_handle;
                 }
             }
 
+            /* reduce the node and map the reduced edge */
+            rexdd_reduce_edge(F, node.level, l, node, (reduced_edges + loc));
 
-            *(unique_handles + loc) = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&node));
+            // *(unique_handles + loc) = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M,&node));
 
         } else if (buffer[0] == 'r' && buffer[1] == 'o' && buffer[2] == 'o' && buffer[3] == 't') {
             t = expect_uint64(fin);
@@ -230,14 +93,15 @@ void read_qbdds(
             printf ("number of roots: %llu\n", t);
             for (uint64_t i=0; i<t; i++) {
                 if (skip_whitespace(fin) == '<') {
-                    edges[i] = expect_edge(fin, unique_handles);
+                    edges[i] = expect_reduced_edge(fin, reduced_edges);
                 }
                 // if (i == 3000) break;
             }
             break;
         }
     }
-    free(unique_handles);
+    // free(unique_handles);
+    free(reduced_edges);
 
     fclose(fin);
 }
@@ -255,6 +119,24 @@ void unmark_forest(
             }
         } // for n
     } // for p
+}
+
+// mark the nonterminal nodes from root in the forest *F. This is used for counting the number of nodes
+void mark_nodes(
+                rexdd_forest_t *F, 
+                rexdd_node_handle_t root)
+{
+    if (!rexdd_is_terminal(root)) {
+        if (!rexdd_is_packed_marked(rexdd_get_packed_for_handle(F->M, root))) {
+            rexdd_mark_packed(rexdd_get_packed_for_handle(F->M,root));
+        }
+        rexdd_node_handle_t low, high;
+        low = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, root));
+        high = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, root));
+        mark_nodes(F, low);
+        mark_nodes(F, high);
+    }
+    
 }
 
 /* count the number of nonterminal nodes for a bdd, make sure the forest is unmarked before;
@@ -326,11 +208,12 @@ int main(int argc, const char* const* argv)
     }
     // assuming the input file is not compressed
     FILE *fin;
-    fin = fopen(infile, "r");
-    unsigned long long t = read_num_roots(fin), i;
-    fclose(fin);
+    // fin = fopen(infile, "r");
+    // unsigned long long t = read_num_roots(fin), i;
+    unsigned long long t = 1;
+    // fclose(fin);
     rexdd_forest_t F_in;
-    rexdd_edge_t edges[t], reduced;
+    rexdd_edge_t edges[t];
     fin = fopen(infile, "r");   // fclose in the function read_qbdds
     read_qbdds(fin, &F_in, edges, t);
 
@@ -344,31 +227,18 @@ int main(int argc, const char* const* argv)
     // build_gv(fin,&F_in,edges[3000]);
     // fclose(fin);
 
-    // reduce the BDDs
-    rexdd_unpacked_node_t p_root;
-    for (i=0; i<t; i++) {
-        printf("reducing root %llu\n",i);
-        rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F_in.M, edges[i].target), &p_root);
-        reduced = reduce_bdds(
-                    &F_in,
-                    rexdd_unpack_level(rexdd_get_packed_for_handle(F_in.M, edges[i].target)),
-                    edges[i].label,
-                    p_root);
-        mark_nodes(&F_in, reduced.target);
-    }
     uint_fast64_t p, n;
     for (p=0; p<F_in.M->pages_size; p++) {
         const rexdd_nodepage_t *page = F_in.M->pages+p;
         for (n=0; n<page->first_unalloc; n++) {
-            if (rexdd_is_packed_marked(page->chunk+n)) {
+            if (rexdd_is_packed_in_use(page->chunk+n)) {
                 count++;
             }
         } // for n
     } // for p
 
     // output the result into a file for each benchmark
-    // unmark_forest(&F_in);
-    // count = count_nodes(&F_in, reduced.target);
+
     printf("The total number of nodes for %s is %llu\n", TYPE, count);
 
     // fin = fopen("read_RexBDD.gv", "w+");
