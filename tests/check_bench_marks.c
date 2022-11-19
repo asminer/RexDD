@@ -208,14 +208,18 @@ int main(int argc, const char* const* argv)
     }
     // assuming the input file is not compressed
     FILE *fin;
-    // fin = fopen(infile, "r");
-    // unsigned long long t = read_num_roots(fin), i;
-    unsigned long long t = 1;
-    // fclose(fin);
+    fin = fopen(infile, "r");
+    unsigned long long t = read_num_roots(fin), i;
+    // unsigned long long t = 1;
+    fclose(fin);
     rexdd_forest_t F_in;
     rexdd_edge_t edges[t];
     fin = fopen(infile, "r");   // fclose in the function read_qbdds
     read_qbdds(fin, &F_in, edges, t);
+
+    // fin = fopen("forest.gv", "w+");
+    // build_gv(fin,&F_in,edges[0]);
+    // fclose(fin);
 
     unsigned long long count = 0;
     unmark_forest(&F_in);
