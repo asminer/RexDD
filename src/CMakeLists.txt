@@ -8,6 +8,7 @@ set(SOURCES
   nodepage.c
   unique.c
   unpacked.c
+  parser.c
 )
 
 configure_file(config.h.in config.h)
