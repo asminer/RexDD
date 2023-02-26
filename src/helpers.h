@@ -152,7 +152,7 @@ void save(
  *  in a text file.
  * 
  */
-void read(
+void read_bdd(
         FILE *fin,
         rexdd_forest_t *F,
         rexdd_edge_t edges[],
@@ -169,7 +169,11 @@ void export_funsNum(
         int levels,
         rexdd_edge_t edges[]);
 
-
+/****************************************************************************
+ *                                                                          *
+ *                              Parser for Endgame                          *
+ *                                                                          *
+ ****************************************************************************/
 
 
 

@@ -508,7 +508,7 @@ void save(FILE *fout, rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
 }
 
 /*  Read forest and root edges from file *fin into *F and *edges*/
-void read(FILE *fin, rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
+void read_bdd(FILE *fin, rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
 {
     // FILE *fin;
 
