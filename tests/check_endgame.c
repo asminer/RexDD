@@ -539,8 +539,6 @@ int main(int argc, const char* const* argv)
         file_type(infile, type);
         fmt = type[0];
         comp = type[1];
-        printf("the format is %c\n", fmt);
-        printf("the compress is %c\n", comp);
 
         file_reader fr;
         init_file_reader(&fr, infile, comp);
@@ -561,6 +559,8 @@ int main(int argc, const char* const* argv)
         }
 
         printf("Building forest %d for %s\n", n, infile);
+        printf("\tThe format is %c\n", fmt);
+        printf("\tThe compress is %c\n", comp);
         printf("\tThe number of inbits is %u\n", p.inbits);
         printf("\tThe number of outbits is %u\n", p.outbits);
         printf("\tThe number of minterms is %lu\n", p.numf);
@@ -626,7 +626,11 @@ int main(int argc, const char* const* argv)
 
     printf("Marking nonterminal nodes in use from roots...\n");
     for (int i=0; i<5*(argc-1); i++) {
-        printf("\troot %d : %d is %llu\n",(i/5)+1, i%5, root_edge[i].target);
+        if (rexdd_is_terminal(root_edge[i].target)) {
+            printf("\troot %d : %d is T0\n",(i/5)+1, i%5);
+        } else {
+            printf("\troot %d : %d is %llu\n",(i/5)+1, i%5, root_edge[i].target);
+        }
         mark_nodes(&F, root_edge[i].target);
     }
     printf("Done marking!\n");
