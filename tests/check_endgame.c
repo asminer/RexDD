@@ -580,8 +580,11 @@ int main(int argc, const char* const* argv)
             if (!read_minterm_bin(&p, inputbits, &term)) break;
         }
         // reverse(inputbits, p.inbits);
-        index = term - '0';
+        index = term - '1';
         root_edge[index] = union_minterm(&F, &root_edge[index], inputbits, p.inbits);
+
+        // gc TBD here for huge number of nodes
+
     }
     printf("Done building!\n");
 
@@ -593,7 +596,7 @@ int main(int argc, const char* const* argv)
             if (!read_minterm_bin(&p, inputbits, &term)) break;
         }
         // reverse(inputbits, p.inbits);
-        index = term - '0';
+        index = term - '1';
         // reverse(inputbits, p.inbits);
 
         for (unsigned i=0; i< p.inbits; i++){
