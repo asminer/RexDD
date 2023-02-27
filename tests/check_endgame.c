@@ -518,102 +518,106 @@ int main(int argc, const char* const* argv)
         return 0;
     }
 
-    const char* infile = 0;
-
-    infile = argv[1];
-
-    // now let's read minterms
-    char fmt = 0 , comp = 0;
-    char type[2];
-    file_type(infile, type);
-    fmt = type[0];
-    comp = type[1];
-    printf("the format is %c\n", fmt);
-    printf("the compress is %c\n", comp);
-
-    file_reader fr;
-    init_file_reader(&fr, infile, comp);
-    parser p;
-    init_parser(&p, &fr);
-    switch (fmt) {
-        case 'p':
-        case 'P':
-            read_header_pla(&p);
-            break;        
-        case 'b':
-        case 'B':
-            read_header_bin(&p);
-            break;
-        default:
-            printf("No parser for format %c\n",fmt);
-            // return 0;
-    }
-
-    printf("The number of inbits is %u\n", p.inbits);
-    printf("The number of outbits is %u\n", p.outbits);
-    printf("The number of minterms is %lu\n", p.numf);
-
-    char term;
-    unsigned num_inputbits = p.inbits;
-    char inputbits[num_inputbits + 2];          // the first and last is 0; index is the level
-    bool inputbits_bol[num_inputbits + 2];
-
-    // Initializing the forest
     rexdd_forest_t F;
     rexdd_forest_settings_t s;
-    rexdd_default_forest_settings(p.inbits, &s);
-    rexdd_init_forest(&F, &s);
+    rexdd_edge_t root_edge[5*(argc - 1)];
     // Initializing the root edges
-    rexdd_edge_t root_edge[5];
-    for (int i=0; i<5; i++) {
+    for (int i=0; i<5*(argc-1); i++) {
         rexdd_set_edge(&root_edge[i], rexdd_rule_X, 0, 0, rexdd_make_terminal(0));
     }
 
 
+    const char* infile = 0;
 
-    int index = 0;
-    // rexdd_edge_t union_edge;
-    for (;;) {
-        if (fmt == 'p') {
-            if (!read_minterm_pla(&p, inputbits, &term)) break;
-        } else {
-            if (!read_minterm_bin(&p, inputbits, &term)) break;
+    for (int n=1; n<argc; n++) {
+
+        infile = argv[n];
+
+        // now let's read minterms
+        char fmt = 0 , comp = 0;
+        char type[2];
+        file_type(infile, type);
+        fmt = type[0];
+        comp = type[1];
+        printf("the format is %c\n", fmt);
+        printf("the compress is %c\n", comp);
+
+        file_reader fr;
+        init_file_reader(&fr, infile, comp);
+        parser p;
+        init_parser(&p, &fr);
+        switch (fmt) {
+            case 'p':
+            case 'P':
+                read_header_pla(&p);
+                break;        
+            case 'b':
+            case 'B':
+                read_header_bin(&p);
+                break;
+            default:
+                printf("No parser for format %c\n",fmt);
+                // return 0;
         }
-        // reverse(inputbits, p.inbits);
-        index = term - '1';
-        root_edge[index] = union_minterm(&F, &root_edge[index], inputbits, p.inbits);
 
-        // gc TBD here for huge number of nodes
+        printf("Building forest %d for %s\n", n, infile);
+        printf("\tThe number of inbits is %u\n", p.inbits);
+        printf("\tThe number of outbits is %u\n", p.outbits);
+        printf("\tThe number of minterms is %lu\n", p.numf);
 
-    }
-    printf("Done building!\n");
+        char term;
+        unsigned num_inputbits = p.inbits;
+        char inputbits[num_inputbits + 2];          // the first and last is 0; index is the level
+        bool inputbits_bol[num_inputbits + 2];
 
-    printf("Evaling...\n");
-    for (;;) {
-        if (fmt == 'p') {
-            if (!read_minterm_pla(&p, inputbits, &term)) break;
-        } else {
-            if (!read_minterm_bin(&p, inputbits, &term)) break;
+        // Initializing the forest
+        if (n == 1) {
+            rexdd_default_forest_settings(p.inbits, &s);
+            rexdd_init_forest(&F, &s);
         }
-        // reverse(inputbits, p.inbits);
-        index = term - '1';
-        // reverse(inputbits, p.inbits);
 
-        for (unsigned i=0; i< p.inbits; i++){
-            if (inputbits[i] == '1') {
-                inputbits_bol[i] = 1;
+        int index = 0;
+        // rexdd_edge_t union_edge;
+        for (;;) {
+            if (fmt == 'p') {
+                if (!read_minterm_pla(&p, inputbits, &term)) break;
             } else {
-                inputbits_bol[i] = 0;
+                if (!read_minterm_bin(&p, inputbits, &term)) break;
             }
-        }
-        if (!rexdd_eval(&F, &root_edge[index], p.inbits, inputbits_bol)) {
-            printf("eval test fail!\n");
-            return 1;
-        }
-        
-    }
-    printf("Evaluation pass!\n");
+            // reverse(inputbits, p.inbits);
+            index = term - '1' + 5*(n-1);
+            root_edge[index] = union_minterm(&F, &root_edge[index], inputbits, p.inbits);
 
+            // gc TBD here for huge number of nodes
+
+        }
+        printf("Done building!\n");
+
+        printf("Evaling...\n");
+        for (;;) {
+            if (fmt == 'p') {
+                if (!read_minterm_pla(&p, inputbits, &term)) break;
+            } else {
+                if (!read_minterm_bin(&p, inputbits, &term)) break;
+            }
+            index = term - '1' + 5*(n-1);
+
+            for (unsigned i=0; i< p.inbits; i++){
+                if (inputbits[i] == '1') {
+                    inputbits_bol[i] = 1;
+                } else {
+                    inputbits_bol[i] = 0;
+                }
+            }
+            if (!rexdd_eval(&F, &root_edge[index], p.inbits, inputbits_bol)) {
+                printf("eval test fail!\n");
+                return 1;
+            }
+            
+        }
+        printf("Evaluation pass!\n\n");
+        free_parser(&p); // file reader will be free
+    }
 
     printf("Unmarking the forest...\n");
     unmark_forest(&F);
@@ -621,8 +625,8 @@ int main(int argc, const char* const* argv)
 
 
     printf("Marking nonterminal nodes in use from roots...\n");
-    for (int i=0; i<5; i++) {
-        printf("\troot %d is %llu\n", i, root_edge[i].target);
+    for (int i=0; i<5*(argc-1); i++) {
+        printf("\troot %d : %d is %llu\n",(i/5)+1, i%5, root_edge[i].target);
         mark_nodes(&F, root_edge[i].target);
     }
     printf("Done marking!\n");
@@ -639,14 +643,13 @@ int main(int argc, const char* const* argv)
             }
         } // for n
     } // for p
-    printf("Total number of nodes in %s is %llu\n", infile, num_nodes);
+    if (argc == 2) {
+        printf("Total number of nodes in %s is %llu\n", infile, num_nodes);
+    } else {
+        printf("Total number of nodes in forest is %llu\n", num_nodes);
+    }
 
-    FILE* outf = fopen("endgame.gv", "w+");
-    build_gv(outf,&F,root_edge[2]);
-    fclose(outf);
 
-
-    free_parser(&p); // file reader will be free
     rexdd_free_forest(&F);
 
 }
