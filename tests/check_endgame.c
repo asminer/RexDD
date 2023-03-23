@@ -325,15 +325,22 @@ void mark_nodes(
     if (!rexdd_is_terminal(root)) {
         if (!rexdd_is_packed_marked(rexdd_get_packed_for_handle(F->M, root))) {
             rexdd_mark_packed(rexdd_get_packed_for_handle(F->M,root));
+            rexdd_node_handle_t low, high;
+            low = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, root));
+            high = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, root));
+            mark_nodes(F, low);
+            mark_nodes(F, high);
         }
-        rexdd_node_handle_t low, high;
-        low = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, root));
-        high = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, root));
-        mark_nodes(F, low);
-        mark_nodes(F, high);
     }
     
 }
+
+// garbage collection of unmarked nodes in forest F
+void gc_unmarked(rexdd_forest_t* F)
+{
+    //
+}
+
 // build a forest recording the input function (2D array of bool with specific container number)
 rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm, uint32_t K)
 {
@@ -350,9 +357,9 @@ rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm,
         // 
         rexdd_set_edge(&ans,
                         rexdd_rule_X,
-                        1,
                         0,
-                        rexdd_make_terminal(0));
+                        0,
+                        rexdd_make_terminal(1));
         return ans;
     }
 
