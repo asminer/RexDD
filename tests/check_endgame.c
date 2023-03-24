@@ -374,14 +374,14 @@ rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm,
     }
     minterm[K+1] = 0;
     // printf("first check eval\n");
-    if (rexdd_eval(F,root,K,minterm_bol)) {
-        rexdd_set_edge(&ans,
-                        root->label.rule,
-                        root->label.complemented,
-                        root->label.swapped,
-                        root->target);
-        return ans;
-    }
+    // if (rexdd_eval(F,root,K,minterm_bol)) {
+    //     rexdd_set_edge(&ans,
+    //                     root->label.rule,
+    //                     root->label.complemented,
+    //                     root->label.swapped,
+    //                     root->target);
+    //     return ans;
+    // }
 
 
     /*
@@ -401,13 +401,13 @@ rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm,
         // root edge does not skip ndoes at this level
         rexdd_edge_label_t l;
         rexdd_unpack_low_edge(rexdd_get_packed_for_handle(F->M, root->target), &l);
-        rexdd_set_edge(&root_down0,
+        rexdd_set_edge((root->label.swapped) ? &root_down1 : &root_down0,
                         l.rule ,
                         l.complemented,
                         l.swapped,
                         rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, root->target)));
         rexdd_unpack_high_edge(rexdd_get_packed_for_handle(F->M, root->target), &l);
-        rexdd_set_edge(&root_down1,
+        rexdd_set_edge((root->label.swapped) ? &root_down0 : &root_down1,
                         l.rule ,
                         l.complemented,
                         l.swapped,
@@ -616,7 +616,20 @@ int main(int argc, const char* const* argv)
                     inputbits_bol[i] = 0;
                 }
             }
-            if (!rexdd_eval(&F, &root_edge[index], p.inbits, inputbits_bol)) {
+            //evaling every root
+            bool is_right = 1;
+            for (int r=0+5*(n-1); r<5+5*(n-1); r++) {
+                if(r!=index) {
+                    if(!rexdd_eval(&F,&root_edge[r], p.inbits, inputbits_bol)) continue;
+                    is_right = 0;
+                    break;
+                } else {
+                    if (rexdd_eval(&F, &root_edge[index], p.inbits, inputbits_bol)) continue;
+                    is_right = 0;
+                    break;
+                }
+            }
+            if (!is_right) {
                 printf("eval test fail!\n");
                 return 1;
             }
