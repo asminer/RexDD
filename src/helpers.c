@@ -462,7 +462,7 @@ void save(FILE *fout, rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     for (p=0; p<F->M->pages_size; p++) {
         const rexdd_nodepage_t *page = F->M->pages+p;
         for (n=0; n<page->first_unalloc; n++) {
-            if (rexdd_is_packed_in_use(page->chunk+n)) {
+            if (rexdd_is_packed_marked(page->chunk+n)) {
                 rexdd_unpack_low_edge(page->chunk+n, &temp.edge[0].label);
                 rexdd_unpack_high_edge(page->chunk+n, &temp.edge[1].label);
                 temp.edge[0].target = rexdd_unpack_low_child(page->chunk+n);
@@ -635,10 +635,38 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 
 }
 
+// unmark all nodes in the forest (initializing for counting the marked nodes)
+void unmark_forest(
+                rexdd_forest_t *F)
+{
+    uint_fast64_t p, n;
+    for (p=0; p<F->M->pages_size; p++) {
+        const rexdd_nodepage_t *page = F->M->pages+p;
+        for (n=0; n<page->first_unalloc; n++) {
+            if (rexdd_is_packed_marked(page->chunk+n)) {
+                rexdd_unmark_packed(page->chunk+n);
+            }
+        } // for n
+    } // for p
+}
 
-
-
-
+// mark the nonterminal nodes from root in the forest *F. This is used for counting the number of nodes
+void mark_nodes(
+                rexdd_forest_t *F, 
+                rexdd_node_handle_t root)
+{
+    if (!rexdd_is_terminal(root)) {
+        if (!rexdd_is_packed_marked(rexdd_get_packed_for_handle(F->M, root))) {
+            rexdd_mark_packed(rexdd_get_packed_for_handle(F->M,root));
+            rexdd_node_handle_t low, high;
+            low = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, root));
+            high = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, root));
+            mark_nodes(F, low);
+            mark_nodes(F, high);
+        }
+    }
+    
+}
 
 
 

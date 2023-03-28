@@ -106,39 +106,6 @@ void read_qbdds(
     fclose(fin);
 }
 
-// unmark all nodes in the forest (initializing for counting the marked nodes)
-void unmark_forest(
-                rexdd_forest_t *F)
-{
-    uint_fast64_t p, n;
-    for (p=0; p<F->M->pages_size; p++) {
-        const rexdd_nodepage_t *page = F->M->pages+p;
-        for (n=0; n<page->first_unalloc; n++) {
-            if (rexdd_is_packed_marked(page->chunk+n)) {
-                rexdd_unmark_packed(page->chunk+n);
-            }
-        } // for n
-    } // for p
-}
-
-// mark the nonterminal nodes from root in the forest *F. This is used for counting the number of nodes
-void mark_nodes(
-                rexdd_forest_t *F, 
-                rexdd_node_handle_t root)
-{
-    if (!rexdd_is_terminal(root)) {
-        if (!rexdd_is_packed_marked(rexdd_get_packed_for_handle(F->M, root))) {
-            rexdd_mark_packed(rexdd_get_packed_for_handle(F->M,root));
-        }
-        rexdd_node_handle_t low, high;
-        low = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, root));
-        high = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, root));
-        mark_nodes(F, low);
-        mark_nodes(F, high);
-    }
-    
-}
-
 /* count the number of nonterminal nodes for a bdd, make sure the forest is unmarked before;
    if bdds of several roots need to be counted, it only requires unmark_forest once before counting. */
 unsigned long long count_nodes(

@@ -168,13 +168,24 @@ void export_funsNum(
         rexdd_forest_t F,
         int levels,
         rexdd_edge_t edges[]);
-
 /****************************************************************************
- *                                                                          *
- *                              Parser for Endgame                          *
- *                                                                          *
- ****************************************************************************/
+ *  Unmark all nodes in the forest (initializing for counting the marked nodes)
+ */
+void unmark_forest(
+                rexdd_forest_t *F);
+/****************************************************************************
+ *  Mark the nonterminal nodes from root in the forest *F. This is used for counting the number of nodes
+ */
+void mark_nodes(
+                rexdd_forest_t *F, 
+                rexdd_node_handle_t root);
 
+
+// garbage collection of unmarked nodes in forest F
+// void gc_unmarked(rexdd_forest_t* F)
+// {
+//     //
+// }
 
 
 
