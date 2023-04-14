@@ -282,7 +282,7 @@ int main(int argc, const char* const* argv)
         char term;
         unsigned num_inputbits = p.inbits;
         char inputbits[num_inputbits + 2];          // the first and last is 0; index is the level
-        bool inputbits_bol[num_inputbits + 2];
+        // bool inputbits_bol[num_inputbits + 2];
 
         unsigned long rows = 0x01UL<<(num_inputbits);   // may be bigger for 5 pieces
         char *function = malloc(rows*sizeof(char));
@@ -301,7 +301,7 @@ int main(int argc, const char* const* argv)
         }
 
         unsigned long var_index = 0;
-        int index = 0;
+        // int index = 0;
         // rexdd_edge_t union_edge;
         for (;;) {
             if (fmt == 'p') {
@@ -311,7 +311,7 @@ int main(int argc, const char* const* argv)
             }
             // set the path on corresponding location
             var_index = bin2dec(inputbits, num_inputbits);
-            index = term - '1' + 5*(n-1);
+            // index = term - '1' + 5*(n-1);
             function[var_index] = term-'0';
 
             // root_edge[index] = union_minterm(&F, &root_edge[index], inputbits, p.inbits);
@@ -329,6 +329,7 @@ int main(int argc, const char* const* argv)
 
         for (int j=0+5*(n-1); j<5+5*(n-1); j++) {
             for (size_t i=0; i<rows; i++) {
+                // get function from all
                 edge_function[i] = (function[i]==((j%5)+1))?1:0;
             }
             functionToEdge(&F,edge_function,&root_edge[j],num_inputbits, 0, rows-1);
@@ -336,75 +337,75 @@ int main(int argc, const char* const* argv)
 
         printf("Done building!\n");
 
-        printf("Evaling...%c\n",fmt);
+        // printf("Evaling...%c\n",fmt);
         free_parser(&p); // file reader will be free
-        file_reader fr1;
-        init_file_reader(&fr1, infile, comp);
-        parser p1;
-        init_parser(&p1, &fr1);
-        switch (fmt) {
-            case 'p':
-            case 'P':
-                read_header_pla(&p1);
-                break;        
-            case 'b':
-            case 'B':
-                read_header_bin(&p1);
-                break;
-            default:
-                printf("No parser for format %c\n",fmt);
-                // return 0;
-        }
+        // file_reader fr1;
+        // init_file_reader(&fr1, infile, comp);
+        // parser p1;
+        // init_parser(&p1, &fr1);
+        // switch (fmt) {
+        //     case 'p':
+        //     case 'P':
+        //         read_header_pla(&p1);
+        //         break;        
+        //     case 'b':
+        //     case 'B':
+        //         read_header_bin(&p1);
+        //         break;
+        //     default:
+        //         printf("No parser for format %c\n",fmt);
+        //         // return 0;
+        // }
 
-        // FILE* mout;
-        // mout = fopen("minterms.txt", "w");
-        for (;;) {
-            if (fmt == 'p') {
-                if (!read_minterm_pla(&p1, inputbits, &term)) break;
-            } else {
-                if (!read_minterm_bin(&p1, inputbits, &term)) {
-                    printf("break!\n");
-                    break;
-                }
-            }
-            index = term - '1' + 5*(n-1);
-            for (unsigned i=0; i< p1.inbits+2; i++){
-                if (inputbits[i] == '1') {
-                    // inputbits_bol[p1.inbits+1-i] = 1;
-                    inputbits_bol[i] = 1;
-                } else {
-                    // inputbits_bol[p1.inbits+1-i] = 0;
-                    inputbits_bol[i] = 0;
-                }
-                // fprintf(mout,"%d ", inputbits_bol[i]);
-            }
-            // fprintf(mout, "\t%d\n", index);
-            //evaling every root
-            bool is_right = 1;
-            int r = 0;
-            for (r=0+5*(n-1); r<5+5*(n-1); r++) {
-                if(r!=index) {
-                    if(!rexdd_eval(&F,&root_edge[r], p1.inbits, inputbits_bol)) continue;
-                    is_right = 0;
-                    break;
-                } else {
-                    if (rexdd_eval(&F, &root_edge[index], p1.inbits, inputbits_bol)) continue;
-                    is_right = 0;
-                    printf("\tnot right in THE root\n");
-                    break;
-                }
-            }
-            // if (rexdd_eval(&F, &DC_edge[n-1], p1.inbits, inputbits_bol)) is_right = 0;
-            if (!is_right) {
-                printf("eval test fail at %d!\n", r-5*(n-1));
-                // fclose(mout);
-                free_parser(&p1); // file reader will be free
-                return 1;
-            }
-        }
-        // fclose(mout);
-        printf("Evaluation pass!\n\n");
-        free_parser(&p1); // file reader will be free
+        // // FILE* mout;
+        // // mout = fopen("minterms.txt", "w");
+        // for (;;) {
+        //     if (fmt == 'p') {
+        //         if (!read_minterm_pla(&p1, inputbits, &term)) break;
+        //     } else {
+        //         if (!read_minterm_bin(&p1, inputbits, &term)) {
+        //             printf("break!\n");
+        //             break;
+        //         }
+        //     }
+        //     index = term - '1' + 5*(n-1);
+        //     for (unsigned i=0; i< p1.inbits+2; i++){
+        //         if (inputbits[i] == '1') {
+        //             // inputbits_bol[p1.inbits+1-i] = 1;
+        //             inputbits_bol[i] = 1;
+        //         } else {
+        //             // inputbits_bol[p1.inbits+1-i] = 0;
+        //             inputbits_bol[i] = 0;
+        //         }
+        //         // fprintf(mout,"%d ", inputbits_bol[i]);
+        //     }
+        //     // fprintf(mout, "\t%d\n", index);
+        //     //evaling every root
+        //     bool is_right = 1;
+        //     int r = 0;
+        //     for (r=0+5*(n-1); r<5+5*(n-1); r++) {
+        //         if(r!=index) {
+        //             if(!rexdd_eval(&F,&root_edge[r], p1.inbits, inputbits_bol)) continue;
+        //             is_right = 0;
+        //             break;
+        //         } else {
+        //             if (rexdd_eval(&F, &root_edge[index], p1.inbits, inputbits_bol)) continue;
+        //             is_right = 0;
+        //             printf("\tnot right in THE root\n");
+        //             break;
+        //         }
+        //     }
+        //     // if (rexdd_eval(&F, &DC_edge[n-1], p1.inbits, inputbits_bol)) is_right = 0;
+        //     if (!is_right) {
+        //         printf("eval test fail at %d!\n", r-5*(n-1));
+        //         // fclose(mout);
+        //         free_parser(&p1); // file reader will be free
+        //         return 1;
+        //     }
+        // }
+        // // fclose(mout);
+        // printf("Evaluation pass!\n\n");
+        // free_parser(&p1); // file reader will be free
 
         free(function);
         free(edge_function);
