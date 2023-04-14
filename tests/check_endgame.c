@@ -4,6 +4,72 @@
 
 #include <assert.h>
 
+unsigned long bin2dec(char* bins, int length)
+{
+    if (bins == 0){
+        printf("null vars\n");
+        return 0;
+    }
+    unsigned long ans = 0;
+    for (int i = 1; i<length+1; i++) {
+        ans += (bins[i]=='1')? 0x01UL<<(i-1) : 0;
+    }
+    return ans;
+}
+
+void functionToEdge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, int L, unsigned long start, unsigned long end)
+{
+    //
+    rexdd_unpacked_node_t temp;
+    temp.level = L;
+    temp.edge[0].label.rule = rexdd_rule_X;
+    temp.edge[1].label.rule = rexdd_rule_X;
+    temp.edge[0].label.swapped = 0;
+    temp.edge[1].label.swapped = 0;
+    temp.edge[0].label.complemented = 0;
+    temp.edge[1].label.complemented = 0;
+    rexdd_edge_label_t l;
+    l.rule = rexdd_rule_X;
+    l.complemented = 0;
+    l.swapped = 0;
+    /*  terminal case */
+    if ((end-start == 1) && (L==1)) {
+        // printf("\tterminal case!\n");
+        temp.edge[0].target = rexdd_make_terminal(functions[start]);
+        temp.edge[1].target = rexdd_make_terminal(functions[end]);
+        
+        rexdd_reduce_edge(F, L, l, temp, root_out);
+        return;
+    }
+    const int next_lvl = L-1;
+    // printf("\t\tgo level %d!\n", next_lvl);
+    functionToEdge(F, functions, &temp.edge[0], next_lvl, start, (end-start)/2+start);
+    functionToEdge(F, functions, &temp.edge[1], next_lvl, (end-start)/2+start+1, end);
+    // printf("\t\treduce level %d!\n", temp.level);
+    rexdd_reduce_edge(F, L, l, temp, root_out);
+}
+
+uint64_t count_nodes(rexdd_forest_t* F, rexdd_edge_t* root, int dc, int num)
+{
+    unmark_forest(F);
+    for (int i=0; i<num; i++) {
+        if (i != dc) {
+            mark_nodes(F, root[i].target);
+        }
+    }
+    // mark_nodes(F, root->target);
+    uint_fast64_t q, n;
+    uint64_t num_nodes = 0;
+    for (q=0; q<F->M->pages_size; q++) {
+        const rexdd_nodepage_t *page = F->M->pages+q;
+        for (n=0; n<page->first_unalloc; n++) {
+            if (rexdd_is_packed_marked(page->chunk+n)) {
+                num_nodes++;
+            }
+        } // for n
+    } // for p
+    return num_nodes;
+}
 /*=======================================================================================================
  *                                  RexBDD related funcitons
  *=======================================================================================================*/
@@ -78,9 +144,9 @@ rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm,
             // root edge is EL
             rexdd_set_edge(&root_down0,
                             rexdd_rule_X,
-                            rexdd_is_one(root->label.rule),
                             0,
-                            rexdd_make_terminal(0));
+                            0,
+                            rexdd_make_terminal(rexdd_is_one(root->label.rule)));
             rexdd_set_edge(&root_down1,
                             (root_skip == 1) ? rexdd_rule_X : root->label.rule,
                             root->label.complemented,
@@ -95,9 +161,9 @@ rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm,
                             root->target);
             rexdd_set_edge(&root_down1,
                             rexdd_rule_X,
-                            rexdd_is_one(root->label.rule),
                             0,
-                            rexdd_make_terminal(0));
+                            0,
+                            rexdd_make_terminal(rexdd_is_one(root->label.rule)));
         } else if (rexdd_is_AL(root->label.rule)) {
             // root edge is AL
             rexdd_set_edge(&root_down0,
@@ -166,9 +232,13 @@ int main(int argc, const char* const* argv)
     rexdd_forest_t F;
     rexdd_forest_settings_t s;
     rexdd_edge_t root_edge[5*(argc - 1)];
-    // Initializing the root edges
+    rexdd_edge_t DC_edge[argc-1];
+    // Initializing the root edges and don't care edge
     for (int i=0; i<5*(argc-1); i++) {
         rexdd_set_edge(&root_edge[i], rexdd_rule_X, 0, 0, rexdd_make_terminal(0));
+    }
+    for (int i=0; i<(argc-1); i++) {
+        rexdd_set_edge(&DC_edge[i], rexdd_rule_X, 0, 0, rexdd_make_terminal(0));
     }
 
     const char* infile = 0;
@@ -214,12 +284,23 @@ int main(int argc, const char* const* argv)
         char inputbits[num_inputbits + 2];          // the first and last is 0; index is the level
         bool inputbits_bol[num_inputbits + 2];
 
+        unsigned long rows = 0x01UL<<(num_inputbits);   // may be bigger for 5 pieces
+        char *function = malloc(rows*sizeof(char));
+        if (!function){
+            printf("Unable to malloc for function\n");
+            exit(1);
+        }
+        for (size_t i=0; i<rows; i++) {
+            function[i] = 0;
+        }
+
         // Initializing the forest
         if (n == 1) {
             rexdd_default_forest_settings(p.inbits, &s);
             rexdd_init_forest(&F, &s);
         }
 
+        unsigned long var_index = 0;
         int index = 0;
         // rexdd_edge_t union_edge;
         for (;;) {
@@ -228,13 +309,31 @@ int main(int argc, const char* const* argv)
             } else {
                 if (!read_minterm_bin(&p, inputbits, &term)) break;
             }
-            // reverse(inputbits, p.inbits);
+            // set the path on corresponding location
+            var_index = bin2dec(inputbits, num_inputbits);
             index = term - '1' + 5*(n-1);
-            root_edge[index] = union_minterm(&F, &root_edge[index], inputbits, p.inbits);
+            function[var_index] = term-'0';
+
+            // root_edge[index] = union_minterm(&F, &root_edge[index], inputbits, p.inbits);
 
             // gc TBD here for huge number of nodes
-
         }
+        char* edge_function = malloc(rows*sizeof(char));
+        if (!edge_function){
+            printf("Unable to malloc for function\n");
+            exit(1);
+        }
+        for (size_t i=0; i<rows; i++) {
+            edge_function[i] = 0;
+        }
+
+        for (int j=0+5*(n-1); j<5+5*(n-1); j++) {
+            for (size_t i=0; i<rows; i++) {
+                edge_function[i] = (function[i]==((j%5)+1))?1:0;
+            }
+            functionToEdge(&F,edge_function,&root_edge[j],num_inputbits, 0, rows-1);
+        }
+
         printf("Done building!\n");
 
         printf("Evaling...%c\n",fmt);
@@ -271,8 +370,10 @@ int main(int argc, const char* const* argv)
             index = term - '1' + 5*(n-1);
             for (unsigned i=0; i< p1.inbits+2; i++){
                 if (inputbits[i] == '1') {
+                    // inputbits_bol[p1.inbits+1-i] = 1;
                     inputbits_bol[i] = 1;
                 } else {
+                    // inputbits_bol[p1.inbits+1-i] = 0;
                     inputbits_bol[i] = 0;
                 }
                 // fprintf(mout,"%d ", inputbits_bol[i]);
@@ -280,7 +381,7 @@ int main(int argc, const char* const* argv)
             // fprintf(mout, "\t%d\n", index);
             //evaling every root
             bool is_right = 1;
-            int r;
+            int r = 0;
             for (r=0+5*(n-1); r<5+5*(n-1); r++) {
                 if(r!=index) {
                     if(!rexdd_eval(&F,&root_edge[r], p1.inbits, inputbits_bol)) continue;
@@ -293,6 +394,7 @@ int main(int argc, const char* const* argv)
                     break;
                 }
             }
+            // if (rexdd_eval(&F, &DC_edge[n-1], p1.inbits, inputbits_bol)) is_right = 0;
             if (!is_right) {
                 printf("eval test fail at %d!\n", r-5*(n-1));
                 // fclose(mout);
@@ -303,12 +405,14 @@ int main(int argc, const char* const* argv)
         // fclose(mout);
         printf("Evaluation pass!\n\n");
         free_parser(&p1); // file reader will be free
+
+        free(function);
+        free(edge_function);
     }
 
     printf("Unmarking the forest...\n");
     unmark_forest(&F);
     printf("Done unmarking!\n");
-
 
     printf("Marking nonterminal nodes in use from roots...\n");
     for (int i=0; i<5*(argc-1); i++) {
@@ -319,8 +423,9 @@ int main(int argc, const char* const* argv)
         }
         mark_nodes(&F, root_edge[i].target);
     }
+    // printf("\tDC root is %llu\n", (rexdd_is_terminal(DC_edge[argc-2].target))?0:DC_edge[argc-2].target);
+    // mark_nodes(&F, DC_edge[argc-2].target);
     printf("Done marking!\n");
-
 
     printf("Counting the total number of nodes in forest...\n");
     uint_fast64_t q, n;
@@ -334,16 +439,33 @@ int main(int argc, const char* const* argv)
         } // for n
     } // for p
     if (argc == 2) {
-        printf("Total number of nodes in %s is %llu\n", infile, num_nodes);
+        printf("Total number of nodes (%s) in %s is %llu\n", TYPE, infile, num_nodes);
     } else {
-        printf("Total number of nodes in forest is %llu\n", num_nodes);
+        printf("Total number of nodes (%s) in forest is %llu\n", TYPE, num_nodes);
     }
+
+    /*  w/o one root edge and count */
+    uint64_t min_num_nodes = 0;
+    int wo = 0;
+    for (int i=0; i<5; i++) {
+        min_num_nodes = count_nodes(&F, root_edge, i, 5);
+        if (num_nodes > min_num_nodes) {
+            num_nodes = min_num_nodes;
+            wo = i;
+        }
+    }
+    printf("Total number of nodes (%s) without %d is %llu\n", TYPE, wo, num_nodes);
+    printf("============================================================================\n");
+    // unmark_forest(&F);
+    // for (int i=0; i<5; i++) {
+    //     if (i!=wo) mark_nodes(&F, root_edge[i].target);
+    // }
+    // // mark_nodes(&F, root_edge[wo].target);
 
     // FILE* fout;
     // fout = fopen("forest.txt", "w+");
     // save(fout, &F, root_edge, 5*(argc-1));
     // fclose(fout);
-
     rexdd_free_forest(&F);
     return 0;
 }
