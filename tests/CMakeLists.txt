@@ -10,6 +10,7 @@ set(EXES
   check_bdds
   check_bench_marks
   check_endgame
+  sampling
 )
 
 foreach(testexe ${EXES})
@@ -38,3 +39,4 @@ add_test("Reduce edge test" check_reduce)
 add_test("QBDD/FBDD/ZBDD/RexBDD eval test" check_bdds)
 add_test("Benchmarks test"  check_bench_marks)
 add_test("Chess endgame test"   check_endgame)
+add_test("Bernoulli sampling for functions"   sampling)
