@@ -184,7 +184,7 @@ int main(int argc, const char* const* argv)
     /*  Initialize the forest   */
     rexdd_forest_t F;
     rexdd_forest_settings_t s;
-    u_int64_t num_nodes = 0;
+    uint64_t num_nodes = 0;
     rexdd_default_forest_settings(num_vars, &s);
 
     /*  Start   */
