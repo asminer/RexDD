@@ -180,6 +180,26 @@ void mark_nodes(
                 rexdd_forest_t *F, 
                 rexdd_node_handle_t root);
 
+/****************************************************************************
+ *  Union a path into forest *F
+ */
+rexdd_edge_t union_minterm(
+                rexdd_forest_t* F,
+                rexdd_edge_t* root,
+                char* minterm,
+                uint32_t K);
+
+/****************************************************************************
+ *  Create a BDD from root_out in forest *F to encode function (0-1 array)
+ */
+void functionToEdge(
+                rexdd_forest_t* F,
+                char* functions,
+                rexdd_edge_t* root_out,
+                int L, 
+                unsigned long start,
+                unsigned long end);
+
 
 // garbage collection of unmarked nodes in forest F
 // void gc_unmarked(rexdd_forest_t* F)

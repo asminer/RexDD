@@ -30,38 +30,6 @@ double Random()
 /*======================================================
  *  helper function to get distributions
  =====================================================*/
-void swap(uint64_t *a, uint64_t *b)
-{
-    uint64_t temp = *a;
-    *a = *b;
-    *b = temp;
-}
-
-long long partition(uint64_t arr[], long long low, long long high)
-{
-    uint64_t pivot = arr[high];
-    long long i = low - 1;
-
-    for (long long j = low; j <= high - 1; j++) {
-        if (arr[j] < pivot) {
-            i++;
-            swap(&arr[i], &arr[j]);
-        }
-    }
-    swap(&arr[i + 1], &arr[high]);
-    return i + 1;
-}
-
-void quicksort(uint64_t arr[], long long low, long long high)
-{
-    if (low < high) {
-        long long pi = partition(arr, low, high);
-
-        quicksort(arr, low, pi - 1);
-        quicksort(arr, pi + 1, high);
-    }
-}
-
 void getDistributions(uint64_t arr[], long long n, FILE* fout, char type)
 {
     uint64_t min = arr[0], max = arr[0];
@@ -109,37 +77,6 @@ void getDistributions(uint64_t arr[], long long n, FILE* fout, char type)
 /*======================================================
  *  helper function for main process
  =====================================================*/
-void functionToEdge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, int L, unsigned long start, unsigned long end)
-{
-    rexdd_unpacked_node_t temp;
-    temp.level = L;
-    temp.edge[0].label.rule = rexdd_rule_X;
-    temp.edge[1].label.rule = rexdd_rule_X;
-    temp.edge[0].label.swapped = 0;
-    temp.edge[1].label.swapped = 0;
-    temp.edge[0].label.complemented = 0;
-    temp.edge[1].label.complemented = 0;
-    rexdd_edge_label_t l;
-    l.rule = rexdd_rule_X;
-    l.complemented = 0;
-    l.swapped = 0;
-    /*  terminal case */
-    if ((end-start == 1) && (L==1)) {
-        // printf("\tterminal case!\n");
-        temp.edge[0].target = rexdd_make_terminal(functions[start]);
-        temp.edge[1].target = rexdd_make_terminal(functions[end]);
-        
-        rexdd_reduce_edge(F, L, l, temp, root_out);
-        return;
-    }
-    const int next_lvl = L-1;
-    // printf("\t\tgo level %d!\n", next_lvl);
-    functionToEdge(F, functions, &temp.edge[0], next_lvl, start, (end-start)/2+start);
-    functionToEdge(F, functions, &temp.edge[1], next_lvl, (end-start)/2+start+1, end);
-    // printf("\t\treduce level %d!\n", temp.level);
-    rexdd_reduce_edge(F, L, l, temp, root_out);
-}
-
 uint64_t count_nodes(rexdd_forest_t* F, rexdd_edge_t* root)
 {
     unmark_forest(F);

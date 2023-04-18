@@ -3,6 +3,7 @@
 #include "helpers.h"
 
 #include <assert.h>
+#include <time.h>
 
 unsigned long bin2dec(char* bins, int length)
 {
@@ -15,38 +16,6 @@ unsigned long bin2dec(char* bins, int length)
         ans += (bins[i]=='1')? 0x01UL<<(i-1) : 0;
     }
     return ans;
-}
-
-void functionToEdge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, int L, unsigned long start, unsigned long end)
-{
-    //
-    rexdd_unpacked_node_t temp;
-    temp.level = L;
-    temp.edge[0].label.rule = rexdd_rule_X;
-    temp.edge[1].label.rule = rexdd_rule_X;
-    temp.edge[0].label.swapped = 0;
-    temp.edge[1].label.swapped = 0;
-    temp.edge[0].label.complemented = 0;
-    temp.edge[1].label.complemented = 0;
-    rexdd_edge_label_t l;
-    l.rule = rexdd_rule_X;
-    l.complemented = 0;
-    l.swapped = 0;
-    /*  terminal case */
-    if ((end-start == 1) && (L==1)) {
-        // printf("\tterminal case!\n");
-        temp.edge[0].target = rexdd_make_terminal(functions[start]);
-        temp.edge[1].target = rexdd_make_terminal(functions[end]);
-        
-        rexdd_reduce_edge(F, L, l, temp, root_out);
-        return;
-    }
-    const int next_lvl = L-1;
-    // printf("\t\tgo level %d!\n", next_lvl);
-    functionToEdge(F, functions, &temp.edge[0], next_lvl, start, (end-start)/2+start);
-    functionToEdge(F, functions, &temp.edge[1], next_lvl, (end-start)/2+start+1, end);
-    // printf("\t\treduce level %d!\n", temp.level);
-    rexdd_reduce_edge(F, L, l, temp, root_out);
 }
 
 uint64_t count_nodes(rexdd_forest_t* F, rexdd_edge_t* root, int dc, int num)
@@ -69,150 +38,6 @@ uint64_t count_nodes(rexdd_forest_t* F, rexdd_edge_t* root, int dc, int num)
         } // for n
     } // for p
     return num_nodes;
-}
-/*=======================================================================================================
- *                                  RexBDD related funcitons
- *=======================================================================================================*/
-
-// build a forest recording the input function (2D array of bool with specific container number)
-rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm, uint32_t K)
-{
-    // the final answer
-    rexdd_edge_t ans;
-    ans.label.rule = rexdd_rule_X;
-    ans.label.complemented = 0;
-    ans.label.swapped = 0;
-
-    // terminal case 
-    if (K==0) {
-        rexdd_set_edge(&ans,
-                        rexdd_rule_X,
-                        0,
-                        0,
-                        (root->label.complemented) ? rexdd_make_terminal(0) : rexdd_make_terminal(1));
-        return ans;
-    }
-
-    /*
-     * here means the root edge can not capture the minterm!
-     *      we need to break root edge if it's a long edge
-     */
-    uint32_t root_skip;     // if the root edge is a long edge or not
-    if (rexdd_is_terminal(root->target)) {
-        root_skip = K;
-    } else {
-        root_skip = K - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, root->target));
-    }
-
-    // determine down pointers
-    rexdd_edge_t root_down0, root_down1;
-    if (root_skip == 0) {
-        // root edge does not skip ndoes at this level
-        rexdd_edge_label_t l;
-        rexdd_unpack_low_edge(rexdd_get_packed_for_handle(F->M, root->target), &l);
-        rexdd_set_edge((root->label.swapped) ? &root_down1 : &root_down0,
-                        l.rule ,
-                        l.complemented,
-                        l.swapped,
-                        rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, root->target)));
-        rexdd_unpack_high_edge(rexdd_get_packed_for_handle(F->M, root->target), &l);
-        rexdd_set_edge((root->label.swapped) ? &root_down0 : &root_down1,
-                        l.rule ,
-                        l.complemented,
-                        l.swapped,
-                        rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, root->target)));
-        if (root->label.complemented) {
-            rexdd_edge_com(&root_down0);
-            rexdd_edge_com(&root_down1);
-        }
-    } else {
-        assert(root_skip > 0);
-        // here means the root edge is a long edge (X, EL, EH, AL, AH)
-        if (root->label.rule == rexdd_rule_X) {
-            // this is easy
-            rexdd_set_edge(&root_down0,
-                            root->label.rule,
-                            root->label.complemented,
-                            root->label.swapped,
-                            root->target);
-            rexdd_set_edge(&root_down1,
-                            root->label.rule,
-                            root->label.complemented,
-                            root->label.swapped,
-                            root->target);
-        } else if (rexdd_is_EL(root->label.rule)) {
-            // root edge is EL
-            rexdd_set_edge(&root_down0,
-                            rexdd_rule_X,
-                            0,
-                            0,
-                            rexdd_make_terminal(rexdd_is_one(root->label.rule)));
-            rexdd_set_edge(&root_down1,
-                            (root_skip == 1) ? rexdd_rule_X : root->label.rule,
-                            root->label.complemented,
-                            root->label.swapped,
-                            root->target);
-        } else if (rexdd_is_EH(root->label.rule)) {
-            // root edge is EH
-            rexdd_set_edge(&root_down0,
-                            (root_skip == 1) ? rexdd_rule_X : root->label.rule,
-                            root->label.complemented,
-                            root->label.swapped,
-                            root->target);
-            rexdd_set_edge(&root_down1,
-                            rexdd_rule_X,
-                            0,
-                            0,
-                            rexdd_make_terminal(rexdd_is_one(root->label.rule)));
-        } else if (rexdd_is_AL(root->label.rule)) {
-            // root edge is AL
-            rexdd_set_edge(&root_down0,
-                            root->label.rule,
-                            root->label.complemented,
-                            root->label.swapped,
-                            root->target);
-            rexdd_set_edge(&root_down1,
-                            rexdd_rule_X,
-                            root->label.complemented,
-                            root->label.swapped,
-                            root->target);
-            if (root_skip == 2) {
-                // AL edge skips >= 2 nodes
-                root_down0.label.rule = (rexdd_is_one(root->label.rule)) ? rexdd_rule_EL1 : rexdd_rule_EL0;
-            }
-        } else if (rexdd_is_AH(root->label.rule)) {
-            // root edge is AH
-            rexdd_set_edge(&root_down0,
-                            rexdd_rule_X,
-                            root->label.complemented,
-                            root->label.swapped,
-                            root->target);
-            rexdd_set_edge(&root_down1,
-                            root->label.rule,
-                            root->label.complemented,
-                            root->label.swapped,
-                            root->target);
-            if (root_skip == 2) {
-                // AH edge skips >= 2 nodes
-                root_down1.label.rule = (rexdd_is_one(root->label.rule)) ? rexdd_rule_EH1 : rexdd_rule_EH0;
-            }
-        }
-    }
-
-    // Build new node
-    rexdd_unpacked_node_t tmp;
-    tmp.level = K;
-
-    if (minterm[K] == '1') {
-        tmp.edge[1] = union_minterm(F, &root_down1, minterm, K-1);
-        tmp.edge[0] = root_down0;
-    } else {
-        tmp.edge[0] = union_minterm(F, &root_down0, minterm, K-1);
-        tmp.edge[1] = root_down1;
-    }
-
-    rexdd_reduce_edge(F, K, ans.label, tmp, &ans);
-    return ans;
 }
 
 
@@ -242,7 +67,9 @@ int main(int argc, const char* const* argv)
     }
 
     const char* infile = 0;
-
+    /*  Time    */
+    clock_t start_time, end_time;
+    start_time = clock();
     for (int n=1; n<argc; n++) {
 
         infile = argv[n];
@@ -335,10 +162,8 @@ int main(int argc, const char* const* argv)
             functionToEdge(&F,edge_function,&root_edge[j],num_inputbits, 0, rows-1);
         }
 
-        printf("Done building!\n");
-
-        // printf("Evaling...%c\n",fmt);
         free_parser(&p); // file reader will be free
+        // printf("Evaling...%c\n",fmt);
         // file_reader fr1;
         // init_file_reader(&fr1, infile, comp);
         // parser p1;
@@ -409,13 +234,13 @@ int main(int argc, const char* const* argv)
 
         free(function);
         free(edge_function);
-    }
+    } // end of files for loop
+    end_time = clock();
+    printf("** reading and building time: %0.2f seconds **\n", (double)(end_time-start_time)/CLOCKS_PER_SEC);
 
-    printf("Unmarking the forest...\n");
+    // unmarking forest
     unmark_forest(&F);
-    printf("Done unmarking!\n");
-
-    printf("Marking nonterminal nodes in use from roots...\n");
+    // marking nodes in use
     for (int i=0; i<5*(argc-1); i++) {
         if (rexdd_is_terminal(root_edge[i].target)) {
             printf("\troot %d : %d is T0\n",(i/5)+1, i%5);
@@ -426,9 +251,8 @@ int main(int argc, const char* const* argv)
     }
     // printf("\tDC root is %llu\n", (rexdd_is_terminal(DC_edge[argc-2].target))?0:DC_edge[argc-2].target);
     // mark_nodes(&F, DC_edge[argc-2].target);
-    printf("Done marking!\n");
 
-    printf("Counting the total number of nodes in forest...\n");
+    // counting the total number
     uint_fast64_t q, n;
     uint64_t num_nodes = 0;
     for (q=0; q<F.M->pages_size; q++) {
