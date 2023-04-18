@@ -28,7 +28,7 @@ double Random()
 }
 
 /*======================================================
- *  helper function to sort
+ *  helper function to get distributions
  =====================================================*/
 void swap(uint64_t *a, uint64_t *b)
 {
@@ -62,12 +62,55 @@ void quicksort(uint64_t arr[], long long low, long long high)
     }
 }
 
+void getDistributions(uint64_t arr[], long long n, FILE* fout, char type)
+{
+    uint64_t min = arr[0], max = arr[0];
+    for (long long i=0; i<n; i++) {
+        if (arr[i]<min) min = arr[i];
+        if (arr[i]>max) max = arr[i];
+    }
+    uint64_t* density = calloc((long)(max - min + 1), sizeof(uint64_t));
+    uint64_t* cumulative = calloc((long)(max - min + 1), sizeof(uint64_t));
+    for (long long i=0; i<n; i++) {
+        density[arr[i]-min]++;
+    }
+    printf("=================| Results |===============\n");
+    printf("#node(%s)\t\t#count(%%)\n", TYPE);
+    fprintf(fout, "#node(%s)\t\t#count(%%)\n", TYPE);
+    cumulative[0] = density[0];
+    if (type == 2) {
+        printf("%llu\t\t\t%0.4f\n", min, (double)100*density[0]/n);
+        fprintf(fout, "%llu\t\t\t%0.4f\n", min, (double)100*density[0]/n);
+    } else if (type == 3) {
+        printf("%llu\t\t\t%0.4f\n", min, (double)100*cumulative[0]/n);
+        fprintf(fout, "%llu\t\t\t%0.4f\n", min, (double)100*cumulative[0]/n);
+    }
+    for (uint64_t i=1; i<(max - min + 1); i++) {
+        cumulative[i] = cumulative[i-1];
+        if (density[i]!=0) {
+            cumulative[i] += density[i];
+        }
+        if (type == 2) {
+            if (density[i] != 0) {
+                printf("%llu\t\t\t%0.4f\n", min+i, (double)100*density[i]/n);
+                fprintf(fout, "%llu\t\t\t%0.4f\n", min+i, (double)100*density[i]/n);
+            } else {
+                continue;
+            }
+        } else if (type == 3) {
+            printf("%llu\t\t\t%0.4f\n", min+i, (double)100*cumulative[i]/n);
+            fprintf(fout, "%llu\t\t\t%0.4f\n", min+i, (double)100*cumulative[i]/n);
+        }
+    }
+    free(density);
+    free(cumulative);
+}
+
 /*======================================================
  *  helper function for main process
  =====================================================*/
 void functionToEdge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, int L, unsigned long start, unsigned long end)
 {
-    //
     rexdd_unpacked_node_t temp;
     temp.level = L;
     temp.edge[0].label.rule = rexdd_rule_X;
@@ -188,6 +231,7 @@ int main(int argc, const char* const* argv)
     rexdd_default_forest_settings(num_vars, &s);
 
     /*  Start   */
+    FILE* numbers_out = fopen("numberOfNodes.txt", "w+");
     start_time = clock();
     for (long long i=0; i<num_function; i++) {
         // initialize forest for this function
@@ -198,6 +242,7 @@ int main(int argc, const char* const* argv)
         }
         functionToEdge(&F, function, &root, num_vars, 0, rows-1);
         num_nodes = count_nodes(&F, &root);
+        fprintf(numbers_out, "%llu\n", num_nodes);
         if (option > 1) {
             numbers[i] = num_nodes;
             printf("Got function root edges [%lld / %lld]\n", i+1, num_function);
@@ -212,41 +257,18 @@ int main(int argc, const char* const* argv)
         rexdd_free_forest(&F);
     } // end for loop of functions
     end_time = clock();
+    fclose(numbers_out);
     printf("** building and counting time: %f seconds\n", (double)(end_time-start_time)/CLOCKS_PER_SEC);
 
+    /*  Get numbers distribution    */
     FILE* fout = 0;    
-    if (option > 1) {
-        start_time = clock();
-        quicksort(numbers, 0, num_function-1);
-        end_time = clock();
-        printf("** quick sort time: %f seconds\n", (double)(end_time-start_time)/CLOCKS_PER_SEC);
-        printf("=================| Results |===============\n");
+    if (option > 1) { 
         if (option == 2) {
             fout = fopen("sampling_density.txt", "w+");
         } else {
             fout = fopen("sampling_cumulative.txt", "w+");
         }
-        printf("#node(%s)\t\t#count(%%)\n", TYPE);
-        fprintf(fout, "#node(%s)\t\t#count(%%)\n", TYPE);
-        uint64_t pre = numbers[0];
-        long long count = 0;
-        for (long long n=0; n<num_function; n++) {
-            if (numbers[n] == pre){
-                count++;
-                continue;
-            }
-            printf("%llu\t\t\t%0.4f\n", pre, (double)100*count/num_function);
-            fprintf(fout, "%llu\t\t\t%0.4f\n", pre, (double)100*count/num_function);
-            if (option == 2) {
-                count = 1;
-            } else if (option == 3) {
-                count++;
-            }
-            pre = numbers[n];
-        }
-        printf("%llu\t\t\t%0.4f\n", pre, (double)100*count/num_function);
-        fprintf(fout, "%llu\t\t\t%0.4f\n", pre, (double)100*count/num_function);
-
+        getDistributions(numbers, num_function, fout, option);
     }
     /*  Free every thing    */
     free(function);
