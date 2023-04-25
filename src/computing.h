@@ -35,17 +35,17 @@ typedef struct
 typedef struct 
 {
     rexdd_edge_in_ct* table;
-    uint_fast32_t* handles;
+    uint_fast64_t* handles;
     /*
      *  More like an array for indexes of front
      *  hash -> index of handles -> index of table
      */ 
-    uint_fast32_t first_unalloc;
-    uint_fast32_t free_list;
-    uint_fast32_t num_entries;
+    uint_fast64_t first_unalloc;    
+    uint_fast64_t free_list;        // point to +1
+    uint_fast64_t num_entries;
 
-    uint_fast32_t size;
-    uint_fast32_t enlarge;
+    uint_fast64_t size;
+    uint_fast64_t enlarge;
     unsigned size_index;        // index of "primes" for enlarge
     unsigned prev_size_index;
 

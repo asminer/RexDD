@@ -40,7 +40,7 @@ static const uint_fast64_t primes[] = {
  *  Helper: Get a free slot in table
  *
  */
-uint_fast32_t rexdd_ct_free_slot(rexdd_comp_table_t* CT)
+uint_fast64_t rexdd_ct_free_slot(rexdd_comp_table_t* CT)
 {
     //
     rexdd_sanity1(CT, "Null computing table");
@@ -50,11 +50,59 @@ uint_fast32_t rexdd_ct_free_slot(rexdd_comp_table_t* CT)
     CT->num_entries++;
 
     if (CT->free_list) {
-        uint_fast32_t slot = CT->free_list-1;
+        uint_fast64_t slot = CT->free_list-1;
         CT->free_list = CT->table[slot].node->third32;
         return slot;
     }
     return CT->first_unalloc++;
+}
+
+/****************************************************************************
+ *
+ *  Helper: collect hash table chains into a single list; return front
+ *  Retruns the fornt of list in reverse order (comparing to the order in *handles)
+ *
+ */
+static uint_fast64_t rexdd_ct_to_list(rexdd_comp_table_t *CT)
+{
+    if (!CT) return 0;
+
+    uint_fast64_t front = 0;
+    uint_fast64_t i, chain;
+    for (i=0; i<CT->size; i++) {
+        while (CT->handles[i]) {
+            chain = CT->handles[i];
+            CT->handles[i] = rexdd_get_packed_next(CT->table[chain].node);
+            rexdd_set_packed_next(CT->table[chain].node, front);
+            front = chain;
+        }
+    } // end for i
+    CT->num_entries = 0;
+    return front;
+}
+
+/****************************************************************************
+ *
+ * Helper: re-hash a list
+ *
+ */
+static void rexdd_rehash_ct_list(uint_fast64_t list, rexdd_comp_table_t *CT)
+{
+    rexdd_sanity1(CT, "Null computing table");
+
+    rexdd_packed_node_t *packed = 0;
+    uint_fast64_t next, hash;
+    while (list) {
+        packed = CT->table[list].node;
+        next = rexdd_get_packed_next(packed);
+        hash = rexdd_hash_packed(packed, CT->size);
+        // before this new *handles is set to zeros
+        rexdd_set_packed_next(packed, CT->handles[hash]);
+        CT->handles[hash] = list;
+
+        list = next;
+        CT->num_entries++;
+    }
 }
 
 /****************************************************************************
@@ -69,11 +117,11 @@ void rexdd_init_CT(rexdd_comp_table_t *CT)
     CT->size = primes[0];
     CT->table = malloc(CT->size * sizeof(rexdd_edge_in_ct));     // malloc and set zeros
     rexdd_check1(CT->table, "Malloc table fail in rexdd_init_CT");
-    for (uint_fast32_t i=0; i<CT->size; i++) {
+    for (uint_fast64_t i=0; i<CT->size; i++) {
         CT->table[i].node = 0;
         CT->table[i].edge = 0;
     }
-    CT->handles = calloc(CT->size, sizeof(uint_fast32_t));
+    CT->handles = calloc(CT->size, sizeof(uint_fast64_t));
     rexdd_check1(CT->handles, "Malloc handles fail in rexdd_init_CT");
     
     CT->num_entries = 0;
@@ -93,7 +141,7 @@ void rexdd_free_CT(rexdd_comp_table_t *CT)
     rexdd_sanity1(CT, "Null unique table");
 
     if (!CT->table) return;
-    for (uint_fast32_t i=0; i<CT->size; i++) {
+    for (uint_fast64_t i=0; i<CT->size; i++) {
         if (CT->table[i].node) free(CT->table[i].node);
         CT->table[i].node = 0;
         if (CT->table[i].edge) free(CT->table[i].edge);
@@ -127,11 +175,12 @@ char rexdd_check_CT(rexdd_comp_table_t *CT, rexdd_unpacked_node_t *node, rexdd_e
 
     /*
      *  Determine the hash for the node
+     *  Note: results of hash function always less than CT->size (as the second parameter)
      */
-    rexdd_packed_node_t *packedNode;
-    rexdd_unpacked_to_packed(node, packedNode);
-    uint_fast64_t hash = rexdd_hash_packed(packedNode, CT->size);
-    uint_fast32_t front = CT->handles[hash];
+    rexdd_packed_node_t packedNode;
+    rexdd_unpacked_to_packed(node, &packedNode);
+    uint_fast64_t hash = rexdd_hash_packed(&packedNode, CT->size);
+    uint_fast64_t front = CT->handles[hash];
 
     /*
      *  Empty chain, not cached return 0;
@@ -141,13 +190,13 @@ char rexdd_check_CT(rexdd_comp_table_t *CT, rexdd_unpacked_node_t *node, rexdd_e
     /*
      *  Non-empty chain. Check the chain for duplicates
      */
-    uint_fast32_t currhand = front;
+    uint_fast64_t currhand = front;
     rexdd_packed_node_t* currnode = 0;
     rexdd_packed_node_t* prevnode = 0;
 
     while (currhand) {
         currnode = CT->table[currhand].node;
-        if (!rexdd_are_packed_duplicates(packedNode, currnode)) {
+        if (!rexdd_are_packed_duplicates(&packedNode, currnode)) {
             currhand = rexdd_get_packed_next(currnode);     // next pointer in table
             prevnode = currnode;
             continue;
@@ -181,8 +230,6 @@ char rexdd_check_CT(rexdd_comp_table_t *CT, rexdd_unpacked_node_t *node, rexdd_e
  */
 void rexdd_insert_CT(rexdd_comp_table_t *CT, rexdd_unpacked_node_t *node, rexdd_edge_t *e)
 {
-    // Checked before, assuming this is a new entry not cached
-
     rexdd_sanity1(CT, "Null computing table");
     rexdd_sanity1(CT->table, "Empty computing table");
     rexdd_sanity1(node, "Null unpacked node");
@@ -190,42 +237,43 @@ void rexdd_insert_CT(rexdd_comp_table_t *CT, rexdd_unpacked_node_t *node, rexdd_
     /*
      *  Check if we should enlarge the table
      */
-    if (CT->num_entries > CT->enlarge) {
-        // TBD
+    if (CT->num_entries == CT->enlarge-1) {
+        // let's convert it to list then enlarge
+        uint_fast64_t list = rexdd_ct_to_list(CT);
+
+        CT->size_index++;
+        CT->size = primes[CT->size_index];
+        CT->table = realloc(CT->table, CT->size * sizeof(rexdd_edge_in_ct));    // not change the old contents
+        rexdd_sanity1(CT->table, "Realloc table fail in rexdd_insert_CT");
+        // zero out the new slots
+        uint_fast64_t i;
+        for (i=CT->size; i>primes[CT->size_index-1]; i--) {
+            CT->table[i-1].node = 0;
+            CT->table[i-1].edge = 0;
+
+        }
+        free(CT->handles);
+        CT->handles = calloc(CT->size, sizeof(uint_fast64_t));  // new *handles is set to zeros
+        rexdd_sanity1(CT->handles, "Calloc handles fail in rexdd_insert_CT");
+        CT->enlarge = primes[CT->size_index+1] ? CT->size : (0x01ul << 60);
+        
+        rexdd_rehash_ct_list(list, CT);
     }
 
-    /*
-     *  Determine the hash for the node
-     */
-    rexdd_packed_node_t *packedNode;
-    rexdd_unpacked_to_packed(node, packedNode);
-    uint_fast64_t hash = rexdd_hash_packed(packedNode, CT->size);
-    uint_fast32_t front = CT->handles[hash];
+    /* Checked before, this is definitely a new entry not cached  */
 
     /*
-     *  New entry, new chain
+     *  Get a free or unalloc slot in table to store entry;
+     *  Set the node and edge at slot
      */
-    if (0==CT->table[front].node) {
-        CT->table[front].node = malloc(sizeof(rexdd_packed_node_t));
-        rexdd_check1(CT->table[front].node, "Malloc table->node fail in rexdd_insert_CT");
-        CT->table[front].edge = malloc(sizeof(rexdd_edge_t));
-        rexdd_check1(CT->table[front].edge, "Malloc table->edge fail in rexdd_insert_CT");
-
-        CT->num_entries++;
-        return;
-    }
-
-    /*
-     *  Non-empty chain. Move it to the front
-     */
-    uint_fast32_t slot;
+    uint_fast64_t slot;
     slot = rexdd_ct_free_slot(CT);
-    if (!CT->table[slot].node) {
-        // this slot is not allocated
+    if (CT->table[slot].node == 0) {
+        // this is an unalloc slot, so malloc one
         CT->table[slot].node = malloc(sizeof(rexdd_packed_node_t));
-        rexdd_sanity1(CT->table[slot].node, "Malloc slot node fail in rexdd_insert_CT");
+        rexdd_check1(CT->table[slot].node, "Malloc table->node fail in rexdd_insert_CT");
         CT->table[slot].edge = malloc(sizeof(rexdd_edge_t));
-        rexdd_sanity1(CT->table[slot].edge, "Malloc slot edge fail in rexdd_insert_CT");
+        rexdd_check1(CT->table[slot].edge, "Malloc table->edge fail in rexdd_insert_CT");
     }
     rexdd_unpacked_to_packed(node, CT->table[slot].node);
     rexdd_set_edge(CT->table[slot].edge,
@@ -233,6 +281,17 @@ void rexdd_insert_CT(rexdd_comp_table_t *CT, rexdd_unpacked_node_t *node, rexdd_
                     e->label.complemented,
                     e->label.swapped,
                     e->target);
+
+    /*
+     *  Determine the hash for the node
+     */
+    rexdd_packed_node_t packedNode;
+    rexdd_unpacked_to_packed(node, &packedNode);
+    uint_fast64_t hash = rexdd_hash_packed(&packedNode, CT->size);
+    uint_fast64_t front = CT->handles[hash];
+    /*
+     *  Move this node to the front
+     */
     rexdd_set_packed_next(CT->table[slot].node, front);
     CT->handles[hash] = slot;
     CT->num_entries++;
@@ -241,5 +300,9 @@ void rexdd_insert_CT(rexdd_comp_table_t *CT, rexdd_unpacked_node_t *node, rexdd_
 
 void rexdd_sweep_CT(rexdd_comp_table_t *CT, rexdd_nodeman_t *M)
 {
-    //
+    rexdd_sanity1(CT, "Null computing table");
+    rexdd_sanity1(M, "Null nodeman");
+    if (0==CT->table) return;
+
+
 }
