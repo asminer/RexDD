@@ -200,12 +200,10 @@ void functionToEdge(
                 unsigned long start,
                 unsigned long end);
 
-
-// garbage collection of unmarked nodes in forest F
-// void gc_unmarked(rexdd_forest_t* F)
-// {
-//     //
-// }
+/****************************************************************************
+ * garbage collection of unmarked nodes in forest F
+ */
+void gc_unmarked(rexdd_forest_t* F);
 
 
 

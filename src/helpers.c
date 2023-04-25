@@ -841,6 +841,51 @@ void functionToEdge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, 
 }
 
 
+/****************************************************************************
+ *  Garbage collection of unmarked nodes in forest F
+ *  assuming nodes in use are marked
+ */
+void gc_unmarked(rexdd_forest_t* F)
+{
+    /*
+     *  Sweep unique table
+     */ 
+    rexdd_sweep_UT(F->UT);
+
+    /*
+     *  Sweep computing table
+     *      TBD
+     */ 
+
+    /*
+     *  Ready to sweep all unmarked nodes
+     */
+    rexdd_sweep_nodeman(F->M);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // /****************************************************************************
 //  * Helper: write an edge in dot format.
 //  * The source node, and the ->, should have been written already.
