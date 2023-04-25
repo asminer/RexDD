@@ -1,5 +1,6 @@
 
 set(SOURCES
+  computing.c
   error.c
   forest.c
   functions.c
