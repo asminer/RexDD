@@ -62,7 +62,6 @@ void rexdd_init_CT(rexdd_comp_table_t *CT)
         exit(1);
     }
     for (uint_fast64_t i=0; i<primes[0]; i++) {
-        CT->table[i].lvl = 0;
         CT->table[i].edge1 = 0;
         CT->table[i].edge2 = 0;
         CT->table[i].edgeA = 0;
@@ -87,7 +86,6 @@ void rexdd_free_CT(rexdd_comp_table_t *CT)
         if (CT->table[i].edgeA) {
             free(CT->table[i].edgeA);
         }
-        CT->table[i].lvl = 0;
     }
     CT->num_entries = 0;
     CT->size_index = 0;
@@ -101,20 +99,19 @@ void rexdd_free_CT(rexdd_comp_table_t *CT)
  *  If cached, returns 1 and corresponding edge is set to *e;
  *  otherwise, returns 0 and *e is not changed
  */
-char rexdd_check_CT(rexdd_comp_table_t *CT, uint32_t n, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e)
+char rexdd_check_CT(rexdd_comp_table_t *CT, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e)
 {
     rexdd_sanity1(CT, "Null computing table");
     rexdd_sanity1(CT->table, "Empty computing table");
 
-    uint_fast64_t hash = rexdd_hash_edges(n, edge1, edge2, primes[CT->size_index]);
+    uint_fast64_t hash = rexdd_hash_edges(edge1, edge2, primes[CT->size_index]);
 
     if (CT->table[hash].edgeA != 0) {
         /*
          *  Non-empty slot. Check if match
          */
         if (rexdd_edges_are_equal(edge1, CT->table[hash].edge1) &&
-            rexdd_edges_are_equal(edge2, CT->table[hash].edge2) && 
-            CT->table[hash].lvl == n) 
+            rexdd_edges_are_equal(edge2, CT->table[hash].edge2)) 
         {
             rexdd_set_edge(e,
                     CT->table[hash].edgeA->label.rule,
@@ -134,7 +131,7 @@ char rexdd_check_CT(rexdd_comp_table_t *CT, uint32_t n, rexdd_edge_t *edge1, rex
  *  Insert a unpacked node and corresponding edge *e into 
  *  computing table for AND operation
  */
-void rexdd_cache_CT(rexdd_comp_table_t *CT, uint32_t n, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e)
+void rexdd_cache_CT(rexdd_comp_table_t *CT, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e)
 {
     rexdd_sanity1(CT, "Null computing table");
     rexdd_sanity1(e, "Null target edge");
@@ -152,7 +149,7 @@ void rexdd_cache_CT(rexdd_comp_table_t *CT, uint32_t n, rexdd_edge_t *edge1, rex
             CT->table[i].edgeA = 0;
         }
     }
-    uint_fast64_t hash = rexdd_hash_edges(n, edge1, edge2, primes[CT->size_index]);
+    uint_fast64_t hash = rexdd_hash_edges(edge1, edge2, primes[CT->size_index]);
     /*
      *  Empty slot, need malloc
      */
@@ -167,7 +164,6 @@ void rexdd_cache_CT(rexdd_comp_table_t *CT, uint32_t n, rexdd_edge_t *edge1, rex
          */
         rexdd_sanity1(CT->table[hash].edge1 && CT->table[hash].edge2, "Null edges pair in computing table");
     }
-    CT->table[hash].lvl = n;
     rexdd_set_edge(CT->table[hash].edge1,
                 edge1->label.rule,
                 edge1->label.complemented,
@@ -199,7 +195,6 @@ void rexdd_sweep_CT(rexdd_comp_table_t *CT, rexdd_nodeman_t *M)
                 || rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edge2->target))
                 || rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edgeA->target)))
             {
-                CT->table[i].lvl = 0;
                 free(CT->table[i].edge1);
                 CT->table[i].edge1 = 0;
                 free(CT->table[i].edge2);
