@@ -1,6 +1,7 @@
 
 #include <stdlib.h> // malloc/free calloc realloc
 #include <stdio.h>
+#include <time.h>
 
 #include "forest.h"
 #include "error.h"
@@ -31,7 +32,8 @@ void rexdd_init_forest(rexdd_forest_t *F, const rexdd_forest_settings_t *s)
     rexdd_init_nodeman(F->M,0);
     F->UT = malloc(sizeof(rexdd_unique_table_t));
     rexdd_init_UT(F->UT, F->M);
-
+    F->CT = malloc(sizeof(rexdd_comp_table_t));
+    rexdd_init_CT(F->CT);
     // Initialize list of root edges (empty)
     F->roots = NULL;
 
@@ -44,7 +46,11 @@ void rexdd_free_forest(rexdd_forest_t *F)
 
     rexdd_default_forest_settings(0, &(F->S));
     rexdd_free_UT(F->UT);
+    free(F->UT);
     rexdd_free_nodeman(F->M);
+    free(F->M);
+    rexdd_free_CT(F->CT);
+    free(F->CT);
 }
 
 /* ================================================================================================ */
@@ -1014,9 +1020,11 @@ void rexdd_reduce_edge(
         }
 
         rexdd_edge_t reduced;
-
+        clock_t start, end;
+        start = clock();
         rexdd_reduce_node(F, &p, &reduced);
-
+        end = clock();
+        printf("** reduc_node time: %d clocks **\n", (int)(end-start));
         rexdd_merge_edge(F, m, p.level, l, &reduced, out);
     }
 }

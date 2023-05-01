@@ -5,6 +5,7 @@
 #include "nodeman.h"
 #include "unique.h"
 #include "error.h"
+#include "computing.h"
 
 /********************************************************************
  *
@@ -61,6 +62,7 @@ struct rexdd_forest_s {
     rexdd_forest_settings_t S;
     rexdd_nodeman_t *M;
     rexdd_unique_table_t *UT;
+    rexdd_comp_table_t *CT;
 
     // ...
 
