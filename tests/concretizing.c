@@ -117,6 +117,11 @@ rexdd_edge_t restr(rexdd_forest_t* F, rexdd_edge_t* root, uint_fast32_t n)
 }
 
 /*-----------------------------------------------One side match-----------------------------------------*/
+// unsigned char compare_osm()
+// {
+//     //
+// }
+
 // rexdd_edge_t osm(rexdd_forest_t* F, rexdd_edge_t* root)
 // {
 //     //
@@ -137,6 +142,9 @@ int main(int argc, const char* const* argv)
         printf("Need one input file\n");
         return 0;
     }
+
+    FILE* fp;
+    fp = fopen("concretizing_process.txt", "w+");
 
     rexdd_forest_t F;
     rexdd_forest_settings_t s;
@@ -230,6 +238,7 @@ int main(int argc, const char* const* argv)
             }
         }
         free_parser(&p); // file reader will be free
+        fprintf(fp, "Base building: %d / %d\n", n, argc-1);
     } // end of files for loop
     end_time = clock();
     printf("** reading and building time: %0.2f seconds **\n", (double)(end_time-start_time)/CLOCKS_PER_SEC);
@@ -402,12 +411,14 @@ int main(int argc, const char* const* argv)
             }
         }
         free_parser(&p); // file reader will be free
+        fprintf(fp, "Terminal 0: %d / %d\n", k, argc-1);
     }
 
     /* starting concretizing*/
     for (int i=0; i<5*(argc-1); i++) {
 
         if (root_flag[i]==1) root_edge[i] = restr(&F, &root_edge[i], F.S.num_levels);
+        fprintf(fp,"Concretizing edge: %d / %d\n", i, 5*(argc-1));
 
         // unmark_forest(&F);
         // if (root_flag[i]==1) mark_nodes(&F, root_edge[i].target);
@@ -533,5 +544,6 @@ int main(int argc, const char* const* argv)
     
     printf("============================================================================\n");
     rexdd_free_forest(&F);
+    fclose(fp);
     return 0;
 }
