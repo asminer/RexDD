@@ -598,6 +598,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     int max_num = 0;
     int num_term = 0;
     int numFunc[33];
+    int num_nodes = 0;
     for (int i=0; i<33; i++) {
         numFunc[i] = 0;
     }
@@ -608,7 +609,8 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
         } else {
             num_term = terms;
         }
-        int num_nodes = countNodes(&F,edges[i].target) + num_term;
+        // int num_nodes = countNodes(&F,edges[i].target) + num_term;
+        num_nodes = countNodes(&F,edges[i].target);
         numFunc[num_nodes]++;
         if (max_num < num_nodes) {
             max_num = num_nodes;
@@ -624,7 +626,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     fprintf(fount, "\nDone level %d", levels);
     fclose(fount);
 
-    for (int i=1; i<33; i++) {
+    for (int i=0; i<33; i++) {
         fprintf(test, "%d %d\n", i, numFunc[i]);
     }
 
@@ -669,7 +671,7 @@ void mark_nodes(
 }
 
 // build a forest recording the input function (2D array of bool with specific container number)
-rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm, uint32_t K)
+rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm, int outcome, uint32_t K)
 {
     // the final answer
     rexdd_edge_t ans;
@@ -677,13 +679,19 @@ rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm,
     ans.label.complemented = 0;
     ans.label.swapped = 0;
 
-    // terminal case 
+    // terminal case     
     if (K==0) {
+        rexdd_node_handle_t termi;
+        if ((outcome == 1) || (outcome == 0)) {
+            termi = (root->label.complemented) ? rexdd_make_terminal(1-outcome) : rexdd_make_terminal(outcome);
+        } else {
+            termi = rexdd_make_terminal(outcome);
+        }
         rexdd_set_edge(&ans,
                         rexdd_rule_X,
                         0,
                         0,
-                        (root->label.complemented) ? rexdd_make_terminal(0) : rexdd_make_terminal(1));
+                        termi);
         return ans;
     }
 
@@ -797,10 +805,10 @@ rexdd_edge_t union_minterm(rexdd_forest_t* F, rexdd_edge_t* root, char* minterm,
     tmp.level = K;
 
     if (minterm[K] == '1') {
-        tmp.edge[1] = union_minterm(F, &root_down1, minterm, K-1);
+        tmp.edge[1] = union_minterm(F, &root_down1, minterm, outcome, K-1);
         tmp.edge[0] = root_down0;
     } else {
-        tmp.edge[0] = union_minterm(F, &root_down0, minterm, K-1);
+        tmp.edge[0] = union_minterm(F, &root_down0, minterm, outcome, K-1);
         tmp.edge[1] = root_down1;
     }
 
@@ -840,7 +848,67 @@ void functionToEdge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, 
     rexdd_reduce_edge(F, L, l, temp, root_out);
 }
 
+rexdd_edge_t rexdd_AND_edges(rexdd_forest_t* F, rexdd_edge_t* edge1, rexdd_edge_t* edge2, uint32_t lvl)
+{
+    rexdd_edge_t edgeA;
+    // Base case 1
+    if (rexdd_edges_are_equal(edge1, edge2)) {
+        // rexdd_set_edge();
+    }
+    if (lvl == 0) {
+        rexdd_set_edge(&edgeA,
+                rexdd_rule_X,
+                edge1->label.complemented & edge2->label.complemented,
+                0,
+                rexdd_make_terminal(0));
+        return edgeA;
+    }
 
+    /*
+     *  Terminal case: at least one edge to terminal node
+     */
+    if (rexdd_is_terminal(edge1->target) || rexdd_is_terminal(edge2->target)) {
+        bool which_terminal = (rexdd_is_terminal(edge1->target)) ? 0 : 1;   // 0: edge1; 1: edge2
+        bool terminal_value = (which_terminal) ? 
+                                edge2->label.complemented ^ rexdd_terminal_value(edge2->target) :
+                                edge1->label.complemented ^ rexdd_terminal_value(edge1->target);
+        if (terminal_value) {
+            if (which_terminal) {
+                rexdd_set_edge(&edgeA,
+                        edge1->label.rule,
+                        edge1->label.complemented,
+                        edge1->label.swapped,
+                        edge1->target);
+            } else {
+                rexdd_set_edge(&edgeA,
+                        edge2->label.rule,
+                        edge2->label.complemented,
+                        edge2->label.swapped,
+                        edge2->target);
+            }
+        } else {
+            rexdd_set_edge(&edgeA,
+                    rexdd_rule_X,
+                    0,
+                    0,
+                    rexdd_make_terminal(0));
+        }
+        return edgeA;
+    }
+
+    /*
+     *  This a new pair of edges, it needs coumpting
+     */
+    // get the child edges of target nodes on edge1 and edge2
+    rexdd_edge_t le1, le2, he1, he2;
+
+
+    if (edge1->label.rule == rexdd_rule_X) {
+        if (edge2->label.rule == rexdd_rule_X) {
+            return edgeA;
+        }
+    }
+}
 /****************************************************************************
  *  Garbage collection of unmarked nodes in forest F
  *  assuming nodes in use are marked
@@ -854,8 +922,8 @@ void gc_unmarked(rexdd_forest_t* F)
 
     /*
      *  Sweep computing table
-     *      TBD
-     */ 
+     */
+    rexdd_sweep_CT(F->CT, F->M);
 
     /*
      *  Ready to sweep all unmarked nodes

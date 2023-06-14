@@ -133,12 +133,12 @@ void rexdd_reduce_node(
 #if defined C_QBDD || defined CS_QBDD || defined C_FBDD || defined CS_FBDD || defined CESRBDD || defined REXBDD
     // If the target node of unpacked node P's child edge is terminal 1, inverse the complement bit of this child edge
     if (rexdd_is_terminal(P->edge[0].target)
-        && rexdd_terminal_value(P->edge[0].target)) {
+        && (rexdd_terminal_value(P->edge[0].target)==1)) {
             P->edge[0].label.complemented = !P->edge[0].label.complemented;
             P->edge[0].target = rexdd_make_terminal(0);
         }
     if (rexdd_is_terminal(P->edge[1].target)
-        && rexdd_terminal_value(P->edge[1].target)) {
+        && (rexdd_terminal_value(P->edge[1].target)==1)) {
             P->edge[1].label.complemented = !P->edge[1].label.complemented;
             P->edge[1].target = rexdd_make_terminal(0);
         }
@@ -1020,11 +1020,11 @@ void rexdd_reduce_edge(
         }
 
         rexdd_edge_t reduced;
-        clock_t start, end;
-        start = clock();
+        // clock_t start, end;
+        // start = clock();
         rexdd_reduce_node(F, &p, &reduced);
-        end = clock();
-        printf("** reduc_node time: %d clocks **\n", (int)(end-start));
+        // end = clock();
+        // printf("** reduc_node time: %d clocks **\n", (int)(end-start));
         rexdd_merge_edge(F, m, p.level, l, &reduced, out);
     }
 }

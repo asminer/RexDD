@@ -187,6 +187,7 @@ rexdd_edge_t union_minterm(
                 rexdd_forest_t* F,
                 rexdd_edge_t* root,
                 char* minterm,
+                int outcome,
                 uint32_t K);
 
 /****************************************************************************
@@ -199,6 +200,15 @@ void functionToEdge(
                 int L, 
                 unsigned long start,
                 unsigned long end);
+
+/****************************************************************************
+ *  AND operation for edge1 and edge2, it will return the result
+ */
+rexdd_edge_t rexdd_AND_edges(
+                rexdd_forest_t* F,
+                rexdd_edge_t* edge1,
+                rexdd_edge_t* edge2,
+                uint32_t lvl);
 
 /****************************************************************************
  * garbage collection of unmarked nodes in forest F

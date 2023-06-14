@@ -11,6 +11,7 @@ set(EXES
   check_bench_marks
   check_endgame
   sampling
+  concretizing
 )
 
 foreach(testexe ${EXES})
@@ -35,8 +36,11 @@ cmake_policy(SET CMP0110 NEW)
 add_test("Node packing test"   check_pack)
 add_test("Node page test"      check_np)
 add_test("Unique table test"   check_ut)
+# add_test("Computing table test" check_ct)
+# add_test("Garbage collection test" check_gc)
 add_test("Reduce edge test" check_reduce)
 add_test("QBDD/FBDD/ZBDD/RexBDD eval test" check_bdds)
 add_test("Benchmarks test"  check_bench_marks)
 add_test("Chess endgame test"   check_endgame)
 add_test("Bernoulli sampling for functions"   sampling)
+add_test("Concretizing BDDs"    concretizing)
