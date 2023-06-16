@@ -12,6 +12,9 @@ set(EXES
   check_endgame
   sampling
   concretizing
+  restr
+  osm
+  tsm
 )
 
 foreach(testexe ${EXES})
@@ -44,3 +47,7 @@ add_test("Benchmarks test"  check_bench_marks)
 add_test("Chess endgame test"   check_endgame)
 add_test("Bernoulli sampling for functions"   sampling)
 add_test("Concretizing BDDs"    concretizing)
+add_test("Concretizing restriction"    restr)
+add_test("Concretizing one side match"    osm)
+add_test("Concretizing two side match"    tsm)
+
