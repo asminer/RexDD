@@ -468,6 +468,11 @@ int main(int argc, const char* const* argv)
             if (root_flag[index] == 0) root_flag[index] = 1;
 
             add(minterms_state, minterms, num_inputbits, inputbits, term - '1');
+            printf("\tminterms_state: ");
+            for (int i=0; i<NUM_OUT; i++) {
+                printf("%u, ", minterms_state[i]);
+            }
+            printf("\n");
 
             // check if reach the buffer size, and union minterms buffer
             for (out_index = 0; out_index<NUM_OUT; out_index++) {
