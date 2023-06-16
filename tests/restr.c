@@ -467,6 +467,7 @@ int main(int argc, const char* const* argv)
 
             count_gc++;
             if (count_gc % (num_f / 5) == 0) {
+                printf("Start GC %d \n", (int)(count_gc / (num_f / 5)));
                 unmark_forest(&F);
                 for (int i=0; i<5*(argc-1); i++) {
                     mark_nodes(&F, root_edge[i].target);
@@ -477,7 +478,7 @@ int main(int argc, const char* const* argv)
         }
         // flush remaining minterms
         for (out_index = 0; out_index<NUM_OUT; out_index++) {
-            if (minterms_state[out_index] != 0) {
+            if (minterms_state[out_index] > 0) {
                 root_edge[out_index+5*(n-1)] = union_minterms(&F, num_inputbits, &root_edge[out_index+5*(n-1)], minterms[out_index], 1, minterms_state[out_index]);
                 minterms_state[out_index] = 0;
             }
@@ -661,6 +662,7 @@ int main(int argc, const char* const* argv)
             
             count_gc++;
             if (count_gc % (num_f / 5) == 0) {
+                printf("Start GC %d \n", (int)(count_gc / (num_f / 5)));
                 unmark_forest(&F);
                 for (int i=0; i<5*(argc-1); i++) {
                     mark_nodes(&F, root_edge[i].target);
@@ -671,7 +673,7 @@ int main(int argc, const char* const* argv)
         }
         // flush remaining minterms
         for (out_index = 0; out_index<NUM_OUT; out_index++) {
-                if (minterms_state[out_index] != 0) {
+                if (minterms_state[out_index] > 0) {
                     if (root_flag[out_index+5*(k-1)] == 2) {
                         for (int i=0+5*(k-1); i<5+5*(k-1); i++) {
                             if (root_flag[i] == 1) {
