@@ -298,7 +298,7 @@ void add(unsigned* minterms_state, char*** minterms, unsigned num_bits, const ch
     //     }
     // }
     if (minterms_state[term]>=BUF_SIZE) {
-        printf("Too many minterms stored!\n");
+        printf("Too many minterms stored! (%d / %u)\n",term, minterms_state[term]);
         exit(1);
     }
     unsigned i;
@@ -468,11 +468,6 @@ int main(int argc, const char* const* argv)
             if (root_flag[index] == 0) root_flag[index] = 1;
 
             add(minterms_state, minterms, num_inputbits, inputbits, term - '1');
-            // printf("\tminterms_state: ");
-            // for (int i=0; i<NUM_OUT; i++) {
-            //     printf("%u, ", minterms_state[i]);
-            // }
-            // printf("\n");
 
             // check if reach the buffer size, and union minterms buffer
             for (out_index = 0; out_index<NUM_OUT; out_index++) {

@@ -156,6 +156,9 @@ bool read_minterm_pla(parser* p, char* input_bits, char* out_terminal)
         out_terminal[0] = '0';
     } else {
         out_terminal[0] = (char)('0' + t);
+        if (out_terminal[0] == '6') {
+            out_terminal[0] = '5';
+        }
     }
     return true;
 }
@@ -193,8 +196,8 @@ bool read_minterm_bin(parser* p, char* input_bits, char* out_terminal)
         out_terminal[0] = '0';
     } else {
         out_terminal[0] = (char)('0' + w1*4 + w2*2 + w3);
-        if (out_terminal[0] == 6) {
-            out_terminal[0] = 5;
+        if (out_terminal[0] == '6') {
+            out_terminal[0] = '5';
         }
     }
     p->numf--;
