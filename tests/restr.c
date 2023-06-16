@@ -283,7 +283,7 @@ rexdd_edge_t union_minterms(rexdd_forest_t* F, uint32_t K, rexdd_edge_t* root, c
     return ans;
 }
 
-void add(unsigned* minterms_state, char*** minterms, unsigned num_bits, const char* linebuf, char term)
+void add(unsigned* minterms_state, char*** minterms, unsigned num_bits, const char* linebuf, int term)
 {
     //  minterms_state[i] is the number of minterms for terminal i stored in minterms
     if (!minterms) {
@@ -303,6 +303,18 @@ void add(unsigned* minterms_state, char*** minterms, unsigned num_bits, const ch
     }
     unsigned i;
     for (i = 0; i<num_bits+2; i++) {
+        if (!minterms[term]) {
+            printf("null minterms[term]\n");
+            exit(1);
+        }
+        if (!minterms_state[term]) {
+            printf("null minterms_state[term]\n");
+            exit(1);
+        }
+        if (!minterms[term][minterms_state[term]]) {
+            printf("null minterms[term][minterms_state[term]]\n");
+            exit(1);
+        }
         minterms[term][minterms_state[term]][i] = linebuf[i];
     }
     minterms_state[term]++;
@@ -460,7 +472,7 @@ int main(int argc, const char* const* argv)
             // check if reach the buffer size, and union minterms buffer
             for (out_index = 0; out_index<NUM_OUT; out_index++) {
                 if (minterms_state[out_index] == BUF_SIZE) {
-                    root_edge[index] = union_minterms(&F, num_inputbits, &root_edge[index], minterms[out_index], 1, minterms_state[out_index]);
+                    root_edge[out_index+5*(n-1)] = union_minterms(&F, num_inputbits, &root_edge[out_index+5*(n-1)], minterms[out_index], 1, minterms_state[out_index]);
                     minterms_state[out_index] = 0;
                 }
             }
