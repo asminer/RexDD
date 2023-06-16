@@ -307,7 +307,7 @@ void add(unsigned* minterms_state, char*** minterms, unsigned num_bits, const ch
             printf("null minterms[term]\n");
             exit(1);
         }
-        if (!minterms_state[term]) {
+        if (!minterms_state) {
             printf("null minterms_state[term]\n");
             exit(1);
         }
