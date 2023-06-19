@@ -784,7 +784,7 @@ int main(int argc, const char* const* argv)
                 }
             } // for n
         } // for p
-        printf("number of nodes (%s) in forest %d after concretizing is %llu\n", TYPE, i, num_nodes);
+        printf("number of nodes (%s) in forest %d after concretizing (restr) is %llu\n", TYPE, i, num_nodes);
     }
     if (argc>2) {
         unmark_forest(&F);
@@ -801,7 +801,7 @@ int main(int argc, const char* const* argv)
             } // for n
         } // for p
         
-        printf("Total number of nodes (%s) in after concretizing is %llu\n", TYPE, num_nodes);
+        printf("Total number of nodes (%s) in forest after concretizing (restr) is %llu\n", TYPE, num_nodes);
     }
 
     // /* verifacation */
