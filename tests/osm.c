@@ -610,7 +610,7 @@ int main(int argc, const char* const* argv)
 
         free_parser(&p); // file reader will be free
         free_minterms(minterms, NUM_OUT, BUF_SIZE, num_inputbits);
-        fp = fopen("concretizing_process.txt", "w+");
+        fp = fopen("osm_process.txt", "w+");
         fprintf(fp, "Base building: %d / %d\n", n, argc-1);
         fclose(fp);
     } // end of files for loop
@@ -833,7 +833,7 @@ int main(int argc, const char* const* argv)
 
         free_parser(&p); // file reader will be free
         free_minterms(minterms, NUM_OUT, BUF_SIZE, num_inputbits);
-        fp = fopen("concretizing_process.txt", "w+");
+        fp = fopen("osm_process.txt", "w+");
         fprintf(fp, "Terminal 0: %d / %d\n", k, argc-1);
         fclose(fp);
     }
@@ -844,7 +844,7 @@ int main(int argc, const char* const* argv)
     for (int i=0; i<5*(argc-1); i++) {
 
         if (root_flag[i]==1) root_edge[i] = osm(&F, &root_edge[i], F.S.num_levels);
-        fp = fopen("concretizing_process.txt", "w+");
+        fp = fopen("osm_process.txt", "w+");
         fprintf(fp,"Concretizing edge: %d / %d\n", i, 5*(argc-1));
         fclose(fp);
     }
