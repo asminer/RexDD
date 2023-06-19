@@ -91,6 +91,32 @@ void read_removeList(const char* infile, int* removes, int N)
     fclose(inf);
 }
 
+void read_validList(const char* infile, char* valid, int N) {
+    //
+    FILE* inf;
+    inf = fopen(infile, "r");
+    char valid_flag[N*DC_VAL];
+    for (int i=0; i<N*DC_VAL; i++) valid_flag[i] = 0;
+
+    char c;
+    int count = 0;
+    while ((c = fgetc(inf)) != EOF) {
+        if (c == ',' || c == ' ') continue;
+        if (c == '\n') {
+            count++;
+            continue;
+        }
+        valid_flag[count*5+(c-'0')] = 1;
+    }
+
+    for (int i=0; i<N*DC_VAL; i++) {
+        // printf("valid_flag[%d / %d] is %d\n",i/5, i%5, valid_flag[i]);
+        valid[i] = valid_flag[i];
+    }
+    fclose(inf);
+
+}
+
 uint64_t count_nodes(rexdd_forest_t* F, rexdd_edge_t* root, int dc, int num1, int num2)
 {
     unmark_forest(F);
@@ -342,6 +368,10 @@ rexdd_edge_t restr(rexdd_forest_t* F, rexdd_edge_t* root, uint_fast32_t n)
     lc.target = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M,root->target));
     rexdd_unpack_high_edge(rexdd_get_packed_for_handle(F->M,root->target), &(hc.label));
     hc.target = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M,root->target));
+    if (root->label.complemented) {
+        rexdd_edge_com(&lc);
+        rexdd_edge_com(&hc);
+    }
     uint_fast32_t levelc = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M,root->target));
     if (rexdd_is_terminal(lc.target) && (rexdd_terminal_value(lc.target) == DC_VAL)) {
         return restr(F, &hc, levelc-1);
@@ -357,8 +387,12 @@ rexdd_edge_t restr(rexdd_forest_t* F, rexdd_edge_t* root, uint_fast32_t n)
     /*
      *  how to deal with complement bit? TBD
      */
+    rexdd_edge_label_t l;
+    l.rule = root->label.rule;
+    l.complemented = 0;
+    l.swapped = root->label.swapped;
 
-    rexdd_reduce_edge(F, n, root->label, tmp, &ans);
+    rexdd_reduce_edge(F, n, l, tmp, &ans);
     
     return ans;
 }
@@ -479,7 +513,6 @@ int main(int argc, const char* const* argv)
 
             count_gc++;
             if (count_gc % (num_f / 5) == 0) {
-                printf("Start GC %d \n", (int)(count_gc / (num_f / 5)));
                 unmark_forest(&F);
                 for (int i=0; i<5*(argc-1); i++) {
                     mark_nodes(&F, root_edge[i].target);
@@ -504,12 +537,31 @@ int main(int argc, const char* const* argv)
     } // end of files for loop
     end_time = clock();
     printf("** reading and building time: %0.2f seconds **\n", (double)(end_time-start_time)/CLOCKS_PER_SEC);
+    printf("============================================================================\n");
 
 /*
  *  At this point, forest is built!
  */
 
 /*----------------------------------------Mark and count ALL root---------------------------------------*/
+    uint_fast64_t q, n;
+    uint64_t num_nodes = 0;
+    for (int i=1; i<argc; i++) {
+        unmark_forest(&F);
+        for (int j=0+5*(i-1); j<5+5*(i-1); j++) {
+            if (root_flag[j]==1) mark_nodes(&F, root_edge[j].target);
+        }
+        num_nodes = 0;
+        for (q=0; q<F.M->pages_size; q++) {
+            const rexdd_nodepage_t *page = F.M->pages+q;
+            for (n=0; n<page->first_unalloc; n++) {
+                if (rexdd_is_packed_marked(page->chunk+n)) {
+                    num_nodes++;
+                }
+            } // for n
+        } // for p
+        printf("number of nodes (%s) in forest %d before removing and concretizing is %llu\n", TYPE, i, num_nodes);
+    }
     // unmarking forest
     unmark_forest(&F);
     // marking nodes in use
@@ -522,8 +574,6 @@ int main(int argc, const char* const* argv)
         mark_nodes(&F, root_edge[i].target);
     }
     // counting the total number
-    uint_fast64_t q, n;
-    uint64_t num_nodes = 0;
     for (q=0; q<F.M->pages_size; q++) {
         const rexdd_nodepage_t *page = F.M->pages+q;
         for (n=0; n<page->first_unalloc; n++) {
@@ -674,7 +724,6 @@ int main(int argc, const char* const* argv)
             
             count_gc++;
             if (count_gc % (num_f / 5) == 0) {
-                printf("Start GC %d \n", (int)(count_gc / (num_f / 5)));
                 unmark_forest(&F);
                 for (int i=0; i<5*(argc-1); i++) {
                     mark_nodes(&F, root_edge[i].target);
@@ -757,13 +806,15 @@ int main(int argc, const char* const* argv)
 
     // /* verifacation */
     // infile = argv[1];
-
+    // char fmt = 0 , comp = 0;
+    // char type[2];
     // file_type(infile, type);
     // fmt = type[0];
     // comp = type[1];
 
     // file_reader fr1;
     // init_file_reader(&fr1, infile, comp);
+    // parser p;
 
     // init_parser(&p, &fr1);
     // switch (fmt) {
@@ -790,6 +841,7 @@ int main(int argc, const char* const* argv)
     // index = 0;
     // count_gc = 0;
     // bool inputbits_bol[num_inputbits + 2];
+    // char inputbits[num_inputbits + 2];          // the first and last is 0; index is the level
 
     // for (;;) {
     //     if (fmt == 'p') {
@@ -810,20 +862,34 @@ int main(int argc, const char* const* argv)
     //         // fprintf(mout,"%d ", inputbits_bol[i]);
     //     }
 
-    //     if (index == 0) {
-    //         if (rexdd_eval(&F,&root_edge[0],F.S.num_levels, inputbits_bol)==1) {
-    //             // printf("Evaluation %d pass!\n", index);
-    //             continue;
+    //     if (root_flag[index] == 2) {
+    //         for (int i=0; i<5; i++) {
+    //             if (root_flag[i] == 1) {
+    //                 if (rexdd_eval(&F,&root_edge[i],F.S.num_levels, inputbits_bol)!=1) {
+    //                     continue;
+    //                 } else {
+    //                     printf("DC minterm evaluation error\n");
+    //                     exit(1);
+    //                 }
+    //             }
     //         }
-    //         printf("Evaluation of 0 error\n");
-    //         exit(1);
-    //     } else if (index == 1) {
-    //         if (rexdd_eval(&F,&root_edge[0],F.S.num_levels, inputbits_bol)==0) {
-    //             // printf("Evaluation %d pass!\n", index);
-    //             continue;
+    //     } else if (root_flag[index] == 1) {
+    //         if (rexdd_eval(&F,&root_edge[index],F.S.num_levels, inputbits_bol)!=1) {
+    //             printf("minterm value %d evaluation 1 error with term %d\n", index, rexdd_eval(&F,&root_edge[index],F.S.num_levels, inputbits_bol));
+    //             exit(1);
     //         }
-    //         printf("Evaluation of 1 error\n");
-    //         exit(1);
+    //         if (index > 0) {
+    //             for (int i=0; i<index; i++) {
+    //                 if (root_flag[i] == 1) {
+    //                     if (rexdd_eval(&F,&root_edge[i],F.S.num_levels, inputbits_bol)!=1) {
+    //                         continue;
+    //                     } else {
+    //                         printf("minterm value %d evaluation 2 error\n", index);
+    //                         exit(1);
+    //                     }
+    //                 }
+    //             }
+    //         }
     //     }
     // }
     // printf("verif pass!\n");
