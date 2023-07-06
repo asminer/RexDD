@@ -883,96 +883,123 @@ int main(int argc, const char* const* argv)
         printf("Total number of nodes (%s) in forest after concretizing (osm) is %llu\n", TYPE, num_nodes);
     }
 
-    // /* verifacation */
-    // infile = argv[1];
-    // char fmt = 0 , comp = 0;
-    // char type[2];
-    // file_type(infile, type);
-    // fmt = type[0];
-    // comp = type[1];
+    /*--------------------------------------------Verifacation----------------------------------------------*/
+    infile = argv[1];
+    char fmt = 0 , comp = 0;
+    char type[2];
+    file_type(infile, type);
+    fmt = type[0];
+    comp = type[1];
 
-    // file_reader fr1;
-    // init_file_reader(&fr1, infile, comp);
-    // parser p;
+    file_reader fr1;
+    init_file_reader(&fr1, infile, comp);
+    parser p;
 
-    // init_parser(&p, &fr1);
-    // switch (fmt) {
-    //     case 'p':
-    //     case 'P':
-    //         read_header_pla(&p);
-    //         break;        
-    //     case 'b':
-    //     case 'B':
-    //         read_header_bin(&p);
-    //         break;
-    //     default:
-    //         printf("No parser for format %c\n",fmt);
-    //         // return 0;
-    // }
+    init_parser(&p, &fr1);
+    switch (fmt) {
+        case 'p':
+        case 'P':
+            read_header_pla(&p);
+            break;        
+        case 'b':
+        case 'B':
+            read_header_bin(&p);
+            break;
+        default:
+            printf("No parser for format %c\n",fmt);
+            // return 0;
+    }
 
-    // // printf("Building forest %d for %s\n", n, infile);
-    // printf("\tThe format is %c\n", fmt);
-    // printf("\tThe compress is %c\n", comp);
-    // printf("\tThe number of inbits is %u\n", p.inbits);
-    // printf("\tThe number of outbits is %u\n", p.outbits);
-    // printf("\tThe number of minterms is %lu\n", p.numf);
+    // printf("Building forest %d for %s\n", n, infile);
+    printf("\tThe format is %c\n", fmt);
+    printf("\tThe compress is %c\n", comp);
+    printf("\tThe number of inbits is %u\n", p.inbits);
+    printf("\tThe number of outbits is %u\n", p.outbits);
+    printf("\tThe number of minterms is %lu\n", p.numf);
 
-    // index = 0;
-    // count_gc = 0;
-    // bool inputbits_bol[num_inputbits + 2];
-    // char inputbits[num_inputbits + 2];          // the first and last is 0; index is the level
+    index = 0;
+    count_gc = 0;
+    bool inputbits_bol[num_inputbits + 2];
+    char inputbits[num_inputbits + 2];          // the first and last is 0; index is the level
+    int term_eval = 0;
+    clock_t total_time = 0;
 
-    // for (;;) {
-    //     if (fmt == 'p') {
-    //         if (!read_minterm_pla(&p, inputbits, &term)) break;
-    //     } else {
-    //         if (!read_minterm_bin(&p, inputbits, &term)) break;
-    //     }
-    //     // set the path on corresponding location
-    //     index = term - '1';
-    //     for (unsigned i=0; i< p.inbits+2; i++){
-    //         if (inputbits[i] == '1') {
-    //             // inputbits_bol[p1.inbits+1-i] = 1;
-    //             inputbits_bol[i] = 1;
-    //         } else {
-    //             // inputbits_bol[p1.inbits+1-i] = 0;
-    //             inputbits_bol[i] = 0;
-    //         }
-    //         // fprintf(mout,"%d ", inputbits_bol[i]);
-    //     }
 
-    //     if (root_flag[index] == 2) {
-    //         for (int i=0; i<5; i++) {
-    //             if (root_flag[i] == 1) {
-    //                 if (rexdd_eval(&F,&root_edge[i],F.S.num_levels, inputbits_bol)!=1) {
-    //                     continue;
-    //                 } else {
-    //                     printf("DC minterm evaluation error\n");
-    //                     exit(1);
-    //                 }
-    //             }
-    //         }
-    //     } else if (root_flag[index] == 1) {
-    //         if (rexdd_eval(&F,&root_edge[index],F.S.num_levels, inputbits_bol)!=1) {
-    //             printf("minterm value %d evaluation 1 error with term %d\n", index, rexdd_eval(&F,&root_edge[index],F.S.num_levels, inputbits_bol));
-    //             exit(1);
-    //         }
-    //         if (index > 0) {
-    //             for (int i=0; i<index; i++) {
-    //                 if (root_flag[i] == 1) {
-    //                     if (rexdd_eval(&F,&root_edge[i],F.S.num_levels, inputbits_bol)!=1) {
-    //                         continue;
-    //                     } else {
-    //                         printf("minterm value %d evaluation 2 error\n", index);
-    //                         exit(1);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-    // printf("verif pass!\n");
-    // free_parser(&p); // file reader will be free
+    for (;;) {
+        if (fmt == 'p') {
+            if (!read_minterm_pla(&p, inputbits, &term)) break;
+        } else {
+            if (!read_minterm_bin(&p, inputbits, &term)) break;
+        }
+        // set the path on corresponding location
+        index = term - '1';
+        for (unsigned i=0; i< p.inbits+2; i++){
+            if (inputbits[i] == '1') {
+                // inputbits_bol[p1.inbits+1-i] = 1;
+                inputbits_bol[i] = 1;
+            } else {
+                // inputbits_bol[p1.inbits+1-i] = 0;
+                inputbits_bol[i] = 0;
+            }
+            // fprintf(mout,"%d ", inputbits_bol[i]);
+        }
+
+        start_time = clock();
+        // for (int test_num = 0; test_num<100; test_num++) {
+            for (term_eval=0; term_eval<5; term_eval++) {
+                if (root_flag[term_eval] == 1 && rexdd_eval(&F,&root_edge[term_eval],F.S.num_levels, inputbits_bol) == 1) break;
+                continue;
+            }
+            if (term_eval == 5) {
+                for (int i=0; i<5; i++) {
+                    if (root_flag[i]==2) {
+                        term_eval = i;
+                        break;
+                    }
+                }
+            }
+        // }
+        end_time = clock();
+        if (term_eval == index) {
+            total_time += (end_time-start_time);
+        } else {
+            printf("query error!\n");
+            exit(1);
+        }
+        // if (root_flag[index] == 2) {
+        //     for (int i=0; i<5; i++) {
+        //         if (root_flag[i] == 1) {
+        //             if (rexdd_eval(&F,&root_edge[i],F.S.num_levels, inputbits_bol)!=1) {
+        //                 continue;
+        //             } else {
+        //                 printf("DC minterm evaluation error\n");
+        //                 exit(1);
+        //             }
+        //         }
+        //     }
+        // } else if (root_flag[index] == 1) {
+        //     if (rexdd_eval(&F,&root_edge[index],F.S.num_levels, inputbits_bol)!=1) {
+        //         printf("minterm value %d evaluation 1 error with term %d\n", index, rexdd_eval(&F,&root_edge[index],F.S.num_levels, inputbits_bol));
+        //         exit(1);
+        //     }
+        //     if (index > 0) {
+        //         for (int i=0; i<index; i++) {
+        //             if (root_flag[i] == 1) {
+        //                 if (rexdd_eval(&F,&root_edge[i],F.S.num_levels, inputbits_bol)!=1) {
+        //                     continue;
+        //                 } else {
+        //                     printf("minterm value %d evaluation 2 error\n", index);
+        //                     exit(1);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+    }
+    printf("clocks_pre_sec is %lu\n", CLOCKS_PER_SEC);
+    printf("Average query time is %0.8f\n", (double)(total_time/CLOCKS_PER_SEC));
+    printf("verif pass!\n");
+    free_parser(&p); // file reader will be free
     
     printf("============================================================================\n");
     rexdd_free_forest(&F);
