@@ -211,7 +211,7 @@ static inline void rexdd_set_edge(rexdd_edge_t *E,
 
 /****************************************************************************
  *
- *  Helper to compare edges
+ *  Helper to compare edges if equal
  *
  */
 static inline bool rexdd_edges_are_equal(const rexdd_edge_t *E1, const rexdd_edge_t *E2)
@@ -222,6 +222,27 @@ static inline bool rexdd_edges_are_equal(const rexdd_edge_t *E1, const rexdd_edg
     if (E1->label.rule != E2->label.rule) return false;
     if (E1->label.complemented != E2->label.complemented) return false;
     return E1->label.swapped == E2->label.swapped;
+}
+
+/****************************************************************************
+ *
+ *  Helper to if two edges are complemented to each other
+ *
+ */
+static inline bool rexdd_edges_are_complement(const rexdd_edge_t *E1, const rexdd_edge_t *E2)
+{
+    rexdd_sanity1(E1, "null edge in rexdd_equal_edges");
+    rexdd_sanity1(E2, "null edge in rexdd_equal_edges");
+    if (rexdd_is_terminal(E1->target) && rexdd_is_terminal(E2->target)) {
+        return ((rexdd_terminal_value(E1->target) ^ (E1->label.complemented)) 
+                    != (rexdd_terminal_value(E2->target) ^ (E2->label.complemented)))
+                && (E1->label.rule == rexdd_rule_com_t(E2->label.rule));
+    }
+
+    if (E1->target != E2->target) return false;
+    if (E1->label.swapped != E2->label.swapped) return false;
+    return (E1->label.complemented != E2->label.complemented) 
+            && (E1->label.rule == rexdd_rule_com_t(E2->label.rule));
 }
 
 
