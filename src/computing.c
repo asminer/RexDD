@@ -36,18 +36,6 @@ static const uint_fast64_t primes[] = {
 
 /****************************************************************************
  *
- * Helper: re-hash a list
- *
- */
-static void rexdd_rehash_ct_list(uint_fast64_t list, rexdd_comp_table_t *CT)
-{
-    rexdd_sanity1(CT, "Null computing table");
-
-    
-}
-
-/****************************************************************************
- *
  *  Initialize a computing table
  *
  */
@@ -62,6 +50,7 @@ void rexdd_init_CT(rexdd_comp_table_t *CT)
         exit(1);
     }
     for (uint_fast64_t i=0; i<primes[0]; i++) {
+        CT->table[i].lvl = 0;
         CT->table[i].edge1 = 0;
         CT->table[i].edge2 = 0;
         CT->table[i].edgeA = 0;
@@ -77,6 +66,7 @@ void rexdd_free_CT(rexdd_comp_table_t *CT)
 {
     rexdd_sanity1(CT, "Null unique table");
     for (uint_fast64_t i=0; i<primes[CT->size_index]; i++) {
+        CT->table[i].lvl = 0;
         if (CT->table[i].edge1) {
             free(CT->table[i].edge1);
         }
@@ -99,18 +89,19 @@ void rexdd_free_CT(rexdd_comp_table_t *CT)
  *  If cached, returns 1 and corresponding edge is set to *e;
  *  otherwise, returns 0 and *e is not changed
  */
-char rexdd_check_CT(rexdd_comp_table_t *CT, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e)
+char rexdd_check_CT(rexdd_comp_table_t *CT, uint32_t lvl, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e)
 {
     rexdd_sanity1(CT, "Null computing table");
     rexdd_sanity1(CT->table, "Empty computing table");
 
-    uint_fast64_t hash = rexdd_hash_edges(edge1, edge2, primes[CT->size_index]);
+    uint_fast64_t hash = rexdd_hash_edges(lvl, edge1, edge2, primes[CT->size_index]);
 
     if (CT->table[hash].edgeA != 0) {
         /*
          *  Non-empty slot. Check if match
          */
-        if (rexdd_edges_are_equal(edge1, CT->table[hash].edge1) &&
+        if (CT->table[hash].lvl == lvl && 
+            rexdd_edges_are_equal(edge1, CT->table[hash].edge1) &&
             rexdd_edges_are_equal(edge2, CT->table[hash].edge2)) 
         {
             rexdd_set_edge(e,
@@ -131,7 +122,7 @@ char rexdd_check_CT(rexdd_comp_table_t *CT, rexdd_edge_t *edge1, rexdd_edge_t *e
  *  Insert a unpacked node and corresponding edge *e into 
  *  computing table for AND operation
  */
-void rexdd_cache_CT(rexdd_comp_table_t *CT, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e)
+void rexdd_cache_CT(rexdd_comp_table_t *CT, uint32_t lvl, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e)
 {
     rexdd_sanity1(CT, "Null computing table");
     rexdd_sanity1(e, "Null target edge");
@@ -144,12 +135,13 @@ void rexdd_cache_CT(rexdd_comp_table_t *CT, rexdd_edge_t *edge1, rexdd_edge_t *e
         uint_fast64_t new_size = primes[CT->size_index] ? primes[CT->size_index] : (0x01ul << 60);
         CT->table = realloc(CT->table, new_size*sizeof(rexdd_edge_in_ct));
         for (uint_fast64_t i=primes[CT->size_index-1]; i<new_size; i++) {
+            CT->table[i].lvl = 0;
             CT->table[i].edge1 = 0;
             CT->table[i].edge2 = 0;
             CT->table[i].edgeA = 0;
         }
     }
-    uint_fast64_t hash = rexdd_hash_edges(edge1, edge2, primes[CT->size_index]);
+    uint_fast64_t hash = rexdd_hash_edges(lvl, edge1, edge2, primes[CT->size_index]);
     /*
      *  Empty slot, need malloc
      */
@@ -164,6 +156,7 @@ void rexdd_cache_CT(rexdd_comp_table_t *CT, rexdd_edge_t *edge1, rexdd_edge_t *e
          */
         rexdd_sanity1(CT->table[hash].edge1 && CT->table[hash].edge2, "Null edges pair in computing table");
     }
+    CT->table[hash].lvl = lvl;
     rexdd_set_edge(CT->table[hash].edge1,
                 edge1->label.rule,
                 edge1->label.complemented,
@@ -188,13 +181,14 @@ void rexdd_sweep_CT(rexdd_comp_table_t *CT, rexdd_nodeman_t *M)
     rexdd_sanity1(M, "Null nodeman");
     
     for (uint_fast64_t i=0; i<primes[CT->size_index]; i++) {
-        if ((CT->table[i].edgeA == 0)) {
+        if (CT->table[i].edgeA == 0) {
             continue;
         } else {
             if (rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edge1->target))
                 || rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edge2->target))
                 || rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edgeA->target)))
             {
+                CT->table[i].lvl = 0;
                 free(CT->table[i].edge1);
                 CT->table[i].edge1 = 0;
                 free(CT->table[i].edge2);

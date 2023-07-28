@@ -12,6 +12,7 @@
  */
 typedef struct
 {
+    uint32_t        lvl;
     rexdd_edge_t *edge1;
     rexdd_edge_t *edge2;
     rexdd_edge_t *edgeA;
@@ -53,14 +54,14 @@ void rexdd_free_CT(rexdd_comp_table_t *CT);
  *  If cached, returns 1 and corresponding edge is set to *e;
  *  otherwise, returns 0 and *e is not changed
  */
-char rexdd_check_CT(rexdd_comp_table_t *CT, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e);
+char rexdd_check_CT(rexdd_comp_table_t *CT, uint32_t lvl, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e);
 
 /****************************************************************************
  *
  *  Insert a unpacked node and corresponding edge *e into 
  *  computing table for AND operation
  */
-void rexdd_cache_CT(rexdd_comp_table_t *CT, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e);
+void rexdd_cache_CT(rexdd_comp_table_t *CT, uint32_t lvl, rexdd_edge_t *edge1, rexdd_edge_t *edge2, rexdd_edge_t *e);
 
 /****************************************************************************
  *
@@ -74,14 +75,15 @@ void rexdd_sweep_CT(rexdd_comp_table_t *CT, rexdd_nodeman_t *M);
  * 
  */
 static inline uint_fast64_t 
-rexdd_hash_edges(const rexdd_edge_t* edge1, const rexdd_edge_t* edge2, uint_fast64_t m)
+rexdd_hash_edges(const uint32_t lvl, const rexdd_edge_t* edge1, const rexdd_edge_t* edge2, uint_fast64_t m)
 {
     uint64_t h;
+    h = (edge1->target & edge2->target) % m;
+    h = ((h<<32) | lvl) % m;
     if (0 == (m & ~((0x01ul << 32) - 1)) ) {
         /*
          *  m fits in 32 bits
          */
-        h = (edge1->target & edge2->target) % m;
         h = ((h << 32) | 
             (edge1->label.rule << 27) | 
             (edge2->label.rule << 22)) % m;
@@ -97,7 +99,6 @@ rexdd_hash_edges(const rexdd_edge_t* edge1, const rexdd_edge_t* edge2, uint_fast
         /*
          *  m fits in 48 bits
          */
-        h = (edge1->target & edge2->target) % m;
         h = ((h << 16) | 
             (edge1->label.rule << 11) | 
             (edge2->label.rule << 6)) % m;
@@ -112,7 +113,6 @@ rexdd_hash_edges(const rexdd_edge_t* edge1, const rexdd_edge_t* edge2, uint_fast
     /*
      *  m fits in 56 bits
      */
-    h = (edge1->target & edge2->target) % m;
     h = ((h << 8) | 
         (edge1->label.rule << 3) | 
         (edge1->label.complemented << 2) | 
