@@ -779,7 +779,7 @@ void rexdd_merge_edge(
         new_handle = rexdd_insert_UT(F->UT, new_handle);
         out->label.rule = rexdd_rule_X;
         out->target = new_handle;
-    } else if ((rexdd_is_EL(l.rule) && !rexdd_is_EL(reduced->label.rule))) {
+    } else if ((rexdd_is_EL(l.rule) && (!rexdd_is_EL(reduced->label.rule) || (rexdd_is_one(l.rule)!=rexdd_is_one(reduced->label.rule))))) {
         // push up one
         rexdd_unpacked_node_t new_p;
         new_p.edge[0].target = rexdd_make_terminal(0);
@@ -797,7 +797,7 @@ void rexdd_merge_edge(
             out->label.rule = rexdd_rule_X;
         }
         out->target = new_handle;
-    } else if ((rexdd_is_EH(l.rule) && !rexdd_is_EH(reduced->label.rule))) {
+    } else if ((rexdd_is_EH(l.rule) && (!rexdd_is_EH(reduced->label.rule)||(rexdd_is_one(l.rule)!=rexdd_is_one(reduced->label.rule))))) {
         // push up one
         rexdd_unpacked_node_t new_p;
         new_p.edge[0] = *reduced;
@@ -946,7 +946,6 @@ void rexdd_merge_edge(
         }
         out->label = temp.label;
         out->target = temp.target;
-
     }
 }
 

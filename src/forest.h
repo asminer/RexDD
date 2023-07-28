@@ -207,25 +207,6 @@ void rexdd_reduce_edge(
         rexdd_unpacked_node_t   p,
         rexdd_edge_t            *out);
 
-
-//---------------------TBD not used for now-----------------------------
-/**
- *  Push up one node for the specific merge case
- *      @param  F       Forest for the edge
- *      @param  n       The leve of the target node
- *      @param  l       The incoming edge label
- *      @param  reduced The reduced edge
- *      @param  out     The result edge will be written here
- *
- */
-// void rexdd_puo_edge(
-//         uint32_t                n,
-//         rexdd_edge_label_t      l,
-//         rexdd_edge_t            *reduced,
-//         rexdd_edge_t            *out);
-
-//----------------------TBD Not used for now---------------------------
-
 /**
  *  Evaluate the function
  *
