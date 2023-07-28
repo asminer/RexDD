@@ -10,6 +10,7 @@ set(SOURCES
   unique.c
   unpacked.c
   parser.c
+  operation.c
 )
 
 configure_file(config.h.in config.h)

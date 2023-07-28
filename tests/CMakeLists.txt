@@ -15,6 +15,7 @@ set(EXES
   restr
   osm
   tsm
+  check_and
 )
 
 foreach(testexe ${EXES})
@@ -50,4 +51,5 @@ add_test("Concretizing BDDs"    concretizing)
 add_test("Concretizing restriction"    restr)
 add_test("Concretizing one side match"    osm)
 add_test("Concretizing two side match"    tsm)
+add_test("AND operation test"   check_and)
 
