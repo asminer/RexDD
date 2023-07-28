@@ -1,5 +1,6 @@
 
 #include "forest.h"
+#include <assert.h>
 
 #ifdef FBDD
 #   define TYPE "FBDD"
@@ -191,6 +192,37 @@ rexdd_edge_t union_minterm(
                 uint32_t K);
 
 /****************************************************************************
+ *  Initialize a 3-D minterms 
+ *      Note:   num_out is the number of possible outcome values; 
+ *              buf_size is the max number of minterms for one outcome value slot;
+ *              num_bits is the bits length of the minterms
+ */
+char*** init_minterms(int num_out, unsigned buf_size, unsigned num_bits);
+
+/****************************************************************************
+ *  Free a 3-D minterms
+ */
+void free_minterms(char*** minterms, int num_out, unsigned buf_size, unsigned num_bits);
+
+/****************************************************************************
+ *  Union N elements of a 2-D minterms buffer into forest *F
+ *      Note: with outcome value outcome
+ */
+rexdd_edge_t union_minterms(
+                rexdd_forest_t* F, 
+                uint32_t K, 
+                rexdd_edge_t* root, 
+                char** minterms, 
+                int outcome, 
+                unsigned int N);
+
+/****************************************************************************
+ *  Expand the low (type=0) child edge or high (type=1) child edge 
+ *      from level r of a long edge e
+ */
+rexdd_edge_t rexdd_expand_childEdge(rexdd_forest_t* F, uint32_t r, rexdd_edge_t* e, bool type);
+
+/****************************************************************************
  *  Create a BDD from root_out in forest *F to encode function (0-1 array)
  */
 void functionToEdge(
@@ -201,14 +233,6 @@ void functionToEdge(
                 unsigned long start,
                 unsigned long end);
 
-/****************************************************************************
- *  AND operation for edge1 and edge2, it will return the result
- */
-rexdd_edge_t rexdd_AND_edges(
-                rexdd_forest_t* F,
-                rexdd_edge_t* edge1,
-                rexdd_edge_t* edge2,
-                uint32_t lvl);
 
 /****************************************************************************
  * garbage collection of unmarked nodes in forest F
