@@ -129,3 +129,11 @@ rexdd_edge_t rexdd_OR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rex
  *      @return rexdd_edge_t 
  */
 rexdd_edge_t rexdd_XOR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl);
+
+/**
+ *  NOT operation of one edge representing one reduced BDDs
+ * 
+ * @param e 
+ * @return rexdd_edge_t 
+ */
+rexdd_edge_t rexdd_NOT_edge(const rexdd_edge_t* e);

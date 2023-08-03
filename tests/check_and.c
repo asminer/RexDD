@@ -140,49 +140,6 @@ int main(int argc, const char* const* argv)
     show_edge(ans);
     printf("level is %d\n", (rexdd_is_terminal(ans.target))?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, ans.target)));
 
-    // printf("******************************************\n");
-    // rexdd_edge_t test,expan1,expan2;
-    // rexdd_node_handle_t test_handle;
-    // rexdd_unpacked_node_t test_node;
-    // test_node.level = 2;
-    // test_node.edge[0].label.rule = rexdd_rule_EL1;
-    // test_node.edge[0].label.complemented = 0;
-    // test_node.edge[0].label.swapped = 0;
-    // test_node.edge[0].target = rexdd_make_terminal(0);
-    // test_node.edge[1].label.rule = rexdd_rule_EL1;
-    // test_node.edge[1].label.complemented = 0;
-    // test_node.edge[1].label.swapped = 0;
-    // test_node.edge[1].target = rexdd_make_terminal(0);
-    // test_handle = rexdd_nodeman_get_handle(F.M, &test_node);
-    // test_handle = rexdd_insert_UT(F.UT, test_handle);
-
-    // expan1.label.rule = rexdd_rule_X;
-    // expan1.label.complemented = 1;
-    // expan1.label.swapped = 0;
-    // expan1.target = test_handle;
-
-    // test_node.edge[0].label.rule = rexdd_rule_EL1;
-    // test_node.edge[0].label.complemented = 0;
-    // test_node.edge[0].label.swapped = 0;
-    // test_node.edge[0].target = rexdd_make_terminal(0);
-    // test_node.edge[1].label.rule = rexdd_rule_X;
-    // test_node.edge[1].label.complemented = 1;
-    // test_node.edge[1].label.swapped = 0;
-    // test_node.edge[1].target = rexdd_make_terminal(0);
-    // test_handle = rexdd_nodeman_get_handle(F.M, &test_node);
-    // test_handle = rexdd_insert_UT(F.UT, test_handle);
-
-    // expan2.label.rule = rexdd_rule_X;
-    // expan2.label.complemented = 0;
-    // expan2.label.swapped = 0;
-    // expan2.target = test_handle;
-
-    // test = rexdd_AND_edges(&F, &expan1, &expan2, 3);
-    // show_edge(test);
-    // printf("level is %d\n", (rexdd_is_terminal(test.target))?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, test.target)));
-    // printf("\n");
-    // printf("******************************************\n");
-
     printf("number of minterms(1) for e1:\t%lld\n",count1);
     printf("number of minterms(1) for e2:\t%lld\n",count2);
     printf("number of common minterms:\t%lld\n",count);
@@ -223,6 +180,19 @@ int main(int argc, const char* const* argv)
         fclose(fout);
         printf("AND cardinality test ERROR!\n");
     }
+    rexdd_edge_t or_ans, xor_ans;
+    or_ans = rexdd_OR_edges(&F, &e1, &e2, num_vals);
+    long long card_or, card_xor;
+    card_or = card_edge(&F, &or_ans, num_vals);
+    printf("\ncardinality of OR ans:\t%lld\n", card_or);
+    if (count1 + count2 - card_ans == card_or) {
+        printf("OR cardinality test PASS!\n");
+    } else {
+        printf("OR cardinality test ERROR!\n");
+    }
+    xor_ans = rexdd_XOR_edges(&F, &e1, &e2, num_vals);
+    card_xor = card_edge(&F, &xor_ans, num_vals);
+    printf("\ncardinality of XOR ans:\t%lld\n", card_xor);
 
     bool minterm[num_vals];
     bool minterm_eval[num_vals+2];
@@ -245,20 +215,36 @@ int main(int argc, const char* const* argv)
         }
         bool ans_eval = rexdd_eval(&F, &ans, num_vals, minterm_eval);
         if ((function1[n] && function2[n]) != ans_eval){
-            printf("\nans evaluation error!\n");
+            printf("\nAND_ans evaluation error!\n");
             for (uint32_t m=0; m<num_vals; m++) {
                 printf("%d ", minterm[m]);
             }
             printf("\tf1: %d\tf2: %d\n", function1[n], function2[n]);
-            // exit(1);
+            exit(1);
+        }
+        ans_eval = rexdd_eval(&F, &or_ans, num_vals, minterm_eval);
+        if ((function1[n] || function2[n]) != ans_eval){
+            printf("\nOR_ans evaluation error!\n");
+            for (uint32_t m=0; m<num_vals; m++) {
+                printf("%d ", minterm[m]);
+            }
+            printf("\tf1: %d\tf2: %d\n", function1[n], function2[n]);
+            exit(1);
+        }
+        ans_eval = rexdd_eval(&F, &xor_ans, num_vals, minterm_eval);
+        if ((function1[n] ^ function2[n]) != ans_eval){
+            printf("\nXOR_ans evaluation error!\n");
+            for (uint32_t m=0; m<num_vals; m++) {
+                printf("%d ", minterm[m]);
+            }
+            printf("\tf1: %d\tf2: %d\n", function1[n], function2[n]);
+            exit(1);
         }
     }
     printf("\n");
     printf("AND evaluation test PASS!\n");
-
-    ans = rexdd_OR_edges(&F, &e1, &e2, num_vals);
-    card_ans = card_edge(&F, &ans, num_vals);
-    printf("cardinality of OR ans:\t%lld\n", card_ans);
+    printf("OR evaluation test PASS!\n");
+    printf("XOR evaluation test PASS!\n");
 
     rexdd_free_forest(&F);
     free(function1);

@@ -388,8 +388,6 @@ rexdd_edge_t rexdd_OR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rex
     edge1 = *e1;
     edge2 = *e2;
     // normalize if they are constant edges
-    rexdd_normalize_edge(&edge1);
-    rexdd_normalize_edge(&edge2);
     rexdd_edge_com(&edge1);
     rexdd_edge_com(&edge2);
     edgeA = rexdd_AND_edges(F, &edge1, &edge2, lvl);
@@ -404,13 +402,19 @@ rexdd_edge_t rexdd_XOR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
     edge1 = *e1;
     edge2 = *e2;
     // normalize if they are constant edges
-    rexdd_normalize_edge(&edge1);
-    rexdd_normalize_edge(&edge2);
     rexdd_edge_com(&edge1);
     rexdd_edge_com(&edge2);
     edge_or = rexdd_OR_edges(F, &edge1, &edge2, lvl);
     edge_and = rexdd_AND_edges(F, &edge1, &edge2, lvl);
     rexdd_edge_com(&edge_and);
     edgeA = rexdd_AND_edges(F, &edge_or, &edge_and, lvl);
+    return edgeA;
+}
+
+rexdd_edge_t rexdd_NOT_edge(const rexdd_edge_t* e)
+{
+    rexdd_edge_t edgeA;
+    edgeA = *e;
+    rexdd_edge_com(&edgeA);
     return edgeA;
 }
