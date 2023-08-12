@@ -16,7 +16,7 @@ double uniform()
     // random returns between 0 and 2^31 - 1
     double x;
     do {
-        x = random();
+        x = rand();
     } while (0.0 == x);
     return x / 2147483648.0;
 }
@@ -136,7 +136,7 @@ int main()
         1048575, 262143, 65535, 16383, 4091, 1023, 255, 63, 15, 3, 1, 1, 0
     };
 
-    srandom(3263827);   // if you know, you know
+    srand(3263827);   // if you know, you know
 
     rexdd_nodepage_t P;
 

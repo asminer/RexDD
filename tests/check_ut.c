@@ -73,7 +73,7 @@ int main()
 {
     printf("Unique table test\n\n");
 
-    srandom(12345678);
+    srand(12345678);
 
     rexdd_nodeman_t M;
     rexdd_unique_table_t UT;

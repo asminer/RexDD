@@ -26,21 +26,21 @@ bool equal(const rexdd_unpacked_node_t *P, const rexdd_unpacked_node_t *Q)
 
 static inline uint64_t random64()
 {
-    uint64_t x = random();
+    uint64_t x = rand();
     x <<= 31;
-    return x | random();
+    return x | rand();
 }
 
 static inline uint16_t randombit()
 {
-    return random() & 0x00100;
+    return rand() & 0x00100;
 }
 
 void fill_random(rexdd_unpacked_node_t *P)
 {
     if (0==P) return;
 
-    P->level = random();
+    P->level = rand();
     if (0==P->level) {
         P->level++; // level can't be zero
     }
@@ -48,7 +48,7 @@ void fill_random(rexdd_unpacked_node_t *P)
     P->edge[0].target = random64();
     P->edge[1].target = random64();
 
-    unsigned a = random();
+    unsigned a = rand();
 
     P->edge[0].label.rule = a & LOW5;
     a >>= 5;
@@ -137,7 +137,7 @@ int main()
     printf("rexdd_unpacked_node_t: %lu bytes\n", sizeof(rexdd_unpacked_node_t));
     printf("rexdd_packed_node_t: %lu bytes\n", sizeof(rexdd_packed_node_t));
 
-    srandom(12345678);
+    srand(12345678);
     rexdd_unpacked_node_t U;
     rexdd_packed_node_t p;
 
