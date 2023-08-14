@@ -80,7 +80,7 @@ rexdd_hash_edges(const uint32_t lvl, const rexdd_edge_t* edge1, const rexdd_edge
     uint64_t h;
     h = (edge1->target & edge2->target) % m;
     h = ((h<<32) | lvl) % m;
-    if (0 == (m & ~((0x01ul << 32) - 1)) ) {
+    if (0 == (m & ~(((uint64_t)0x01 << 32) - 1)) ) {
         /*
          *  m fits in 32 bits
          */
@@ -95,7 +95,7 @@ rexdd_hash_edges(const uint32_t lvl, const rexdd_edge_t* edge1, const rexdd_edge
         return h;
     } 
 
-    if (0 == (m & ~ ((0x01ul << 16) - 1)) ) {
+    if (0 == (m & ~ (((uint64_t)0x01 << 16) - 1)) ) {
         /*
          *  m fits in 48 bits
          */

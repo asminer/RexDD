@@ -115,7 +115,7 @@ void rexdd_free_UT(rexdd_unique_table_t *T)
     T->size = 0;
     T->size_index = 0;
     T->prev_size_index = 0;
-    T->enlarge = 0x01ul << 60;
+    T->enlarge = (uint64_t)0x01 << 60;
 }
 
 
@@ -200,7 +200,7 @@ rexdd_node_handle_t rexdd_insert_UT(rexdd_unique_table_t *T, rexdd_node_handle_t
         T->table = realloc(T->table, T->size * sizeof(rexdd_node_handle_t));
         rexdd_check1(T->table, "Realloc fail in rexdd_insert_UT");
         zero_array(T->table, T->size);
-        T->enlarge = primes[T->size_index+1] ? T->size : (0x01ul << 60);
+        T->enlarge = primes[T->size_index+1] ? T->size : ((uint64_t)0x01 << 60);
 
         rexdd_rehash_list(list, T);
     }

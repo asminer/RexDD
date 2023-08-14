@@ -132,7 +132,7 @@ void rexdd_cache_CT(rexdd_comp_table_t *CT, uint32_t lvl, rexdd_edge_t *edge1, r
      */
     if (CT->num_entries > primes[CT->size_index] / 2) {
         CT->size_index++;
-        uint_fast64_t new_size = primes[CT->size_index] ? primes[CT->size_index] : (0x01ul << 60);
+        uint_fast64_t new_size = primes[CT->size_index] ? primes[CT->size_index] : ((uint64_t)0x01 << 60);
         CT->table = realloc(CT->table, new_size*sizeof(rexdd_edge_in_ct));
         for (uint_fast64_t i=primes[CT->size_index-1]; i<new_size; i++) {
             CT->table[i].lvl = 0;

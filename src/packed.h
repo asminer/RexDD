@@ -65,7 +65,7 @@ typedef struct {
 static inline uint_fast64_t
 rexdd_get_packed_next(const rexdd_packed_node_t *N)
 {
-    static const uint64_t   NEXT_MASK   = (0x01ul << 49) - 1;  // bits 0..48
+    static const uint64_t   NEXT_MASK   = ((uint64_t)0x01 << 49) - 1;  // bits 0..48
     return N->first64 & NEXT_MASK;
 }
 
@@ -79,7 +79,7 @@ rexdd_get_packed_next(const rexdd_packed_node_t *N)
 static inline void
 rexdd_set_packed_next(rexdd_packed_node_t *N, uint64_t nxt)
 {
-    static const uint64_t   NEXT_MASK   = (0x01ul << 49) - 1;  // bits 0..48
+    static const uint64_t   NEXT_MASK   = ((uint64_t)0x01 << 49) - 1;  // bits 0..48
     N->first64 = (N->first64 & ~NEXT_MASK) | (nxt & NEXT_MASK);
 }
 
@@ -93,7 +93,7 @@ rexdd_set_packed_next(rexdd_packed_node_t *N, uint64_t nxt)
 static inline bool
 rexdd_is_packed_marked(const rexdd_packed_node_t *N)
 {
-    static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
+    static const uint64_t   MARK_MASK   = (uint64_t)0x01 << 49;   // bit 49
     return N->first64 & MARK_MASK;
 }
 
@@ -106,7 +106,7 @@ rexdd_is_packed_marked(const rexdd_packed_node_t *N)
 static inline void
 rexdd_mark_packed(rexdd_packed_node_t *N)
 {
-    static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
+    static const uint64_t   MARK_MASK   = (uint64_t)0x01 << 49;   // bit 49
     N->first64 |= MARK_MASK;
 }
 
@@ -119,7 +119,7 @@ rexdd_mark_packed(rexdd_packed_node_t *N)
 static inline void
 rexdd_unmark_packed(rexdd_packed_node_t *N)
 {
-    static const uint64_t   MARK_MASK   = 0x01ul << 49;   // bit 49
+    static const uint64_t   MARK_MASK   = (uint64_t)0x01 << 49;   // bit 49
     N->first64 &= ~MARK_MASK;
 }
 
@@ -134,16 +134,16 @@ rexdd_unmark_packed(rexdd_packed_node_t *N)
 static inline void
 rexdd_unpacked_to_packed(const rexdd_unpacked_node_t *uN, rexdd_packed_node_t *pN)
 {
-    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
-    static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1; // bits 0..35
+    static const uint64_t   TOP14_MASK  = ~(((uint64_t)0x01 << 50)-1);  // bits 50..63
+    static const uint64_t   LOW36_MASK  = ((uint64_t)0x01 << 36) - 1; // bits 0..35
 
     static const uint32_t   LOW22_MASK  = (0x01 << 22) - 1; // bits 0..21
     static const uint32_t   LORU_MASK   = ((0x01 << 5) - 1) << 22;    // bits 22..26
     static const uint32_t   HIRU_MASK   = ((0x01 << 5) - 1) << 27;    // bits 27..31
-    static const uint32_t   LOW29_MASK  = (0x01ul << 29) - 1; // bits 0..29
-    static const uint32_t   BIT29_MASK  = 0x01ul << 29;
-    static const uint32_t   BIT30_MASK  = 0x01ul << 30;
-    static const uint32_t   BIT31_MASK  = 0x01ul << 31;
+    static const uint32_t   LOW29_MASK  = ((uint64_t)0x01 << 29) - 1; // bits 0..29
+    static const uint32_t   BIT29_MASK  = (uint64_t)0x01 << 29;
+    static const uint32_t   BIT30_MASK  = (uint64_t)0x01 << 30;
+    static const uint32_t   BIT31_MASK  = (uint64_t)0x01 << 31;
 
     pN->first64 =
         ( (uN->edge[0].target << 14) & TOP14_MASK);
@@ -181,7 +181,7 @@ static inline uint_fast32_t
 rexdd_unpack_level(const rexdd_packed_node_t *pN)
 {
     // bits 0..29
-    static const uint32_t   LOW29_MASK  = (0x01ul << 29) - 1;
+    static const uint32_t   LOW29_MASK  = ((uint64_t)0x01 << 29) - 1;
 
     return pN->fourth32 & LOW29_MASK;
 }
@@ -200,7 +200,7 @@ rexdd_unpack_low_edge(const rexdd_packed_node_t *pN, rexdd_edge_label_t *el)
     // bits 22..26
     static const uint32_t   LORU_MASK   = ((0x01 << 5) - 1) << 22;
     // bit 29
-    static const uint32_t   BIT29_MASK  = 0x01ul << 29;
+    static const uint32_t   BIT29_MASK  = (uint64_t)0x01 << 29;
 
     el->rule = (pN->third32 & LORU_MASK) >> 22;
     el->swapped = pN->fourth32 & BIT29_MASK;
@@ -217,9 +217,9 @@ static inline rexdd_node_handle_t
 rexdd_unpack_low_child(const rexdd_packed_node_t *pN)
 {
     // bits 50..63
-    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);
+    static const uint64_t   TOP14_MASK  = ~(((uint64_t)0x01 << 50)-1);
     // bits 0..35
-    static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1;
+    static const uint64_t   LOW36_MASK  = ((uint64_t)0x01 << 36) - 1;
 
     return  ((pN->first64 & TOP14_MASK) >> 14)
             |
@@ -238,8 +238,8 @@ rexdd_unpack_high_edge(const rexdd_packed_node_t *pN, rexdd_edge_label_t *el)
 {
     // bits 27..31
     static const uint32_t   HIRU_MASK   = ((0x01 << 5) - 1) << 27;
-    static const uint32_t   BIT30_MASK  = 0x01ul << 30;
-    static const uint32_t   BIT31_MASK  = 0x01ul << 31;
+    static const uint32_t   BIT30_MASK  = (uint64_t)0x01 << 30;
+    static const uint32_t   BIT31_MASK  = (uint64_t)0x01 << 31;
 
     el->rule = (pN->third32 & HIRU_MASK) >> 27;
     el->swapped = pN->fourth32 & BIT30_MASK;
@@ -256,7 +256,7 @@ static inline rexdd_node_handle_t
 rexdd_unpack_high_child(const rexdd_packed_node_t *pN)
 {
     // bits 0..35
-    static const uint64_t   LOW36_MASK  = (0x01ul << 36) - 1;
+    static const uint64_t   LOW36_MASK  = ((uint64_t)0x01 << 36) - 1;
     // bits 0..21
     static const uint32_t   LOW22_MASK  = (0x01 << 22) - 1;
 
@@ -326,7 +326,7 @@ static inline bool
 rexdd_are_packed_duplicates(const rexdd_packed_node_t *P,
         const rexdd_packed_node_t *Q)
 {
-    static const uint64_t   TOP14_MASK  = ~((0x01ul << 50)-1);  // bits 50..63
+    static const uint64_t   TOP14_MASK  = ~(((uint64_t)0x01 << 50)-1);  // bits 50..63
 
     return  (P->second64 == Q->second64) &&
             (P->third32 == Q->third32) &&
@@ -344,7 +344,7 @@ static inline uint_fast64_t
 rexdd_hash_packed(const rexdd_packed_node_t *P, uint_fast64_t m)
 {
     uint64_t h;
-    if (0 == (m & ~((0x01ul << 32) - 1)) ) {
+    if (0 == (m & ~(((uint64_t)0x01 << 32) - 1)) ) {
         /*
          * m fits in 32 bits ->
          *      anything mod m fits in 32 bits ->
@@ -358,7 +358,7 @@ rexdd_hash_packed(const rexdd_packed_node_t *P, uint_fast64_t m)
         return (( h << 14) | (P->first64 >> 50)) % m;
     }
 
-    if (0 == (m & ~ ((0x01ul << 16) - 1)) ) {
+    if (0 == (m & ~ (((uint64_t)0x01 << 16) - 1)) ) {
         /*
          * m fits in 48 bits ->
          *      anything mod m fits in 48 bits ->

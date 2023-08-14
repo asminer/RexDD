@@ -123,7 +123,7 @@ typedef uint64_t    rexdd_node_handle_t;
  */
 static inline bool rexdd_is_terminal(rexdd_node_handle_t n)
 {
-    return n & (0x01ul << 49);
+    return n & ((uint64_t)0x01 << 49);
 }
 
 /****************************************************************************
@@ -134,7 +134,7 @@ static inline bool rexdd_is_terminal(rexdd_node_handle_t n)
 static inline rexdd_node_handle_t rexdd_terminal_value(rexdd_node_handle_t n)
 {
     rexdd_sanity1(rexdd_is_terminal(n), "requesting terminal value for nonterminal");
-    return n & ((0x01ul << 49)-1);
+    return n & (((uint64_t)0x01 << 49)-1);
 }
 
 /****************************************************************************
@@ -145,7 +145,7 @@ static inline rexdd_node_handle_t rexdd_terminal_value(rexdd_node_handle_t n)
  */
 static inline rexdd_node_handle_t rexdd_make_terminal(rexdd_node_handle_t n)
 {
-    return ( n & ((0x01ul << 49)-1) ) | ( 0x01ul << 49 );
+    return ( n & (((uint64_t)0x01 << 49)-1) ) | ( (uint64_t)0x01 << 49 );
 }
 
 /****************************************************************************
@@ -156,7 +156,7 @@ static inline rexdd_node_handle_t rexdd_make_terminal(rexdd_node_handle_t n)
 static inline rexdd_node_handle_t rexdd_nonterminal_handle(rexdd_node_handle_t n)
 {
     rexdd_sanity1(!rexdd_is_terminal(n), "requesting nonterminal handle for terminal");
-    return n & ((0x01ul << 49)-1);
+    return n & (((uint64_t)0x01 << 49)-1);
 }
 
 /****************************************************************************
@@ -167,7 +167,7 @@ static inline rexdd_node_handle_t rexdd_nonterminal_handle(rexdd_node_handle_t n
  */
 static inline rexdd_node_handle_t rexdd_make_nonterminal(rexdd_node_handle_t n)
 {
-    return n & ((0x01ul << 49)-1);
+    return n & (((uint64_t)0x01 << 49)-1);
 }
 
 
