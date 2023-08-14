@@ -92,6 +92,10 @@ long long card_edge(rexdd_forest_t* F, rexdd_edge_t* root, uint32_t lvl)
 
 int main(int argc, const char* const* argv)
 {
+    if (argc == 0) {
+		printf("Usage: ./check_and [num_val]\n");
+		printf("\tThis will randomly generate two boolean functions to test logic operation\n");
+	}
     uint32_t num_vals = atoi(argv[1]);
 
     rexdd_forest_t F;
@@ -152,32 +156,32 @@ int main(int argc, const char* const* argv)
     if (count == card_ans){
         printf("AND cardinality test PASS!\n");
     } else {
-        FILE* fout;
-        rexdd_edge_t err1, err2, errA;
-        rexdd_set_edge(&err1,
-                        rexdd_rule_X,
-                        1,
-                        0,
-                        496);
-        rexdd_set_edge(&err2,
-                        rexdd_rule_X,
-                        0,
-                        0,
-                        997);
-        rexdd_set_edge(&errA,
-                        rexdd_rule_X,
-                        0,
-                        0,
-                        1461);
-        fout = fopen("and_e1.gv", "w+");
-        build_gv(fout, &F, err1);
-        fclose(fout);
-        fout = fopen("and_e2.gv", "w+");
-        build_gv(fout, &F, err2);
-        fclose(fout);
-        fout = fopen("and_ans.gv", "w+");
-        build_gv(fout, &F, errA);
-        fclose(fout);
+        // FILE* fout;
+        // rexdd_edge_t err1, err2, errA;
+        // rexdd_set_edge(&err1,
+        //                 rexdd_rule_X,
+        //                 1,
+        //                 0,
+        //                 496);
+        // rexdd_set_edge(&err2,
+        //                 rexdd_rule_X,
+        //                 0,
+        //                 0,
+        //                 997);
+        // rexdd_set_edge(&errA,
+        //                 rexdd_rule_X,
+        //                 0,
+        //                 0,
+        //                 1461);
+        // fout = fopen("and_e1.gv", "w+");
+        // build_gv(fout, &F, err1);
+        // fclose(fout);
+        // fout = fopen("and_e2.gv", "w+");
+        // build_gv(fout, &F, err2);
+        // fclose(fout);
+        // fout = fopen("and_ans.gv", "w+");
+        // build_gv(fout, &F, errA);
+        // fclose(fout);
         printf("AND cardinality test ERROR!\n");
     }
     rexdd_edge_t or_ans, xor_ans;

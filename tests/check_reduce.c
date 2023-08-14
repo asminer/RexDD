@@ -126,7 +126,7 @@ int main()
     levels = 1;
     rexdd_edge_t ptr1[0x01 << (0x01 << levels)];
 
-    for (unsigned long i=0; i< 0x01 << (0x01 << levels); i++) {
+    for (unsigned long i=0; i< 0x01ul << (0x01 << levels); i++) {
         ptr1[i] = initial;
     }
 
@@ -175,7 +175,7 @@ int main()
         }
     }
 
-    if (check_reduce(&F, levels, Vars_1, buffer, 64+18, ptr1) != 0x01 << (0x01 << levels)) {
+    if (check_reduce(&F, levels, Vars_1, buffer, 64+18, ptr1) != 0x01ul << (0x01 << levels)) {
         printf("Level one check failed\n");
     } else {
         printf("level one reduced edge: %d\n", 0x01 << (0x01 << levels));
@@ -192,7 +192,7 @@ int main()
     levels = 2;
     n_edge = 0;
     rexdd_edge_t ptr2[0x01 << (0x01 << levels)];
-    for (unsigned long i=0; i< 0x01 << (0x01 << levels); i++) {
+    for (unsigned long i=0; i< 0x01ul << (0x01 << levels); i++) {
         ptr2[i] = initial;
     }
     rexdd_edge_t buffer2[64+18];
@@ -233,7 +233,7 @@ int main()
         }
     }
 
-    if (check_reduce(&F, levels, Vars_2, buffer2, 64+18, ptr2) != 0x01 << (0x01 << levels)) {
+    if (check_reduce(&F, levels, Vars_2, buffer2, 64+18, ptr2) != 0x01ul << (0x01 << levels)) {
         printf("Level two check failed\n");
     } else {
         printf("level two reduced edge: %d\n", 0x01 << (0x01 << levels));
@@ -250,7 +250,7 @@ int main()
     levels = 3;
     n_edge = 0;
     rexdd_edge_t ptr3[0x01 << (0x01 << levels)];
-    for (unsigned long i=0; i< 0x01 << (0x01 << levels); i++) {
+    for (unsigned long i=0; i< 0x01ul << (0x01 << levels); i++) {
         ptr3[i] = initial;
     }
     rexdd_edge_t buffer3[2*2*16*16+18];
@@ -291,7 +291,7 @@ int main()
         }
     }
 
-    if (check_reduce(&F, levels, Vars_3, buffer3, 2*2*16*16+18, ptr3) != 0x01 << (0x01 << levels)) {
+    if (check_reduce(&F, levels, Vars_3, buffer3, 2*2*16*16+18, ptr3) != 0x01ul << (0x01 << levels)) {
         printf("Level three check failed\n");
     } else {
         printf("level three reduced edge: %d\n", 0x01 << (0x01 << levels));
@@ -308,7 +308,7 @@ int main()
     levels = 4;
     n_edge = 0;
     rexdd_edge_t ptr4[0x01 << (0x01 << levels)];
-    for (unsigned long i=0; i< 0x01 << (0x01 << levels); i++) {
+    for (unsigned long i=0; i< 0x01ul << (0x01 << levels); i++) {
         ptr4[i] = initial;
     }
     rexdd_edge_t buffer4[2*2*256*256+18];
@@ -349,7 +349,7 @@ int main()
         }
     }
 
-    if (check_reduce(&F, levels, Vars_4, buffer4, 2*2*256*256+18, ptr4) != 0x01 << (0x01 << levels)) {
+    if (check_reduce(&F, levels, Vars_4, buffer4, 2*2*256*256+18, ptr4) != 0x01ul << (0x01 << levels)) {
         printf("Level four check failed\n");
     } else {
         printf("level four reduced edge: %d\n", 0x01 << (0x01 << levels));

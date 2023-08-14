@@ -7,10 +7,10 @@
 
 const unsigned TESTS=100000000;
 
-const uint64_t LOW49= (0x01ul << 49)-1;
-const uint64_t LOW50= (0x01ul << 50)-1;
-const uint64_t LOW29= (0x01ul << 29)-1;
-const uint64_t LOW5 = (0x01ul <<  5)-1;
+const uint64_t LOW49= ((uint64_t)0x01 << 49)-1;
+const uint64_t LOW50= ((uint64_t)0x01 << 50)-1;
+const uint64_t LOW29= ((uint64_t)0x01 << 29)-1;
+const uint64_t LOW5 = ((uint64_t)0x01 <<  5)-1;
 
 bool equal(const rexdd_unpacked_node_t *P, const rexdd_unpacked_node_t *Q)
 {

@@ -176,7 +176,7 @@ int main(int argc, const char* const* argv)
     // assuming the input file is not compressed
     FILE *fin;
     fin = fopen(infile, "r");
-    unsigned long long t = read_num_roots(fin), i;
+    unsigned long long t = read_num_roots(fin);
     // unsigned long long t = 1;
     fclose(fin);
     rexdd_forest_t F_in;

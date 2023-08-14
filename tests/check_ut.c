@@ -84,7 +84,7 @@ int main()
 
     unsigned i, count = 0;
     for (i=0; i<insertions; i++) {
-        fill_node(random(), &n);
+        fill_node(rand(), &n);
         rexdd_node_handle_t h = rexdd_nodeman_get_handle(&M, &n);
         rexdd_node_handle_t g = rexdd_insert_UT(&UT, h);
         if (g != h) {
