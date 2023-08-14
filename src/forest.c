@@ -1036,8 +1036,6 @@ bool rexdd_eval(
         uint32_t                m,
         bool                    vars[])
 {
-    rexdd_sanity1(m>=0, "Root level of edge can not be less than 0");
-
     uint32_t k;
     if (rexdd_is_terminal(e->target)) {
         k = 0;

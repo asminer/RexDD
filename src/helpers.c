@@ -4,6 +4,38 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TBD - should this be private, in unpacked.c?
+static const char* rexdd_rule_name[] = {
+    "EL0",
+    "AL0",
+    "EL1",
+    "AL1",
+    "EH0",
+    "AH0",
+    "EH1",
+    "AH1",
+    "X",
+    "?",
+    "?",
+//
+    "IN",
+    "IX",
+    "IL0",
+    "IL1",
+    "IH0",
+    "IH1",
+    "IEL0",
+    "IEL1",
+    "IEH0",
+    "IEH1",
+    "IAL0",
+    "IAL1",
+    "IAH0",
+    "IAH1",
+    "I?",
+    "I?",
+};
+
 void boolNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, bool count[handle+1])
 {
     if (rexdd_is_terminal(handle)) {
@@ -598,19 +630,19 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
 
     FILE *fount;
     int max_num = 0;
-    int num_term = 0;
+    // int num_term = 0;
     int numFunc[33];
     int num_nodes = 0;
     for (int i=0; i<33; i++) {
         numFunc[i] = 0;
     }
     for (unsigned long i=0; i<0x01UL<<(0x01<<levels); i++) {
-        int terms = countTerm(&F,edges[i].target);
-        if (terms == 0 || terms == 1) {
-            num_term = 1;
-        } else {
-            num_term = terms;
-        }
+        // int terms = countTerm(&F,edges[i].target);
+        // if (terms == 0 || terms == 1) {
+        //     num_term = 1;
+        // } else {
+        //     num_term = terms;
+        // }
         // int num_nodes = countNodes(&F,edges[i].target) + num_term;
         num_nodes = countNodes(&F,edges[i].target);
         numFunc[num_nodes]++;
@@ -1042,7 +1074,6 @@ rexdd_edge_t rexdd_expand_childEdge(rexdd_forest_t* F, uint32_t r, rexdd_edge_t*
     } else {
         skip = r - rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, e->target));
     }
-    assert(skip>=0);
     rexdd_edge_t ans;
     if (skip == 0) {
         rexdd_edge_label_t l;
