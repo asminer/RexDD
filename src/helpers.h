@@ -28,6 +28,38 @@
 #   define TYPE "RexBDD"
 #endif
 
+// TBD - should this be private, in unpacked.c?
+static const char* rexdd_rule_name[] = {
+    "EL0",
+    "AL0",
+    "EL1",
+    "AL1",
+    "EH0",
+    "AH0",
+    "EH1",
+    "AH1",
+    "X",
+    "?",
+    "?",
+//
+    "IN",
+    "IX",
+    "IL0",
+    "IL1",
+    "IH0",
+    "IH1",
+    "IEL0",
+    "IEL1",
+    "IEH0",
+    "IEH1",
+    "IAL0",
+    "IAL1",
+    "IAH0",
+    "IAH1",
+    "I?",
+    "I?",
+};
+
 /****************************************************************************
  *
  *  Set a boolean array *count to tell how many nodes in the RexBDD root from 
