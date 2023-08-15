@@ -13,8 +13,10 @@ or swapped to invert the next variable.
 # Required for building
 
 cmake version 3.19 or later
+latest c compiler
+graphviz (optional for BDDs visualization)
 
-# Building on Unix-like systems
+# Building on Unix-like or Windows systems
 
 This can be built for QBDD, FBDD, ZBDD, QBDD with complement bit (CQBDD), 
 QBDD with complement and swap bit (CSQBDD), FBDD with complement bit (CFBDD), 
@@ -44,3 +46,9 @@ to set up debugging build directories for QBDD.
 build directory,
 run ```rm CMakeCache.txt; rm -rf CMakeFiles``` in the same build directory, 
 then cd into rexdd and run ```cmake . --preset=debug -D*BDD=ON``` for *BDD
+
+# Building a shared library
+
+Static library file is built by default under ./build-release/src, 
+use the last line in CMakeLists.txt in src, then following the same steps 
+will create the shared library under the same path.

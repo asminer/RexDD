@@ -16,3 +16,4 @@ set(SOURCES
 configure_file(config.h.in config.h)
 
 add_library(RexDD ${SOURCES})
+# add_library(RexDD SHARED ${SOURCES})
