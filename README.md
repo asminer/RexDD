@@ -12,9 +12,9 @@ or swapped to invert the next variable.
 
 # Required for building
 
-cmake version 3.19 or later
-latest c compiler
-graphviz (optional for BDDs visualization)
+- cmake version 3.19 or later
+- latest c compiler
+- graphviz (optional for BDDs visualization)
 
 # Building on Unix-like or Windows systems
 
@@ -49,6 +49,6 @@ then cd into rexdd and run ```cmake . --preset=debug -D*BDD=ON``` for *BDD
 
 # Building a shared library
 
-Static library file is built by default under ./build-release/src, 
-use the last line in CMakeLists.txt in src, then following the same steps 
+Static library file is built by default under ```./build-release/src``` if set ```--preset=release```, 
+use the last line in ```CMakeLists.txt``` in ```src```, then following the same steps 
 will create the shared library under the same path.
