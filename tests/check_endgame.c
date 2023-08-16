@@ -159,7 +159,7 @@ int main(int argc, const char* const* argv)
                 // get function from all
                 edge_function[i] = (function[i]==((j%5)+1))?1:0;
             }
-            functionToEdge(&F,edge_function,&root_edge[j],num_inputbits, 0, rows-1);
+            function_2_edge(&F,edge_function,&root_edge[j],num_inputbits, 0, rows-1);
         }
 
         free_parser(&p); // file reader will be free

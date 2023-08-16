@@ -225,7 +225,7 @@ rexdd_edge_t rexdd_expand_childEdge(rexdd_forest_t* F, uint32_t r, rexdd_edge_t*
 /****************************************************************************
  *  Create a BDD from root_out in forest *F to encode function (0-1 array)
  */
-void functionToEdge(
+void function_2_edge(
                 rexdd_forest_t* F,
                 char* functions,
                 rexdd_edge_t* root_out,

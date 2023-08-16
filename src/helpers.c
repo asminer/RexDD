@@ -1250,9 +1250,8 @@ rexdd_edge_t rexdd_expand_childEdge(rexdd_forest_t* F, uint32_t r, rexdd_edge_t*
     return ans;
 }
 
-void functionToEdge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, int L, unsigned long start, unsigned long end)
+void function_2_edge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, int L, unsigned long start, unsigned long end)
 {
-    //
     rexdd_unpacked_node_t temp;
     temp.level = L;
     temp.edge[0].label.rule = rexdd_rule_X;
@@ -1267,7 +1266,6 @@ void functionToEdge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, 
     l.swapped = 0;
     /*  terminal case */
     if ((end-start == 1) && (L==1)) {
-        // printf("\tterminal case!\n");
         temp.edge[0].target = rexdd_make_terminal(functions[start]);
         temp.edge[1].target = rexdd_make_terminal(functions[end]);
         
@@ -1275,10 +1273,8 @@ void functionToEdge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out, 
         return;
     }
     const int next_lvl = L-1;
-    // printf("\t\tgo level %d!\n", next_lvl);
-    functionToEdge(F, functions, &temp.edge[0], next_lvl, start, (end-start)/2+start);
-    functionToEdge(F, functions, &temp.edge[1], next_lvl, (end-start)/2+start+1, end);
-    // printf("\t\treduce level %d!\n", temp.level);
+    function_2_edge(F, functions, &temp.edge[0], next_lvl, start, (end-start)/2+start);
+    function_2_edge(F, functions, &temp.edge[1], next_lvl, (end-start)/2+start+1, end);
     rexdd_reduce_edge(F, L, l, temp, root_out);
 }
 

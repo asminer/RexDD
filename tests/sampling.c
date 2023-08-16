@@ -177,7 +177,7 @@ int main(int argc, const char* const* argv)
         for (long long j=0; j<rows; j++) {
             function[j] = (Random()>p)?1:0;
         }
-        functionToEdge(&F, function, &root, num_vars, 0, rows-1);
+        function_2_edge(&F, function, &root, num_vars, 0, rows-1);
         num_nodes = count_nodes(&F, &root);
         fprintf(numbers_out, "%llu\n", num_nodes);
         if (option > 1) {

@@ -127,8 +127,8 @@ int main(int argc, const char* const* argv)
         if (function2[i]) count2++;
         if (function1[i]&&function2[i]) count++;
     }
-    functionToEdge(&F, function1, &e1, num_vals, 0, rows-1);
-    functionToEdge(&F, function2, &e2, num_vals, 0, rows-1);
+    function_2_edge(&F, function1, &e1, num_vals, 0, rows-1);
+    function_2_edge(&F, function2, &e2, num_vals, 0, rows-1);
 
     printf("e1 is:\n");
     show_edge(e1);
@@ -142,6 +142,10 @@ int main(int argc, const char* const* argv)
     printf("ans is:\n");
     show_edge(ans);
     printf("level is %d\n", (rexdd_is_terminal(ans.target))?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, ans.target)));
+    FILE* fout;
+    fout = fopen("and_ans0.gv", "w+");
+    build_gv(fout, &F, ans);
+    fclose(fout);
 
     printf("number of minterms(1) for e1:\t%lld\n",count1);
     printf("number of minterms(1) for e2:\t%lld\n",count2);
@@ -248,6 +252,72 @@ int main(int argc, const char* const* argv)
     printf("AND evaluation test PASS!\n");
     printf("OR evaluation test PASS!\n");
     printf("XOR evaluation test PASS!\n");
+
+    rexdd_unpacked_node_t x1, x2, x3;
+    rexdd_edge_t ex1, ex2, ex3;
+    rexdd_edge_label_t lx;
+    lx.rule = rexdd_rule_X;
+    lx.complemented = 0;
+    lx.swapped = 0;
+    x1.level = 1;
+    x2.level = 2;
+    x3.level = 3;
+    x1.edge[0].label.rule = rexdd_rule_X;
+    x1.edge[0].label.complemented = 0;
+    x1.edge[0].label.swapped = 0;
+    x1.edge[0].target = rexdd_make_terminal(0);
+    x1.edge[1].label.rule = rexdd_rule_X;
+    x1.edge[1].label.complemented = 1;
+    x1.edge[1].label.swapped = 0;
+    x1.edge[1].target = rexdd_make_terminal(0);
+
+
+    x2.edge[0].label.rule = rexdd_rule_X;
+    x2.edge[0].label.complemented = 0;
+    x2.edge[0].label.swapped = 0;
+    x2.edge[0].target = rexdd_make_terminal(0);
+    x2.edge[1].label.rule = rexdd_rule_X;
+    x2.edge[1].label.complemented = 1;
+    x2.edge[1].label.swapped = 0;
+    x2.edge[1].target = rexdd_make_terminal(0);
+
+
+    x3.edge[0].label.rule = rexdd_rule_X;
+    x3.edge[0].label.complemented = 0;
+    x3.edge[0].label.swapped = 0;
+    x3.edge[0].target = rexdd_make_terminal(0);
+    x3.edge[1].label.rule = rexdd_rule_X;
+    x3.edge[1].label.complemented = 1;
+    x3.edge[1].label.swapped = 0;
+    x3.edge[1].target = rexdd_make_terminal(0);
+
+
+    rexdd_reduce_edge(&F, 3, lx, x3, &ex3);
+    rexdd_reduce_edge(&F, 3, lx, x2, &ex2);
+    rexdd_reduce_edge(&F, 3, lx, x1, &ex1);
+    printf("reduced edges\n");
+    show_edge(ex1);
+    printf("level is %d\n", (rexdd_is_terminal(ex1.target))?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, ex1.target)));
+    show_edge(ex2);
+    printf("level is %d\n", (rexdd_is_terminal(ex2.target))?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, ex2.target)));
+    show_edge(ex3);
+    printf("level is %d\n", (rexdd_is_terminal(ex3.target))?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, ex3.target)));
+
+
+    rexdd_edge_t ans1, ans2;
+    ans1 = rexdd_AND_edges(&F, &ex1, &ex2, 3);
+    ans2 = rexdd_NOT_edge(&ex3);
+    ans1 = rexdd_AND_edges(&F, &ans2, &ans1, 3);
+
+    ans2 = rexdd_AND_edges(&F, &ex1, &ex2, 3);
+    ans2 = rexdd_NOT_edge(&ans2);
+    ans2 = rexdd_AND_edges(&F, &ex3, &ans2, 3);
+    ans = rexdd_OR_edges(&F, &ans1, &ans2, 3);
+
+    // FILE* fout;
+    fout = fopen("and_ans1.gv", "w+");
+    build_gv(fout, &F, ans);
+    fclose(fout);
 
     rexdd_free_forest(&F);
     free(function1);
