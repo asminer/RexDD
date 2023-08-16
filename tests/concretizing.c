@@ -350,11 +350,11 @@ int main(int argc, const char* const* argv)
     }
 
     // printf("Building forest %d for %s\n", n, infile);
-    printf("\tThe format is %c\n", fmt);
-    printf("\tThe compress is %c\n", comp);
-    printf("\tThe number of inbits is %u\n", p.inbits);
-    printf("\tThe number of outbits is %u\n", p.outbits);
-    printf("\tThe number of minterms is %lu\n", p.numf);
+    // printf("\tThe format is %c\n", fmt);
+    // printf("\tThe compress is %c\n", comp);
+    // printf("\tThe number of inbits is %u\n", p.inbits);
+    // printf("\tThe number of outbits is %u\n", p.outbits);
+    // printf("\tThe number of minterms is %lu\n", p.numf);
 
     index = 0;
     count_gc = 0;
