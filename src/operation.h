@@ -137,3 +137,47 @@ rexdd_edge_t rexdd_XOR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
  * @return rexdd_edge_t 
  */
 rexdd_edge_t rexdd_NOT_edge(const rexdd_edge_t* e);
+
+/**
+ *  NAND opeartion of two edges representing two reduced BDDs
+ * 
+ *      @param F                Forest containing operand BDDs and result
+ *      @param e1               Operand 1
+ *      @param e2               Operand 2
+ *      @param lvl              Respect of level on variables
+ *      @return rexdd_edge_t 
+ */
+rexdd_edge_t rexdd_NAND_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl);
+
+/**
+ *  NOR opeartion of two edges representing two reduced BDDs
+ * 
+ *      @param F                Forest containing operand BDDs and result
+ *      @param e1               Operand 1
+ *      @param e2               Operand 2
+ *      @param lvl              Respect of level on variables
+ *      @return rexdd_edge_t 
+ */
+rexdd_edge_t rexdd_NOR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl);
+
+/**
+ *  IMPLIES opeartion of two edges representing two reduced BDDs
+ * 
+ *      @param F                Forest containing operand BDDs and result
+ *      @param e1               Operand 1
+ *      @param e2               Operand 2
+ *      @param lvl              Respect of level on variables
+ *      @return rexdd_edge_t 
+ */
+rexdd_edge_t rexdd_IMPLIES_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl);
+
+/**
+ *  EQUALS opeartion of two edges representing two reduced BDDs
+ * 
+ *      @param F                Forest containing operand BDDs and result
+ *      @param e1               Operand 1
+ *      @param e2               Operand 2
+ *      @param lvl              Respect of level on variables
+ *      @return rexdd_edge_t 
+ */
+rexdd_edge_t rexdd_EQUALS_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl);

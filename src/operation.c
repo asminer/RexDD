@@ -387,7 +387,6 @@ rexdd_edge_t rexdd_OR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rex
     rexdd_edge_t edge1, edge2, edgeA;                         // the answer
     edge1 = *e1;
     edge2 = *e2;
-    // normalize if they are constant edges
     rexdd_edge_com(&edge1);
     rexdd_edge_com(&edge2);
     edgeA = rexdd_AND_edges(F, &edge1, &edge2, lvl);
@@ -401,7 +400,6 @@ rexdd_edge_t rexdd_XOR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
     rexdd_edge_t edge1, edge2, edge_or, edge_and, edgeA;                         // the answer
     edge1 = *e1;
     edge2 = *e2;
-    // normalize if they are constant edges
     rexdd_edge_com(&edge1);
     rexdd_edge_com(&edge2);
     edge_or = rexdd_OR_edges(F, &edge1, &edge2, lvl);
@@ -415,6 +413,47 @@ rexdd_edge_t rexdd_NOT_edge(const rexdd_edge_t* e)
 {
     rexdd_edge_t edgeA;
     edgeA = *e;
+    rexdd_edge_com(&edgeA);
+    return edgeA;
+}
+
+rexdd_edge_t rexdd_NAND_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl)
+{
+    rexdd_edge_t edge1, edge2, edgeA;
+    edge1 = *e1;
+    edge2 = *e2;
+    edgeA = rexdd_AND_edges(F, &edge1, &edge2, lvl);
+    rexdd_edge_com(&edgeA);
+    return edgeA;
+}
+
+rexdd_edge_t rexdd_NOR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl)
+{
+    rexdd_edge_t edge1, edge2, edgeA;
+    edge1 = *e1;
+    edge2 = *e2;
+    edgeA = rexdd_OR_edges(F, &edge1, &edge2, lvl);
+    rexdd_edge_com(&edgeA);
+    return edgeA;
+}
+
+rexdd_edge_t rexdd_IMPLIES_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl)
+{
+    rexdd_edge_t edge1, edge2, edgeA;
+    edge1 = *e1;
+    edge2 = *e2;
+    rexdd_edge_com(&edge2);
+    edgeA = rexdd_AND_edges(F, &edge1, &edge2, lvl);
+    return edgeA;
+}
+
+rexdd_edge_t rexdd_EQUALS_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl)
+{
+    // Since XOR is calling two ANDs, it may not be the most efficient, another implementation TBD?
+    rexdd_edge_t edge1, edge2, edgeA;
+    edge1 = *e1;
+    edge2 = *e2;
+    edgeA = rexdd_XOR_edges(F, &edge1, &edge2, lvl);
     rexdd_edge_com(&edgeA);
     return edgeA;
 }
