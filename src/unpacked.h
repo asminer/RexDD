@@ -12,7 +12,6 @@
  *
  */
 typedef enum {
-    
     rexdd_rule_X =   8,
     rexdd_rule_EL0 = 0,
     rexdd_rule_EL1 = 2,
@@ -226,8 +225,10 @@ typedef struct {
 
 /*
  *  The complement of rexdd edge
+ *      changing the complement bit of this edge, if allowed
  */
 static inline void rexdd_edge_com (rexdd_edge_t *e) {
+    // this is only used for Rex and some with complement flag
     e->label.rule = rexdd_rule_com_t (e->label.rule);
     e->label.complemented = !e->label.complemented;
 }

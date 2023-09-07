@@ -381,16 +381,47 @@ rexdd_edge_t rexdd_AND_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
     return edgeA;
 }
 
+rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t lvl)
+{
+    rexdd_edge_t edgeA;
+    edgeA = *e;
+    if (TYPE=="RexBDD" || TYPE=="C_FBDD" || TYPE=="C_QBDD" || TYPE=="CS_FBDD" || TYPE=="CS_QBDD" || TYPE=="CESRBDD") {
+        rexdd_edge_com(&edgeA);
+    } else {
+        if (rexdd_is_terminal(edgeA.target)) {
+            edgeA.target = rexdd_make_terminal(1-rexdd_terminal_value(edgeA.target));
+        } else {
+            rexdd_unpacked_node_t tmp;
+            rexdd_edge_label_t l;
+            tmp.level = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, edgeA.target));
+
+            rexdd_unpack_low_edge(rexdd_get_packed_for_handle(F->M, edgeA.target), &l);
+            // what if edge rule is not X? TBD
+            tmp.edge[0].label = l;
+            tmp.edge[0].target = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, edgeA.target));
+            tmp.edge[0] = rexdd_NOT_edge(F, &tmp.edge[0], tmp.level-1);
+            rexdd_unpack_high_edge(rexdd_get_packed_for_handle(F->M, edgeA.target), &l);
+            // what if edge rule is not X? TBD
+            tmp.edge[1].label = l;
+            tmp.edge[1].target = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, edgeA.target));
+            tmp.edge[1] = rexdd_NOT_edge(F, &tmp.edge[1], tmp.level-1);
+            l = edgeA.label;
+            rexdd_reduce_edge(F, lvl, l, tmp, &edgeA);
+        }
+    }
+    return edgeA;
+}
+
 rexdd_edge_t rexdd_OR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl)
 {
     // A or B = not ((not A) and (not B))
     rexdd_edge_t edge1, edge2, edgeA;                         // the answer
     edge1 = *e1;
     edge2 = *e2;
-    rexdd_edge_com(&edge1);
-    rexdd_edge_com(&edge2);
+    edge1 = rexdd_NOT_edge(F, &edge1, lvl);
+    edge2 = rexdd_NOT_edge(F, &edge2, lvl);
     edgeA = rexdd_AND_edges(F, &edge1, &edge2, lvl);
-    rexdd_edge_com(&edgeA);
+    edgeA = rexdd_NOT_edge(F, &edgeA, lvl);
     return edgeA;
 }
 
@@ -400,20 +431,12 @@ rexdd_edge_t rexdd_XOR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
     rexdd_edge_t edge1, edge2, edge_or, edge_and, edgeA;                         // the answer
     edge1 = *e1;
     edge2 = *e2;
-    rexdd_edge_com(&edge1);
-    rexdd_edge_com(&edge2);
+    edge1 = rexdd_NOT_edge(F, &edge1, lvl);
+    edge2 = rexdd_NOT_edge(F, &edge2, lvl);
     edge_or = rexdd_OR_edges(F, &edge1, &edge2, lvl);
     edge_and = rexdd_AND_edges(F, &edge1, &edge2, lvl);
-    rexdd_edge_com(&edge_and);
+    edge_and = rexdd_NOT_edge(F, &edge_and, lvl);
     edgeA = rexdd_AND_edges(F, &edge_or, &edge_and, lvl);
-    return edgeA;
-}
-
-rexdd_edge_t rexdd_NOT_edge(const rexdd_edge_t* e)
-{
-    rexdd_edge_t edgeA;
-    edgeA = *e;
-    rexdd_edge_com(&edgeA);
     return edgeA;
 }
 
@@ -423,7 +446,7 @@ rexdd_edge_t rexdd_NAND_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const r
     edge1 = *e1;
     edge2 = *e2;
     edgeA = rexdd_AND_edges(F, &edge1, &edge2, lvl);
-    rexdd_edge_com(&edgeA);
+    edgeA = rexdd_NOT_edge(F, &edgeA, lvl);
     return edgeA;
 }
 
@@ -433,7 +456,7 @@ rexdd_edge_t rexdd_NOR_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
     edge1 = *e1;
     edge2 = *e2;
     edgeA = rexdd_OR_edges(F, &edge1, &edge2, lvl);
-    rexdd_edge_com(&edgeA);
+    edgeA = rexdd_NOT_edge(F, &edgeA, lvl);
     return edgeA;
 }
 
@@ -442,7 +465,7 @@ rexdd_edge_t rexdd_IMPLIES_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, cons
     rexdd_edge_t edge1, edge2, edgeA;
     edge1 = *e1;
     edge2 = *e2;
-    rexdd_edge_com(&edge2);
+    edge2 = rexdd_NOT_edge(F, &edge2, lvl);
     edgeA = rexdd_AND_edges(F, &edge1, &edge2, lvl);
     return edgeA;
 }
@@ -454,6 +477,6 @@ rexdd_edge_t rexdd_EQUALS_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const
     edge1 = *e1;
     edge2 = *e2;
     edgeA = rexdd_XOR_edges(F, &edge1, &edge2, lvl);
-    rexdd_edge_com(&edgeA);
+    edgeA = rexdd_NOT_edge(F, &edgeA, lvl);
     return edgeA;
 }
