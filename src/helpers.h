@@ -241,7 +241,6 @@ void function_2_edge(
  */
 void gc_unmarked(rexdd_forest_t* F);
 
-
 #endif
 
 
