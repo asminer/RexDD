@@ -1,5 +1,4 @@
-#include "forest.h"
-#include "operation.h"
+#include "rexdd.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -91,10 +90,11 @@ long long card_edge(rexdd_forest_t* F, rexdd_edge_t* root, uint32_t lvl)
 
 int main(int argc, const char* const* argv)
 {
-    if (argc == 0) {
-		printf("Usage: ./check_and [num_val]\n");
-		printf("\tThis will randomly generate two boolean functions to test logic operation\n");
-	}
+    if (argc == 1) {
+      printf("Usage: ./check_and [num_val]\n");
+      printf("\tThis will randomly generate two boolean functions to test logic operation\n");
+      exit(0);
+    }
     uint32_t num_vals = atoi(argv[1]);
 
     rexdd_forest_t F;

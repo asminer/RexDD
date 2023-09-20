@@ -1,3 +1,6 @@
+#ifndef OPERATION_H
+#define OPERATION_H
+
 #include "forest.h"
 #include "helpers.h"
 
@@ -183,3 +186,5 @@ rexdd_edge_t rexdd_IMPLIES_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, cons
  *      @return rexdd_edge_t 
  */
 rexdd_edge_t rexdd_EQUALS_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl);
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef PARSER_H
+#define PARSER_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -169,3 +172,5 @@ static inline void file_type(const char* pathname, char* type)
     printf("Could not determine the file type for input file %s\n", pathname);
     return;
 }
+
+#endif

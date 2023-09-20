@@ -1,3 +1,5 @@
+#ifndef HELPER_H
+#define HELPER_H
 
 #include "forest.h"
 #include <assert.h>
@@ -240,7 +242,7 @@ void function_2_edge(
 void gc_unmarked(rexdd_forest_t* F);
 
 
-
+#endif
 
 
 // /****************************************************************************

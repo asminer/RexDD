@@ -1,5 +1,6 @@
 
 set(SOURCES
+  rexdd.h
   computing.c
   error.c
   forest.c
