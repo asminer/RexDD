@@ -65,9 +65,9 @@ static inline rexdd_rule_t rexdd_rule_com_t (rexdd_rule_t R)
     if (R == rexdd_rule_X) {
         return R;
     } else if (rexdd_is_one(R)) {
-        return R & 13;
+        return (rexdd_rule_t)(R & 13);
     } else {
-        return R | 2;
+        return (rexdd_rule_t)(R | 2);
     }
 }
 

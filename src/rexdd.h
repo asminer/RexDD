@@ -1,14 +1,16 @@
 #ifndef REXDD_H
 #define REXDD_H
 
-#include "forest.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "operation.h"
 #include "parser.h"
+#include "forest.h"
 
-inline void my_print()
-{
-    printf("This is RexDD\n");
+#ifdef __cplusplus
 }
-
+#endif
 
 #endif

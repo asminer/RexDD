@@ -202,7 +202,7 @@ rexdd_unpack_low_edge(const rexdd_packed_node_t *pN, rexdd_edge_label_t *el)
     // bit 29
     static const uint32_t   BIT29_MASK  = (uint64_t)0x01 << 29;
 
-    el->rule = (pN->third32 & LORU_MASK) >> 22;
+    el->rule = (rexdd_rule_t)((pN->third32 & LORU_MASK) >> 22);
     el->swapped = pN->fourth32 & BIT29_MASK;
     el->complemented = 0;
 }
@@ -241,7 +241,7 @@ rexdd_unpack_high_edge(const rexdd_packed_node_t *pN, rexdd_edge_label_t *el)
     static const uint32_t   BIT30_MASK  = (uint64_t)0x01 << 30;
     static const uint32_t   BIT31_MASK  = (uint64_t)0x01 << 31;
 
-    el->rule = (pN->third32 & HIRU_MASK) >> 27;
+    el->rule = (rexdd_rule_t)((pN->third32 & HIRU_MASK) >> 27);
     el->swapped = pN->fourth32 & BIT30_MASK;
     el->complemented = pN->fourth32 & BIT31_MASK;
 }

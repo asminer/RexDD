@@ -3,6 +3,7 @@
 
 #include "nodepage.h"
 #include "error.h"
+#include <stdlib.h>
 
 /*
  *  Efficient storage of lots of nodes, for use by a forest.
@@ -123,6 +124,10 @@ rexdd_get_packed_for_handle(rexdd_nodeman_t *M, rexdd_node_handle_t h)
     rexdd_sanity1(M, "Null node manager");
     rexdd_sanity1(M->pages, "Empty node manager");
     rexdd_sanity1(h, "Null node handle");
+    if (rexdd_is_terminal(h)) {
+        printf("No packed node for terminal handle\n");
+        exit(2);
+    }
 
     --h;
 

@@ -184,9 +184,10 @@ void rexdd_sweep_CT(rexdd_comp_table_t *CT, rexdd_nodeman_t *M)
         if (CT->table[i].edgeA == 0) {
             continue;
         } else {
-            if (rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edge1->target))
-                || rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edge2->target))
-                || rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edgeA->target)))
+            if (!rexdd_is_terminal(CT->table[i].edge1->target))
+            if ((!rexdd_is_terminal(CT->table[i].edge1->target) && !rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edge1->target)))
+                || (!rexdd_is_terminal(CT->table[i].edge2->target) && !rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edge2->target)))
+                || (!rexdd_is_terminal(CT->table[i].edgeA->target) && !rexdd_is_packed_marked(rexdd_get_packed_for_handle(M, CT->table[i].edgeA->target))))
             {
                 CT->table[i].lvl = 0;
                 free(CT->table[i].edge1);
