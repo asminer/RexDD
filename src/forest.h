@@ -6,6 +6,20 @@
 #include "unique.h"
 #include "error.h"
 #include "computing.h"
+#include <stdlib.h>
+
+#define REXBDD  0
+#define QBDD    1
+#define CQBDD   2
+#define SQBDD   3
+#define CSQBDD  4
+#define FBDD    5
+#define CFBDD   6
+#define SFBDD   7
+#define CSFBDD  8
+#define ZBDD    9
+#define ESRBDD  10
+#define CESRBDD 11
 
 /********************************************************************
  *
@@ -30,11 +44,43 @@
 
 typedef struct {
     uint_fast32_t num_levels;
+    char bdd_type;      // BDD type default RexBDD: 0;
+    char* type_name;
 
     // TBD
 } rexdd_forest_settings_t;
-
-
+// global setting BDD type
+inline void rexdd_type_setting(rexdd_forest_settings_t* s, char type) {
+    s->bdd_type = type;
+    if (type == REXBDD) {
+        s->type_name = "REXBDD";
+    } else if (type == QBDD) {
+        s->type_name = "QBDD";
+    } else if (type == CQBDD) {
+        s->type_name = "CQBDD";
+    } else if (type == SQBDD) {
+        s->type_name = "SQBDD";
+    } else if (type == CSQBDD) {
+        s->type_name = "CSQBDD";
+    } else if (type == FBDD) {
+        s->type_name = "FBDD";
+    } else if (type == CFBDD) {
+        s->type_name = "CFBDD";
+    } else if (type == SFBDD) {
+        s->type_name = "SFBDD";
+    } else if (type == CSFBDD) {
+        s->type_name = "CSFBDD";
+    } else if (type == ZBDD) {
+        s->type_name = "ZBDD";
+    } else if (type == ESRBDD) {
+        s->type_name = "ESRBDD";
+    } else if (type == CESRBDD) {
+        s->type_name = "CESRBDD";
+    }else {
+        printf("Unknown BDD type!\n");
+        exit(1);
+    }
+}
 
 
 /**
@@ -110,6 +156,7 @@ void rexdd_free_forest(
  *
  */
 void rexdd_normalize_node(
+        rexdd_forest_t          *F,
         rexdd_unpacked_node_t   *P,
         rexdd_edge_t            *out);
 
