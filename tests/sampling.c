@@ -1,5 +1,4 @@
-#include "forest.h"
-#include "helpers.h"
+#include "rexdd.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,8 +42,8 @@ void getDistributions(uint64_t arr[], long long n, FILE* fout, char type)
         density[arr[i]-min]++;
     }
     printf("=================| Results |===============\n");
-    printf("#node(%s)\t\t#count(%%)\n", TYPE);
-    fprintf(fout, "#node(%s)\t\t#count(%%)\n", TYPE);
+    printf("#node\t\t#count(%%)\n");
+    fprintf(fout, "#node\t\t#count(%%)\n");
     cumulative[0] = density[0];
     if (type == 2) {
         printf("%llu\t\t\t%0.4f\n", min, (double)100*density[0]/n);
@@ -188,7 +187,7 @@ int main(int argc, const char* const* argv)
                 printf("\033[K"); // Clear line
             }
         } else {
-            printf("%s number of nodes over function %lld is %llu\n", TYPE, i+1, num_nodes);
+            printf("%s number of nodes over function %lld is %llu\n", F.S.type_name, i+1, num_nodes);
         }
         // free forest for this function
         rexdd_free_forest(&F);

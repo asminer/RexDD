@@ -1,6 +1,4 @@
-#include "forest.h"
-#include "parser.h"
-#include "helpers.h"
+#include "rexdd.h"
 
 #include <assert.h>
 #include <time.h>
@@ -264,9 +262,9 @@ int main(int argc, const char* const* argv)
         } // for n
     } // for p
     if (argc == 2) {
-        printf("Total number of nodes (%s) in %s is %llu\n", TYPE, infile, num_nodes);
+        printf("Total number of nodes (%s) in %s is %llu\n", F.S.type_name, infile, num_nodes);
     } else {
-        printf("Total number of nodes (%s) in forest is %llu\n", TYPE, num_nodes);
+        printf("Total number of nodes (%s) in forest is %llu\n", F.S.type_name, num_nodes);
     }
 
     /*  w/o one root edge and count */
@@ -279,7 +277,7 @@ int main(int argc, const char* const* argv)
             wo = i;
         }
     }
-    printf("Total number of nodes (%s) without %d is %llu\n", TYPE, wo, num_nodes);
+    printf("Total number of nodes (%s) without %d is %llu\n", F.S.type_name, wo, num_nodes);
     printf("============================================================================\n");
     // unmark_forest(&F);
     // for (int i=0; i<5; i++) {

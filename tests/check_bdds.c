@@ -1,5 +1,4 @@
-#include "forest.h"
-#include "helpers.h"
+#include "rexdd.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -130,6 +129,7 @@ int main()
     rexdd_forest_settings_t s;
 
     rexdd_default_forest_settings(5, &s);
+    rexdd_type_setting(&s, REXBDD);
     rexdd_init_forest(&F, &s);
 
     rexdd_unpacked_node_t temp;
@@ -138,13 +138,18 @@ int main()
     temp.edge[1].label.rule = rexdd_rule_X;
     temp.edge[0].label.swapped = 0;
     temp.edge[1].label.swapped = 0;
-#ifndef REXBDD
-    temp.edge[0].label.complemented = 0;
-    temp.edge[1].label.complemented = 0;
-#else
-    temp.edge[0].target = rexdd_make_terminal(1);
-    temp.edge[1].target = rexdd_make_terminal(1);
-#endif
+// #ifndef REXBDD
+    if (F.S.bdd_type != REXBDD) {
+        temp.edge[0].label.complemented = 0;
+        temp.edge[1].label.complemented = 0;
+    } else {
+        temp.edge[0].target = rexdd_make_terminal(1);
+        temp.edge[1].target = rexdd_make_terminal(1);
+    }
+    
+// #else
+    
+// #endif
 
     rexdd_edge_t eval;
     rexdd_edge_label_t l;
@@ -185,13 +190,17 @@ int main()
 
     printf("check eval for level %d...\n",levels);
     for (int k = 0; k < 0x01 << (0x01 << levels); k++) {
-#ifndef REXBDD
+// #ifndef REXBDD
+    if (F.S.bdd_type != REXBDD) {
         temp.edge[Vars_1[0][1]].target = rexdd_make_terminal(Function_1[0][k]);
         temp.edge[Vars_1[1][1]].target = rexdd_make_terminal(Function_1[1][k]);
-#else
+    } else {
         temp.edge[Vars_1[0][1]].label.complemented = !Function_1[0][k];
         temp.edge[Vars_1[1][1]].label.complemented = !Function_1[1][k];
-#endif
+    }
+// #else
+        
+// #endif
 
         rexdd_reduce_edge(&F, levels, l, temp, &eval);
 
@@ -231,48 +240,10 @@ int main()
     check_eval(F, 2, Vars_1, Function_1, ptr1, Vars_2, Function_2, ptr2);
 
     FILE *f;
-#ifdef QBDD
-    f = fopen("QBDD.gv", "w+");
-#endif
-#ifdef C_QBDD
-    f = fopen("CQBDD.gv", "w+");
-#endif
-#ifdef S_QBDD
-    f = fopen("SQBDD.gv", "w+");
-#endif
-#ifdef CS_QBDD
-    f = fopen("CSQBDD.gv", "w+");
-#endif
+    f = fopen("level2.gv", "w+");
 
-#ifdef FBDD
-    f = fopen("FBDD.gv", "w+");
-#endif
-#ifdef C_FBDD
-    f = fopen("CFBDD.gv", "w+");
-#endif
-#ifdef S_FBDD
-    f = fopen("SFBDD.gv", "w+");
-#endif
-#ifdef CS_FBDD
-    f = fopen("CSFBDD.gv", "w+");
-#endif
-
-#ifdef ZBDD
-    f = fopen("ZBDD.gv", "w+");
-#endif
-
-#ifdef ESRBDD
-    f = fopen("ESRBDD.gv", "w+");
-#endif
-#ifdef CESRBDD
-    f = fopen("CESRBDD.gv", "w+");
-#endif
-
-#ifdef REXBDD
-    f = fopen("RexBDD.gv", "w+");
-#endif
-    // build_gv_forest(f, &F, ptr2, 16);
-    // fclose(f);
+    build_gv_forest(f, &F, ptr2, 16);
+    fclose(f);
 
     export_funsNum(F, levels, ptr2);
 
@@ -288,8 +259,8 @@ int main()
     rexdd_edge_t ptr3[0x01<<(0x01<<levels)];
 
     check_eval(F, 3, Vars_2, Function_2, ptr2, Vars_3, Function_3, ptr3);
-    build_gv_forest(f, &F, ptr3, 256);
-    fclose(f);
+    // build_gv_forest(f, &F, ptr3, 256);
+    // fclose(f);
 
     f = fopen("saved_BDD.txt", "w+");
     save(f,&F, ptr3, 0x01<<(0x01<<levels));

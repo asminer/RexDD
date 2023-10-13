@@ -72,21 +72,21 @@ void showCommon(char* f1, char* f2, long long n)
     printf("number of common minterms is %lld\n", count);
 }
 
-long long card_edge(rexdd_forest_t* F, rexdd_edge_t* root, uint32_t lvl)
-{
-    if (lvl == 0) {
-        assert(root->label.rule == rexdd_rule_X);
-        return rexdd_terminal_value(root->target) ^ root->label.complemented;
-    }
-    // determine down pointers
-    rexdd_edge_t root_down0, root_down1;
-    root_down0 = rexdd_expand_childEdge(F, lvl, root, 0);
-    root_down1 = rexdd_expand_childEdge(F, lvl, root, 1);
-    long long ans0 = 0, ans1 = 0;
-    ans0 = card_edge(F, &root_down0, lvl-1);
-    ans1 = card_edge(F, &root_down1, lvl-1);
-    return ans0 + ans1;
-}
+// long long card_edge(rexdd_forest_t* F, rexdd_edge_t* root, uint32_t lvl)
+// {
+//     if (lvl == 0) {
+//         assert(root->label.rule == rexdd_rule_X);
+//         return rexdd_terminal_value(root->target) ^ root->label.complemented;
+//     }
+//     // determine down pointers
+//     rexdd_edge_t root_down0, root_down1;
+//     root_down0 = rexdd_expand_childEdge(F, lvl, root, 0);
+//     root_down1 = rexdd_expand_childEdge(F, lvl, root, 1);
+//     long long ans0 = 0, ans1 = 0;
+//     ans0 = card_edge(F, &root_down0, lvl-1);
+//     ans1 = card_edge(F, &root_down1, lvl-1);
+//     return ans0 + ans1;
+// }
 
 int main(int argc, const char* const* argv)
 {
@@ -96,11 +96,14 @@ int main(int argc, const char* const* argv)
       exit(0);
     }
     uint32_t num_vals = atoi(argv[1]);
+    char bdd_type = atoi(argv[2]);
 
     rexdd_forest_t F;
     rexdd_forest_settings_t s;
     rexdd_default_forest_settings(num_vals, &s);
+    rexdd_type_setting(&s, bdd_type);
     rexdd_init_forest(&F, &s);
+    printf("testing for id: %d; name: %s\n", F.S.bdd_type, F.S.type_name);
 
     // Randomly generate minterms and build BDD1 and BDD2
     rexdd_edge_t e1, e2, ans;
@@ -187,6 +190,21 @@ int main(int argc, const char* const* argv)
         // fclose(fout);
         printf("AND cardinality test ERROR!\n");
     }
+    unmark_forest(&F);
+    mark_nodes(&F, ans.target);
+    uint_fast64_t q, n;
+    uint64_t num_nodes = 0;
+    for (q=0; q<F.M->pages_size; q++) {
+        const rexdd_nodepage_t *page = F.M->pages+q;
+        for (n=0; n<page->first_unalloc; n++) {
+            if (rexdd_is_packed_marked(page->chunk+n)) {
+                num_nodes++;
+            }
+        } // for n
+    } // for p
+    printf("Total number of nodes in and ans: %llu\n", num_nodes);
+
+
     rexdd_edge_t or_ans, xor_ans;
     or_ans = rexdd_OR_edges(&F, &e1, &e2, num_vals);
     long long card_or, card_xor;
@@ -252,6 +270,12 @@ int main(int argc, const char* const* argv)
     printf("AND evaluation test PASS!\n");
     printf("OR evaluation test PASS!\n");
     printf("XOR evaluation test PASS!\n");
+
+    rexdd_edge_t variable;
+    variable = build_variable(&F, 8);
+    show_edge(variable);
+    printf("level is %d\n", (rexdd_is_terminal(variable.target))?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, variable.target)));
+
 
     rexdd_free_forest(&F);
     free(function1);

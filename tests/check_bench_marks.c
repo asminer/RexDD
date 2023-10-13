@@ -1,5 +1,4 @@
-#include "forest.h"
-#include "helpers.h"
+#include "rexdd.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -210,7 +209,7 @@ int main(int argc, const char* const* argv)
 
     // output the result into a file for each benchmark
 
-    printf("The total number of nodes for %s is %llu\n", TYPE, count);
+    printf("The total number of nodes for %s is %llu\n", F_in.S.type_name, count);
 
     // fin = fopen("read_RexBDD.gv", "w+");
     // build_gv(fin, &F_in, reduced);
