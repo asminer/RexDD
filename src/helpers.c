@@ -145,9 +145,12 @@ void build_gv(FILE *f, rexdd_forest_t *F, rexdd_edge_t e)
     }
 
     fprintf(f, "\t{rank=same v0 T0 [label = \"0\", shape = square]}\n");
-#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD || defined S_QBDD || defined S_FBDD
-    fprintf(f, "\t{rank=same v0 T1 [label = \"1\", shape = square]}\n");
-#endif
+    if (F->S.bdd_type == QBDD || F->S.bdd_type == FBDD || F->S.bdd_type == ZBDD 
+        || F->S.bdd_type == ESRBDD || F->S.bdd_type == SQBDD || F->S.bdd_type == SFBDD) {
+        fprintf(f, "\t{rank=same v0 T1 [label = \"1\", shape = square]}\n");
+        }
+// #if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD || defined S_QBDD || defined S_FBDD
+// #endif
 
     fprintf(f, "}");
 }
@@ -196,11 +199,18 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
     rexdd_unpacked_node_t node;
     char label_bufferL[10];
     char label_bufferH[10];
-#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD || defined S_QBDD || defined S_FBDD
-    for (rexdd_node_handle_t t=1; t<=F->M->pages->first_unalloc; t++) {
-#else
-    for (rexdd_node_handle_t t=1; t<F->M->pages->first_unalloc; t++) {
-#endif
+    rexdd_node_handle_t max_handle;
+    if (F->S.bdd_type == QBDD || F->S.bdd_type == FBDD || F->S.bdd_type == ZBDD
+        || F->S.bdd_type == ESRBDD || F->S.bdd_type == SQBDD || F->S.bdd_type == SFBDD){
+        max_handle = F->M->pages->first_unalloc;
+    } else {
+        max_handle = F->M->pages->first_unalloc - 1;
+    }
+// #if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD || defined S_QBDD || defined S_FBDD
+    for (rexdd_node_handle_t t=1; t<=max_handle; t++) {
+// #else
+//     for (rexdd_node_handle_t t=1; t<F->M->pages->first_unalloc; t++) {
+// #endif
         rexdd_packed_to_unpacked(rexdd_get_packed_for_handle(F->M, t), &node);
 
         fprintf(f, "\t{rank=same v%d N%llu [label = \"N%llu_%llu\", shape = circle]}\n",
@@ -263,9 +273,11 @@ void build_gv_forest(FILE *f, rexdd_forest_t *F, rexdd_edge_t ptr[], int size)
     }
 
     fprintf(f, "\t{rank=same v0 \"T0\" [label = \"0\", shape = square]}\n");
-#if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD || defined S_QBDD || defined S_FBDD
-    fprintf(f, "\t{rank=same v0 \"T1\" [label = \"1\", shape = square]}\n");
-#endif
+// #if defined QBDD || defined FBDD || defined ZBDD || defined ESRBDD || defined S_QBDD || defined S_FBDD
+    if (F->S.bdd_type == QBDD || F->S.bdd_type == FBDD || F->S.bdd_type == ZBDD || F->S.bdd_type == ESRBDD || F->S.bdd_type == SQBDD || F->S.bdd_type == SFBDD) {
+        fprintf(f, "\t{rank=same v0 \"T1\" [label = \"1\", shape = square]}\n");
+    }
+// #endif
 
     fprintf(f, "}");
 
@@ -477,7 +489,7 @@ void save(FILE *fout, rexdd_forest_t *F, rexdd_edge_t edges[], uint64_t t)
     // fout = fopen(temptxt, "w+");
     // // fout = fopen(type, "w+");
 
-    fprintf(fout, "type %s\n", TYPE);
+    fprintf(fout, "type %s\n", F->S.type_name);
 
     fprintf(fout, "lvls %d\n", F->S.num_levels);
     uint64_t max_handle = 0;
@@ -622,8 +634,8 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     printf("Counting number of nodes...\n");
     FILE *test, *test2;
     char buffer[24], buffer2[24];
-    snprintf(buffer, 24, "L%d_nodeFun_%s.txt", levels, TYPE);
-    snprintf(buffer2, 24, "L%d_funNode_%s.txt", levels, TYPE);
+    snprintf(buffer, 24, "L%d_nodeFun_%s.txt", levels, F.S.type_name);
+    snprintf(buffer2, 24, "L%d_funNode_%s.txt", levels, F.S.type_name);
 
     test = fopen(buffer, "w+");
     test2 = fopen(buffer2, "w+");
@@ -667,7 +679,7 @@ void export_funsNum(rexdd_forest_t F, int levels, rexdd_edge_t edges[])
     fclose(test);
     fclose(test2);
     printf("Done counting!\n\n");
-    printf("max number of nodes(including terminal) for any level %d %s is: %d\n\n",levels, TYPE, max_num);
+    printf("max number of nodes(including terminal) for any level %d %s is: %d\n\n",levels, F.S.type_name, max_num);
 
 }
 
@@ -1162,90 +1174,6 @@ rexdd_edge_t rexdd_expand_childEdge(rexdd_forest_t* F, uint32_t r, rexdd_edge_t*
                                 e->target);
             }
         }
-        // switch (e->label.rule) {
-        //     case rexdd_rule_EL0:
-        //     case rexdd_rule_EL1:
-        //         if (type) {
-        //             rexdd_set_edge(&ans,
-        //                             ((r-lvl) == 1)?rexdd_rule_X:e->label.rule,
-        //                             e->label.complemented,
-        //                             e->label.swapped,
-        //                             e->target);
-                    
-        //         } else {
-        //             rexdd_set_edge(&ans,
-        //                             rexdd_rule_X,
-        //                             (e->label.rule == rexdd_rule_EL1),
-        //                             0,
-        //                             rexdd_make_terminal(0));
-        //         }
-        //         break;
-        //     case rexdd_rule_AL0:
-        //     case rexdd_rule_AL1:
-        //         if (type) {
-        //             rexdd_set_edge(&ans,
-        //                             rexdd_rule_X,
-        //                             0,
-        //                             0,
-        //                             rexdd_make_terminal(rexdd_is_one(e->target)));
-        //         } else {
-        //             rexdd_set_edge(&ans,
-        //                             e->label.rule,
-        //                             e->label.complemented,
-        //                             e->label.swapped,
-        //                             e->target);
-        //             if (r-lvl == 2) {
-        //                 ans.label.rule = (rexdd_is_one(e->label.rule)) ? rexdd_rule_EL1 : rexdd_rule_EL0;
-        //             } else if (r-lvl == 1) {
-        //                 ans.label.rule = rexdd_rule_X;
-        //             }
-        //         }
-        //         break;
-        //     case rexdd_rule_EH0:
-        //     case rexdd_rule_EH1:
-        //         if (type) {
-        //             rexdd_set_edge(&ans,
-        //                             rexdd_rule_X,
-        //                             (e->label.rule == rexdd_rule_EH1),
-        //                             0,
-        //                             rexdd_make_terminal(0));
-                    
-        //         } else {
-        //             rexdd_set_edge(&ans,
-        //                             ((r-lvl) == 1)?rexdd_rule_X:e->label.rule,
-        //                             e->label.complemented,
-        //                             e->label.swapped,
-        //                             e->target);
-        //         }
-        //         break;
-        //     case rexdd_rule_AH0:
-        //     case rexdd_rule_AH1:
-        //         if (type) {
-        //             rexdd_set_edge(&ans,
-        //                             e->label.rule,
-        //                             e->label.complemented,
-        //                             e->label.swapped,
-        //                             e->target);
-        //             if (r-lvl == 2) {
-        //                 ans.label.rule = (rexdd_is_one(e->label.rule)) ? rexdd_rule_EH1 : rexdd_rule_EH0;
-        //             } else if (r-lvl == 1) {
-        //                 ans.label.rule = rexdd_rule_X;
-        //             }
-        //         } else {
-        //             rexdd_set_edge(&ans,
-        //                             rexdd_rule_X,
-        //                             0,
-        //                             0,
-        //                             rexdd_make_terminal(rexdd_is_one(e->target)));
-        //         }
-        //         break;
-        //     default:
-        //         rexdd_set_edge(&ans,
-        //                         e->label.rule,
-        //                         e->label.complemented,
-        //                         e->label.swapped,
-        //                         e->target);
-        // }
     }
     return ans;
 }
@@ -1276,6 +1204,96 @@ void function_2_edge(rexdd_forest_t* F, char* functions, rexdd_edge_t* root_out,
     function_2_edge(F, functions, &temp.edge[0], next_lvl, start, (end-start)/2+start);
     function_2_edge(F, functions, &temp.edge[1], next_lvl, (end-start)/2+start+1, end);
     rexdd_reduce_edge(F, L, l, temp, root_out);
+}
+
+rexdd_edge_t build_constant(rexdd_forest_t *F, uint32_t k, int t)
+{
+    //
+    rexdd_edge_t ans;
+    rexdd_edge_label_t l;
+    l.complemented = 0;
+    l.swapped = 0;
+    l.rule = rexdd_rule_X;
+    rexdd_unpacked_node_t temp;
+    if (F->S.bdd_type == QBDD || F->S.bdd_type == CQBDD
+        || F->S.bdd_type == SQBDD || F->S.bdd_type == CSQBDD) {
+        // for BDDs that no skipping level
+        if (k==0) {
+            rexdd_set_edge(&ans, rexdd_rule_X, 0, 0, rexdd_make_terminal(t));
+            return ans;
+        }
+        temp.level = 1;
+        rexdd_set_edge(&temp.edge[0],
+                        rexdd_rule_X,
+                        0,
+                        0,
+                        rexdd_make_terminal(t));
+        rexdd_set_edge(&temp.edge[1],
+                        rexdd_rule_X,
+                        0,
+                        0,
+                        rexdd_make_terminal(t));
+        rexdd_reduce_edge(F, 1, l, temp, &ans);
+        if (k==1) return ans;
+        for (uint32_t i=2; i<=k; i++) {
+            temp.level = i;
+            temp.edge[0] = ans;
+            temp.edge[1] = ans;
+            rexdd_reduce_edge(F, i, l, temp, &ans);
+        }
+        return ans;
+    } else if (F->S.bdd_type == FBDD || F->S.bdd_type == SFBDD
+                || F->S.bdd_type == ZBDD || F->S.bdd_type == ESRBDD) {
+        // for BDDs that no complement bit
+        rexdd_set_edge(&ans, rexdd_rule_X ,0 ,0 , rexdd_make_terminal(t));
+        return ans;
+    } else {
+        // for CF, CSF, CESR, Rex
+        rexdd_set_edge(&ans, rexdd_rule_X, (t==1), 0, rexdd_make_terminal(0));
+        return ans;
+    }
+}
+
+rexdd_edge_t build_variable(rexdd_forest_t *F, uint32_t k)
+{
+    rexdd_edge_t ans;
+    rexdd_edge_label_t l;
+    l.complemented = 0;
+    l.swapped = 0;
+    l.rule = rexdd_rule_X;
+    rexdd_unpacked_node_t temp;
+    temp.level = k;
+    temp.edge[0] = build_constant(F, k-1, 0);
+    temp.edge[1] = build_constant(F, k-1, 1);
+    rexdd_reduce_edge(F, F->S.num_levels, l, temp, &ans);
+    if (F->S.bdd_type == QBDD || F->S.bdd_type == CQBDD
+        || F->S.bdd_type == SQBDD || F->S.bdd_type == CSQBDD) {
+        if (k == F->S.num_levels) return ans;
+        for (uint32_t i=k+1; i<=F->S.num_levels; i++) {
+            temp.level = i;
+            temp.edge[0] = ans;
+            temp.edge[1] = ans;
+            rexdd_reduce_edge(F, i, l, temp, &ans);
+        }
+        return ans;
+    }
+    return ans;
+}
+
+long long card_edge(rexdd_forest_t* F, rexdd_edge_t* root, uint32_t lvl)
+{
+    if (lvl == 0) {
+        assert(root->label.rule == rexdd_rule_X);
+        return rexdd_terminal_value(root->target) ^ root->label.complemented;
+    }
+    // determine down pointers
+    rexdd_edge_t root_down0, root_down1;
+    root_down0 = rexdd_expand_childEdge(F, lvl, root, 0);
+    root_down1 = rexdd_expand_childEdge(F, lvl, root, 1);
+    long long ans0 = 0, ans1 = 0;
+    ans0 = card_edge(F, &root_down0, lvl-1);
+    ans1 = card_edge(F, &root_down1, lvl-1);
+    return ans0 + ans1;
 }
 
 /****************************************************************************

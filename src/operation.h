@@ -11,31 +11,46 @@
  * 
  * @param e 
  */
-static inline void rexdd_normalize_edge(rexdd_edge_t* e)
+static inline void rexdd_normalize_edge(rexdd_forest_t *F, rexdd_edge_t* e)
 {
-#if defined C_QBDD || defined CS_QBDD || defined C_FBDD || defined CS_FBDD || defined CESRBDD || defined REXBDD
-    if (rexdd_is_terminal(e->target) && rexdd_terminal_value(e->target) == 1) {
-        e->label.complemented = !e->label.complemented;
-        e->target = rexdd_make_terminal(0);
+    if (F->S.bdd_type == CQBDD || F->S.bdd_type == CSQBDD
+        || F->S.bdd_type == CFBDD || F->S.bdd_type == CSFBDD
+        || F->S.bdd_type == CESRBDD || F->S.bdd_type == REXBDD) {
+        // for the BDDs with complement bit
+        if (rexdd_is_terminal(e->target)) {
+            e->label.complemented = (rexdd_terminal_value(e->target) == 1) ^ e->label.complemented;
+            e->target = rexdd_make_terminal(0);
+        }
     }
-#endif
-#if defined S_QBDD || defined S_FBDD || defined REXBDD
-    if (rexdd_is_terminal(e->target)) {
-        e->label.swapped = 0;
+// #if defined C_QBDD || defined CS_QBDD || defined C_FBDD || defined CS_FBDD || defined CESRBDD || defined REXBDD
+    
+// #endif
+    if (F->S.bdd_type == SQBDD || F->S.bdd_type == SFBDD || F->S.bdd_type == REXBDD) {
+        if (rexdd_is_terminal(e->target)) {
+            e->label.swapped = 0;
+        }
     }
-#endif
-#if defined REXBDD || defined CESRBDD
-    if (rexdd_is_terminal(e->target) && e->label.rule != rexdd_rule_X
-        && rexdd_is_one(e->label.rule) == e->label.complemented) {
-        e->label.rule = rexdd_rule_X;
+// #if defined S_QBDD || defined S_FBDD || defined REXBDD
+    
+// #endif
+    if (F->S.bdd_type == CESRBDD || F->S.bdd_type == REXBDD) {
+        if (rexdd_is_terminal(e->target) && e->label.rule != rexdd_rule_X
+            && rexdd_is_one(e->label.rule) == e->label.complemented) {
+            e->label.rule = rexdd_rule_X;
+        }
     }
-#endif
-#if defined ZBDD || defined ESRBDD
+// #if defined REXBDD || defined CESRBDD
+    
+// #endif
+    if (F->S.bdd_type == ZBDD || F->S.bdd_type == ESRBDD) {
     if (rexdd_is_terminal(e->target) && !rexdd_terminal_value(e->target)
-        && e->label.rule != rexdd_rule_X) {
-        e->label.rule = rexdd_rule_X;
+            && e->label.rule != rexdd_rule_X) {
+            e->label.rule = rexdd_rule_X;
+        }
     }
-#endif
+// #if defined ZBDD || defined ESRBDD
+    
+// #endif
 }
 
 /**

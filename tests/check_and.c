@@ -72,22 +72,6 @@ void showCommon(char* f1, char* f2, long long n)
     printf("number of common minterms is %lld\n", count);
 }
 
-// long long card_edge(rexdd_forest_t* F, rexdd_edge_t* root, uint32_t lvl)
-// {
-//     if (lvl == 0) {
-//         assert(root->label.rule == rexdd_rule_X);
-//         return rexdd_terminal_value(root->target) ^ root->label.complemented;
-//     }
-//     // determine down pointers
-//     rexdd_edge_t root_down0, root_down1;
-//     root_down0 = rexdd_expand_childEdge(F, lvl, root, 0);
-//     root_down1 = rexdd_expand_childEdge(F, lvl, root, 1);
-//     long long ans0 = 0, ans1 = 0;
-//     ans0 = card_edge(F, &root_down0, lvl-1);
-//     ans1 = card_edge(F, &root_down1, lvl-1);
-//     return ans0 + ans1;
-// }
-
 int main(int argc, const char* const* argv)
 {
     if (argc == 1) {

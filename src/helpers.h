@@ -4,31 +4,6 @@
 #include "forest.h"
 #include <assert.h>
 
-#ifdef FBDD
-#   define TYPE "FBDD"
-#elif defined QBDD
-#   define TYPE "QBDD"
-#elif defined ZBDD
-#   define TYPE "ZBDD"
-#elif defined C_FBDD
-#   define TYPE "C_FBDD"
-#elif defined C_QBDD
-#   define TYPE "C_QBDD"
-#elif defined S_FBDD
-#   define TYPE "S_FBDD"
-#elif defined S_QBDD
-#   define TYPE "S_QBDD"
-#elif defined CS_FBDD
-#   define TYPE "CS_FBDD"
-#elif defined CS_QBDD
-#   define TYPE "CS_QBDD"
-#elif defined ESRBDD
-#   define TYPE "ESRBDD"
-#elif defined CESRBDD
-#   define TYPE "CESRBDD"
-#else
-#   define TYPE "RexBDD"
-#endif
 
 /****************************************************************************
  *
@@ -234,6 +209,22 @@ void function_2_edge(
                 int L, 
                 unsigned long start,
                 unsigned long end);
+
+/****************************************************************************
+ *  Create a BDD constant edge to terminal one/zero at level k
+ *      note: only for t=0/1; more general TBD
+ */
+rexdd_edge_t build_constant(rexdd_forest_t *F, uint32_t k, int t);
+
+/****************************************************************************
+ *  Create a BDD for a variable at level k
+ */
+rexdd_edge_t build_variable(rexdd_forest_t *F, uint32_t k);
+
+/****************************************************************************
+ *  Compute the cardinality of BDD from root edge at level lvl
+ */
+long long card_edge(rexdd_forest_t* F, rexdd_edge_t* root, uint32_t lvl);
 
 
 /****************************************************************************
