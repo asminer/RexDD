@@ -188,6 +188,24 @@ int main(int argc, const char* const* argv)
     } // for p
     printf("Total number of nodes in and ans: %llu\n", num_nodes);
 
+    rexdd_edge_t not_ans;
+    not_ans = rexdd_NOT_edge(&F, &e1, num_vals);
+    long long card_not;
+    card_not = card_edge(&F, &not_ans, num_vals);
+    printf("\ncardinality of NOT of e1 ans:\t%lld\n", card_not);
+    if (card_not + count1 != 0x01<<num_vals) {
+        printf("NOT cardinality test ERROR!\n");
+        FILE* fout_err;
+        fout_err = fopen("not_error.gv", "w+");
+        build_gv(fout_err, &F, not_ans);
+        fclose(fout_err);
+        fout_err = fopen("e1_error.gv", "w+");
+        build_gv(fout_err, &F, e1);
+        fclose(fout_err);
+    } else {
+        printf("NOT cardinality test PASS!\n");
+    }
+
 
     rexdd_edge_t or_ans, xor_ans;
     or_ans = rexdd_OR_edges(&F, &e1, &e2, num_vals);
@@ -198,6 +216,10 @@ int main(int argc, const char* const* argv)
         printf("OR cardinality test PASS!\n");
     } else {
         printf("OR cardinality test ERROR!\n");
+        FILE* fout_err;
+        fout_err = fopen("or_error.gv", "w+");
+        build_gv(fout_err, &F, or_ans);
+        fclose(fout_err);
     }
     xor_ans = rexdd_XOR_edges(&F, &e1, &e2, num_vals);
     card_xor = card_edge(&F, &xor_ans, num_vals);
@@ -238,6 +260,13 @@ int main(int argc, const char* const* argv)
                 printf("%d ", minterm[m]);
             }
             printf("\tf1: %d\tf2: %d\n", function1[n], function2[n]);
+            FILE* fout_err;
+            fout_err = fopen("or_error.gv", "w+");
+            build_gv(fout_err, &F, or_ans);
+            fclose(fout_err);
+            fout_err = fopen("e1_error.gv", "w+");
+            build_gv(fout_err, &F, e1);
+            fclose(fout_err);
             exit(1);
         }
         ans_eval = rexdd_eval(&F, &xor_ans, num_vals, minterm_eval);
@@ -254,12 +283,6 @@ int main(int argc, const char* const* argv)
     printf("AND evaluation test PASS!\n");
     printf("OR evaluation test PASS!\n");
     printf("XOR evaluation test PASS!\n");
-
-    rexdd_edge_t variable;
-    variable = build_variable(&F, 8);
-    show_edge(variable);
-    printf("level is %d\n", (rexdd_is_terminal(variable.target))?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F.M, variable.target)));
-
 
     rexdd_free_forest(&F);
     free(function1);

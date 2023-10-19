@@ -58,7 +58,6 @@ rexdd_edge_t rexdd_expand_edgeXY(rexdd_edge_t* e, char xy)
 
 rexdd_edge_t rexdd_build_L(rexdd_forest_t* F, rexdd_edge_t* ex, rexdd_edge_t* ey, uint32_t n, uint32_t m)
 {
-    // printf("this is build_L\n");
     rexdd_edge_t ans;
 
     /* Base cases that can directly return a long edge */
@@ -325,6 +324,17 @@ rexdd_edge_t rexdd_AND_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
         return edgeA;
     }
 
+    // Base case 3: one edge is zero edge
+    if ((e1->label.rule==rexdd_rule_X 
+            && rexdd_is_terminal(e1->target) 
+            && !e1->label.complemented ^ rexdd_terminal_value(e1->target)) 
+        || (e2->label.rule==rexdd_rule_X 
+            && rexdd_is_terminal(e2->target) 
+            && !e2->label.complemented ^ rexdd_terminal_value(e2->target))) {
+        edgeA = build_constant(F, lvl, 0);
+        return edgeA;
+    }
+
     uint32_t m1, m2;
     if (rexdd_is_terminal(edge1.target)) {
         m1 = 0;
@@ -437,8 +447,72 @@ rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t l
     edgeA = *e;
     if (F->S.bdd_type == REXBDD || F->S.bdd_type == CFBDD || F->S.bdd_type == CQBDD
         || F->S.bdd_type == CSFBDD || F->S.bdd_type == CSQBDD || F->S.bdd_type == CESRBDD) {
+        // BDDs having complement bit, which is good
         rexdd_edge_com(&edgeA);
+    } else if (F->S.bdd_type == ZBDD || F->S.bdd_type == ESRBDD) {
+        // here we deal with ZBDD having edge rules X and EH0, and ESRBDD having edge rules X, EL0 and EH0
+        if (rexdd_is_terminal(edgeA.target) && rexdd_terminal_value(edgeA.target) == 0) {
+            // no matter the rule
+            edgeA = build_constant(F,lvl, 1);
+        } else if (rexdd_is_terminal(edgeA.target) && rexdd_terminal_value(edgeA.target) == 1) {
+            // terminal value 1
+            if (edgeA.label.rule == rexdd_rule_X) {
+                edgeA = build_constant(F,lvl, 0);
+            } else {
+                // edge rule EH0 or EL0
+                rexdd_unpacked_node_t tmp;
+                rexdd_edge_label_t l;
+                l.rule = rexdd_rule_X;
+                l.complemented = 0;
+                l.swapped = 0;
+                tmp.level = 1;
+                tmp.edge[0].label = l;
+                tmp.edge[0].target = (edgeA.label.rule == rexdd_rule_EH0)?rexdd_make_terminal(0):rexdd_make_terminal(1);
+                tmp.edge[1].label = l;
+                tmp.edge[1].target = (edgeA.label.rule == rexdd_rule_EH0)?rexdd_make_terminal(1):rexdd_make_terminal(0);
+                rexdd_reduce_edge(F, 1, l, tmp, &edgeA);
+                // if incoming edge is a long edge
+                for (uint32_t i=2; i<=lvl; i++) {
+                    tmp.level = i;
+                    tmp.edge[0] = (e->label.rule == rexdd_rule_EH0)?edgeA:build_constant(F,i-1, 1);
+                    tmp.edge[1] = (e->label.rule == rexdd_rule_EH0)?build_constant(F,i-1, 1):edgeA;
+                    rexdd_reduce_edge(F, i, l, tmp, &edgeA);
+                }
+            }
+        } else {
+            // nonterminal node
+            rexdd_unpacked_node_t tmp;
+            rexdd_edge_label_t l;
+            tmp.level = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, edgeA.target));
+
+            rexdd_unpack_low_edge(rexdd_get_packed_for_handle(F->M, edgeA.target), &l);
+            tmp.edge[0].label = l;
+            tmp.edge[0].target = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, edgeA.target));
+            tmp.edge[0] = rexdd_NOT_edge(F, &tmp.edge[0], tmp.level-1);
+            rexdd_unpack_high_edge(rexdd_get_packed_for_handle(F->M, edgeA.target), &l);
+            tmp.edge[1].label = l;
+            tmp.edge[1].target = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, edgeA.target));
+            tmp.edge[1] = rexdd_NOT_edge(F, &tmp.edge[1], tmp.level-1);
+            l.rule = rexdd_rule_X;
+            l.complemented = 0;
+            l.swapped = 0;
+            rexdd_reduce_edge(F, tmp.level, l, tmp, &edgeA);
+            // if incoming edge is a long edge
+            for (uint32_t i=tmp.level+1; i<=lvl; i++) {
+                tmp.level = i;
+                if (e->label.rule == rexdd_rule_X) {
+                    tmp.edge[0] = edgeA;
+                    tmp.edge[1] = edgeA;
+                } else {
+                    // it's EH0 or EL0
+                    tmp.edge[0] = (e->label.rule == rexdd_rule_EH0)?edgeA:build_constant(F,i-1, 1);
+                    tmp.edge[1] = (e->label.rule == rexdd_rule_EH0)?build_constant(F,i-1, 1):edgeA;
+                }
+                rexdd_reduce_edge(F, i, l, tmp, &edgeA);
+            }
+        }
     } else {
+        // here we deal with QBDD, SQBDD, FBDD, SFBDD
         if (rexdd_is_terminal(edgeA.target)) {
             edgeA.target = rexdd_make_terminal(1-rexdd_terminal_value(edgeA.target));
         } else {
@@ -447,12 +521,10 @@ rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t l
             tmp.level = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, edgeA.target));
 
             rexdd_unpack_low_edge(rexdd_get_packed_for_handle(F->M, edgeA.target), &l);
-            // what if edge rule is not X? TBD
             tmp.edge[0].label = l;
             tmp.edge[0].target = rexdd_unpack_low_child(rexdd_get_packed_for_handle(F->M, edgeA.target));
             tmp.edge[0] = rexdd_NOT_edge(F, &tmp.edge[0], tmp.level-1);
             rexdd_unpack_high_edge(rexdd_get_packed_for_handle(F->M, edgeA.target), &l);
-            // what if edge rule is not X? TBD
             tmp.edge[1].label = l;
             tmp.edge[1].target = rexdd_unpack_high_child(rexdd_get_packed_for_handle(F->M, edgeA.target));
             tmp.edge[1] = rexdd_NOT_edge(F, &tmp.edge[1], tmp.level-1);

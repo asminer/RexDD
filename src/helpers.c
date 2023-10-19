@@ -1216,8 +1216,8 @@ rexdd_edge_t build_constant(rexdd_forest_t *F, uint32_t k, int t)
     l.rule = rexdd_rule_X;
     rexdd_unpacked_node_t temp;
     if (F->S.bdd_type == QBDD || F->S.bdd_type == CQBDD
-        || F->S.bdd_type == SQBDD || F->S.bdd_type == CSQBDD) {
-        // for BDDs that no skipping level
+        || F->S.bdd_type == SQBDD || F->S.bdd_type == CSQBDD
+        || F->S.bdd_type == ZBDD) {
         if (k==0) {
             rexdd_set_edge(&ans, rexdd_rule_X, 0, 0, rexdd_make_terminal(t));
             return ans;
@@ -1243,7 +1243,7 @@ rexdd_edge_t build_constant(rexdd_forest_t *F, uint32_t k, int t)
         }
         return ans;
     } else if (F->S.bdd_type == FBDD || F->S.bdd_type == SFBDD
-                || F->S.bdd_type == ZBDD || F->S.bdd_type == ESRBDD) {
+                || F->S.bdd_type == ESRBDD) {
         // for BDDs that no complement bit
         rexdd_set_edge(&ans, rexdd_rule_X ,0 ,0 , rexdd_make_terminal(t));
         return ans;
