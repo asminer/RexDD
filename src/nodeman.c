@@ -252,6 +252,7 @@ void rexdd_sweep_nodeman(rexdd_nodeman_t *M)
             M->not_full_pages = front[i];
         }
     }
+    M->previous_handle = 0;
 }
 
 
