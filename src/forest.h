@@ -50,37 +50,7 @@ typedef struct {
     // TBD
 } rexdd_forest_settings_t;
 // global setting BDD type
-inline void rexdd_type_setting(rexdd_forest_settings_t* s, char type) {
-    s->bdd_type = type;
-    if (type == REXBDD) {
-        s->type_name = "REXBDD";
-    } else if (type == QBDD) {
-        s->type_name = "QBDD";
-    } else if (type == CQBDD) {
-        s->type_name = "CQBDD";
-    } else if (type == SQBDD) {
-        s->type_name = "SQBDD";
-    } else if (type == CSQBDD) {
-        s->type_name = "CSQBDD";
-    } else if (type == FBDD) {
-        s->type_name = "FBDD";
-    } else if (type == CFBDD) {
-        s->type_name = "CFBDD";
-    } else if (type == SFBDD) {
-        s->type_name = "SFBDD";
-    } else if (type == CSFBDD) {
-        s->type_name = "CSFBDD";
-    } else if (type == ZBDD) {
-        s->type_name = "ZBDD";
-    } else if (type == ESRBDD) {
-        s->type_name = "ESRBDD";
-    } else if (type == CESRBDD) {
-        s->type_name = "CESRBDD";
-    }else {
-        printf("Unknown BDD type!\n");
-        exit(1);
-    }
-}
+void rexdd_type_setting(rexdd_forest_settings_t* s, char type);
 
 
 /**

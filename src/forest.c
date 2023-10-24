@@ -6,6 +6,39 @@
 #include "forest.h"
 #include "error.h"
 
+
+void rexdd_type_setting(rexdd_forest_settings_t* s, char type) {
+    s->bdd_type = type;
+    if (type == REXBDD) {
+        s->type_name = "REXBDD";
+    } else if (type == QBDD) {
+        s->type_name = "QBDD";
+    } else if (type == CQBDD) {
+        s->type_name = "CQBDD";
+    } else if (type == SQBDD) {
+        s->type_name = "SQBDD";
+    } else if (type == CSQBDD) {
+        s->type_name = "CSQBDD";
+    } else if (type == FBDD) {
+        s->type_name = "FBDD";
+    } else if (type == CFBDD) {
+        s->type_name = "CFBDD";
+    } else if (type == SFBDD) {
+        s->type_name = "SFBDD";
+    } else if (type == CSFBDD) {
+        s->type_name = "CSFBDD";
+    } else if (type == ZBDD) {
+        s->type_name = "ZBDD";
+    } else if (type == ESRBDD) {
+        s->type_name = "ESRBDD";
+    } else if (type == CESRBDD) {
+        s->type_name = "CESRBDD";
+    }else {
+        printf("Unknown BDD type!\n");
+        exit(1);
+    }
+}
+
 /* ================================================================================================ */
 
 void rexdd_default_forest_settings(uint_fast32_t L, rexdd_forest_settings_t *s)
@@ -212,7 +245,8 @@ if (F->S.bdd_type == REXBDD || F->S.bdd_type == CESRBDD) {
 }
 // #endif
 
-if (F->S.bdd_type == ZBDD || F->S.bdd_type == ESRBDD) {
+// for ZBDD, there is no skipping edge, so <EH0,0,0,0> is allowed
+if (F->S.bdd_type == ESRBDD) {
 // #if defined ZBDD || defined ESRBDD
     if (rexdd_is_terminal(P->edge[0].target) && !rexdd_terminal_value(P->edge[0].target)
         && P->edge[0].label.rule != rexdd_rule_X) {
@@ -646,6 +680,8 @@ if (F->S.bdd_type == ZBDD) {
             reduced->label.rule = rexdd_rule_EH0;
         }
     } else {
+        reduced->label.rule = rexdd_rule_X;
+        rexdd_normalize_node(F, P, reduced);
         reduced->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, P));
     }
 }
