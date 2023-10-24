@@ -460,6 +460,8 @@ rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t l
                 edgeA = build_constant(F,lvl, 0);
             } else {
                 // edge rule EH0 or EL0
+                /*  Check Computing table HERE */
+                if (rexdd_check_CT(F->CT, lvl, &edgeA, &edgeA, &edgeA)) return edgeA;
                 rexdd_unpacked_node_t tmp;
                 rexdd_edge_label_t l;
                 l.rule = rexdd_rule_X;
@@ -478,9 +480,13 @@ rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t l
                     tmp.edge[1] = (e->label.rule == rexdd_rule_EH0)?build_constant(F,i-1, 1):edgeA;
                     rexdd_reduce_edge(F, i, l, tmp, &edgeA);
                 }
+                /* Cache [edge1, edge2: edgeA] HERE */
+                rexdd_cache_CT(F->CT, lvl, e, e, &edgeA);
             }
         } else {
             // nonterminal node
+            /*  Check Computing table HERE */
+            if (rexdd_check_CT(F->CT, lvl, &edgeA, &edgeA, &edgeA)) return edgeA;
             rexdd_unpacked_node_t tmp;
             rexdd_edge_label_t l;
             tmp.level = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, edgeA.target));
@@ -510,12 +516,16 @@ rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t l
                 }
                 rexdd_reduce_edge(F, i, l, tmp, &edgeA);
             }
+            /* Cache [edge1, edge2: edgeA] HERE */
+            rexdd_cache_CT(F->CT, lvl, e, e, &edgeA);
         }
     } else {
         // here we deal with QBDD, SQBDD, FBDD, SFBDD
         if (rexdd_is_terminal(edgeA.target)) {
             edgeA.target = rexdd_make_terminal(1-rexdd_terminal_value(edgeA.target));
         } else {
+            /*  Check Computing table HERE */
+            if (rexdd_check_CT(F->CT, lvl, &edgeA, &edgeA, &edgeA)) return edgeA;
             rexdd_unpacked_node_t tmp;
             rexdd_edge_label_t l;
             tmp.level = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, edgeA.target));
@@ -531,6 +541,8 @@ rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t l
             l = edgeA.label;
             rexdd_reduce_edge(F, lvl, l, tmp, &edgeA);
         }
+        /* Cache [edge1, edge2: edgeA] HERE */
+        rexdd_cache_CT(F->CT, lvl, e, e, &edgeA);
     }
     return edgeA;
 }
