@@ -69,6 +69,10 @@ void rexdd_init_forest(rexdd_forest_t *F, const rexdd_forest_settings_t *s)
     rexdd_init_UT(F->UT, F->M);
     F->CT = malloc(sizeof(rexdd_comp_table_t));
     rexdd_init_CT(F->CT);
+    F->num_ops = 0;
+    F->ct_hits = 0;
+    F->num_nots = 0;
+    F->ct_hits_nots = 0;
     // Initialize list of root edges (empty)
     F->roots = NULL;
 

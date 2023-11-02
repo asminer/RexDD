@@ -80,6 +80,12 @@ struct rexdd_forest_s {
     rexdd_unique_table_t *UT;
     rexdd_comp_table_t *CT;
 
+    uint64_t num_ops;
+    uint64_t ct_hits;
+
+    uint64_t num_nots;
+    uint64_t ct_hits_nots;
+
     // ...
 
     // declared in functions.h
