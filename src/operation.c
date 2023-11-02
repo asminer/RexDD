@@ -104,7 +104,8 @@ rexdd_edge_t rexdd_build_L(rexdd_forest_t* F, rexdd_edge_t* ex, rexdd_edge_t* ey
     re_high = *ey;
     for (uint32_t i=m; i<=n; i++) {
         tmp.level = i;
-        tmp.edge[0] = *ex;
+        rexdd_merge_edge(F, i-1, m-1, l, ex, &tmp.edge[0]);
+        // tmp.edge[0] = *ex;
         tmp.edge[1] = re_high;
         rexdd_reduce_edge(F, i, l, tmp, &re_high);
     }
@@ -160,7 +161,8 @@ rexdd_edge_t rexdd_build_H(rexdd_forest_t* F, rexdd_edge_t* ex, rexdd_edge_t* ey
     re_low = *ex;
     for (uint32_t i=m; i<=n; i++) {
         tmp.level = i;
-        tmp.edge[1] = *ey;
+        rexdd_merge_edge(F, i-1, m-1, l, ey, &tmp.edge[1]);
+        // tmp.edge[1] = *ey;
         tmp.edge[0] = re_low;
         rexdd_reduce_edge(F, i, l, tmp, &re_low);
     }
@@ -307,7 +309,7 @@ rexdd_edge_t rexdd_AND_LH(rexdd_forest_t* F, rexdd_edge_t* e1, rexdd_edge_t* e2,
 
 rexdd_edge_t rexdd_AND_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const rexdd_edge_t* e2, uint32_t lvl)
 {
-
+    F->num_ops++;
     rexdd_edge_t edge1, edge2, edgeA;                         // the answer
     edge1 = *e1;
     edge2 = *e2;
@@ -361,7 +363,35 @@ rexdd_edge_t rexdd_AND_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
     }
 
     /*  Check Computing table HERE */
-    if (rexdd_check_CT(F->CT, lvl, &edge1, &edge2, &edgeA)) return edgeA;
+    if (rexdd_check_CT(F->CT, lvl, &edge1, &edge2, &edgeA)) {
+        F->ct_hits++;
+        return edgeA;
+    }
+
+    // The traditional method 
+    if (F->S.bdd_type == QBDD || F->S.bdd_type == CQBDD || F->S.bdd_type == SQBDD || F->S.bdd_type == CSQBDD
+        || F->S.bdd_type == FBDD || F->S.bdd_type == CFBDD || F->S.bdd_type == SFBDD || F->S.bdd_type == CSFBDD) {
+            rexdd_unpacked_node_t tmp_node;
+            tmp_node.level = lvl;
+            rexdd_edge_t x1, y1, x2, y2;
+            x1 = rexdd_expand_childEdge(F,lvl, &edge1, 0);
+            y1 = rexdd_expand_childEdge(F,lvl, &edge1, 1);
+            x2 = rexdd_expand_childEdge(F,lvl, &edge2, 0);
+            y2 = rexdd_expand_childEdge(F,lvl, &edge2, 1);
+
+            tmp_node.edge[0] = rexdd_AND_edges(F, &x1, &x2, lvl-1);
+            tmp_node.edge[1] = rexdd_AND_edges(F, &y1, &y2, lvl-1);
+            rexdd_edge_label_t l;
+            l.rule = rexdd_rule_X;
+            l.complemented = 0;
+            l.swapped = 0;
+            rexdd_reduce_edge(F, lvl, l, tmp_node, &edgeA);
+            
+            /* Cache [n, edge1, edge2: edgeA] HERE */
+            rexdd_cache_CT(F->CT, lvl, &edge1, &edge2, &edgeA);
+
+            return edgeA;
+        }
 
     // Case that edge1 is a short edge
     if (m1 == lvl) {
@@ -386,31 +416,6 @@ rexdd_edge_t rexdd_AND_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
 
         return edgeA;
     }
-
-    // The traditional method 
-    // if (F->S.bdd_type == QBDD || F->S.bdd_type == CQBDD || F->S.bdd_type == SQBDD || F->S.bdd_type == CSQBDD
-    //     || F->S.bdd_type == FBDD || F->S.bdd_type == CFBDD || F->S.bdd_type == SFBDD || F->S.bdd_type == CSFBDD) {
-    //         rexdd_unpacked_node_t tmp_node;
-    //         tmp_node.level = lvl;
-    //         rexdd_edge_t x1, y1, x2, y2;
-    //         x1 = rexdd_expand_childEdge(F,lvl, &edge1, 0);
-    //         y1 = rexdd_expand_childEdge(F,lvl, &edge1, 1);
-    //         x2 = rexdd_expand_childEdge(F,lvl, &edge2, 0);
-    //         y2 = rexdd_expand_childEdge(F,lvl, &edge2, 1);
-
-    //         tmp_node.edge[0] = rexdd_AND_edges(F, &x1, &x2, lvl-1);
-    //         tmp_node.edge[1] = rexdd_AND_edges(F, &y1, &y2, lvl-1);
-    //         rexdd_edge_label_t l;
-    //         l.rule = rexdd_rule_X;
-    //         l.complemented = 0;
-    //         l.swapped = 0;
-    //         rexdd_reduce_edge(F, lvl, l, tmp_node, &edgeA);
-            
-    //         /* Cache [n, edge1, edge2: edgeA] HERE */
-    //         rexdd_cache_CT(F->CT, lvl, &edge1, &edge2, &edgeA);
-
-    //         return edgeA;
-    //     }
 
     // Here we have m1 >= m2, it's time to decide pattern types and use pattern AND
     char t1, t2;
@@ -443,6 +448,7 @@ rexdd_edge_t rexdd_AND_edges(rexdd_forest_t* F, const rexdd_edge_t* e1, const re
 
 rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t lvl)
 {
+    F->num_nots++;
     rexdd_edge_t edgeA;
     edgeA = *e;
     if (F->S.bdd_type == REXBDD || F->S.bdd_type == CFBDD || F->S.bdd_type == CQBDD
@@ -461,7 +467,10 @@ rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t l
             } else {
                 // edge rule EH0 or EL0
                 /*  Check Computing table HERE */
-                if (rexdd_check_CT(F->CT, lvl, &edgeA, &edgeA, &edgeA)) return edgeA;
+                if (rexdd_check_CT(F->CT, lvl, &edgeA, &edgeA, &edgeA)) {
+                    F->ct_hits_nots++;
+                    return edgeA;
+                }
                 rexdd_unpacked_node_t tmp;
                 rexdd_edge_label_t l;
                 l.rule = rexdd_rule_X;
@@ -486,7 +495,10 @@ rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t l
         } else {
             // nonterminal node
             /*  Check Computing table HERE */
-            if (rexdd_check_CT(F->CT, lvl, &edgeA, &edgeA, &edgeA)) return edgeA;
+            if (rexdd_check_CT(F->CT, lvl, &edgeA, &edgeA, &edgeA)) {
+                F->ct_hits_nots++;
+                return edgeA;
+            }
             rexdd_unpacked_node_t tmp;
             rexdd_edge_label_t l;
             tmp.level = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, edgeA.target));
@@ -525,7 +537,10 @@ rexdd_edge_t rexdd_NOT_edge(rexdd_forest_t* F, const rexdd_edge_t* e, uint32_t l
             edgeA.target = rexdd_make_terminal(1-rexdd_terminal_value(edgeA.target));
         } else {
             /*  Check Computing table HERE */
-            if (rexdd_check_CT(F->CT, lvl, &edgeA, &edgeA, &edgeA)) return edgeA;
+            if (rexdd_check_CT(F->CT, lvl, &edgeA, &edgeA, &edgeA)) {
+                F->ct_hits_nots++;
+                return edgeA;
+            }
             rexdd_unpacked_node_t tmp;
             rexdd_edge_label_t l;
             tmp.level = rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, edgeA.target));
