@@ -312,22 +312,20 @@ void handleNodes(rexdd_forest_t *F, rexdd_node_handle_t handle, rexdd_node_handl
 
 int countNodes(rexdd_forest_t *F, rexdd_node_handle_t handle)
 {
-    rexdd_node_handle_t nodes[1<<5];
-    for (int i=0; i<1<<(F->S.num_levels); i++) {
-        nodes[i]=0;
-    }
-    int count = 0;
-    if (rexdd_is_terminal(handle)) {
-        count = 0;
-    } else {
-        handleNodes(F,handle,nodes);
-        for (int i=1; i<1<<5; i++) {
-            if (nodes[i]!=0) {
-                count++;
+    unmark_forest(F);
+    mark_nodes(F, handle);
+    uint_fast64_t q, n;
+    uint64_t num_nodes = 0;
+    for (q=0; q<F->M->pages_size; q++) {
+        const rexdd_nodepage_t *page = F->M->pages+q;
+        for (n=0; n<page->first_unalloc; n++) {
+            if (rexdd_is_packed_marked(page->chunk+n)) {
+                num_nodes++;
             }
-        }
-    }
-    return count;
+        } // for n
+    } // for p
+    unmark_forest(F);
+    return num_nodes;
 }
 
 int countTerm(rexdd_forest_t *F, rexdd_node_handle_t handle)
