@@ -32,6 +32,7 @@ typedef struct
     rexdd_edge_in_ct* table;       // initialized if type is 'A', otherwise, 0.
 
     uint_fast64_t num_entries;      // the number of valid entries
+    uint_fast64_t num_overwrite;    // the number of overwritings
     int size_index;                 // index of primes for table size
 } rexdd_comp_table_t;
 
@@ -78,7 +79,10 @@ static inline uint_fast64_t
 rexdd_hash_edges(const uint32_t lvl, const rexdd_edge_t* edge1, const rexdd_edge_t* edge2, uint_fast64_t m)
 {
     uint64_t h;
-    h = (edge1->target & edge2->target) % m;
+    // h = (edge1->target & edge2->target) % m;
+    h = edge1->target % m;
+    h = (h<<32) | (edge2->target % m);
+    h = h % m;
     h = ((h<<32) | lvl) % m;
     if (0 == (m & ~(((uint64_t)0x01 << 32) - 1)) ) {
         /*
