@@ -67,12 +67,25 @@ void rexdd_init_forest(rexdd_forest_t *F, const rexdd_forest_settings_t *s)
     rexdd_init_nodeman(F->M,0);
     F->UT = malloc(sizeof(rexdd_unique_table_t));
     rexdd_init_UT(F->UT, F->M);
-    F->CT = malloc(sizeof(rexdd_comp_table_t));
-    rexdd_init_CT(F->CT);
-    F->num_ops = 0;
-    F->ct_hits = 0;
+    F->CT_AND = malloc(sizeof(rexdd_comp_table_t));
+    rexdd_init_CT(F->CT_AND);
+    F->CT_OR = malloc(sizeof(rexdd_comp_table_t));
+    rexdd_init_CT(F->CT_OR);
+    F->CT_NOT = malloc(sizeof(rexdd_comp_table_t));
+    rexdd_init_CT(F->CT_NOT);
+
+    F->num_ands = 0;
+    F->ct_and_hits = 0;
+    F->num_and_terms = 0;
+    // F->num_and_miss = 0;
+    F->num_ors = 0;
+    F->ct_or_hits = 0;
+    F->num_or_terms = 0;
+    // F->num_or_miss = 0;
     F->num_nots = 0;
-    F->ct_hits_nots = 0;
+    F->ct_not_hits = 0;
+
+    F->is_trace = 0;
     // Initialize list of root edges (empty)
     F->roots = NULL;
 
@@ -88,8 +101,12 @@ void rexdd_free_forest(rexdd_forest_t *F)
     free(F->UT);
     rexdd_free_nodeman(F->M);
     free(F->M);
-    rexdd_free_CT(F->CT);
-    free(F->CT);
+    rexdd_free_CT(F->CT_AND);
+    free(F->CT_AND);
+    rexdd_free_CT(F->CT_OR);
+    free(F->CT_OR);
+    rexdd_free_CT(F->CT_NOT);
+    free(F->CT_NOT);
 }
 
 /* ================================================================================================ */
@@ -148,6 +165,7 @@ if (F->S.bdd_type == REXBDD || F->S.bdd_type == CSQBDD || F->S.bdd_type == CSFBD
             }
         }
     }
+
     if (P->edge[0].target != P->edge[1].target) {
         out->label.swapped = P->edge[0].target > P->edge[1].target;
     } else if (P->edge[0].label.swapped != P->edge[1].label.swapped) {
@@ -192,6 +210,39 @@ if (F->S.bdd_type == REXBDD || F->S.bdd_type == CSQBDD || F->S.bdd_type == CSFBD
     }
     if (out->label.swapped) {
         rexdd_node_sw (P);
+    }
+} else if (F->S.bdd_type == ZBDD) {
+    uint_fast32_t low_target_lvl = 0, high_target_lvl = 0;
+    low_target_lvl = (rexdd_is_terminal(P->edge[0].target)?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, P->edge[0].target)));
+    high_target_lvl = (rexdd_is_terminal(P->edge[1].target)?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, P->edge[1].target)));
+    rexdd_node_handle_t tmp_handle;
+    // if low edge is long X edge to nonterminal or ONE terminal
+    if (P->level - low_target_lvl > 1 && P->edge[0].label.rule == rexdd_rule_X && P->edge[0].target != rexdd_make_terminal(0)) {
+        tmp_handle = P->edge[0].target;
+        rexdd_unpacked_node_t tmp;
+        for (uint_fast32_t i=low_target_lvl+1; i<P->level; i++) {
+            tmp.level = i;
+            tmp.edge[0] = P->edge[0];
+            tmp.edge[0].target = tmp_handle;
+            tmp.edge[1] = P->edge[1];
+            tmp.edge[1].target = tmp_handle;
+            tmp_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, &tmp));
+        }
+        P->edge[0].target = tmp_handle;
+    }
+    // if high edge is long X edge to nonterminal or ONE terminal
+    if (P->level - high_target_lvl > 1 && P->edge[1].label.rule == rexdd_rule_X && P->edge[1].target != rexdd_make_terminal(0)) {
+        tmp_handle = P->edge[1].target;
+        rexdd_unpacked_node_t tmp;
+        for (uint_fast32_t i=high_target_lvl+1; i<P->level; i++) {
+            tmp.level = i;
+            tmp.edge[0] = P->edge[0];
+            tmp.edge[0].target = tmp_handle;
+            tmp.edge[1] = P->edge[1];
+            tmp.edge[1].target = tmp_handle;
+            tmp_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, &tmp));
+        }
+        P->edge[1].target = tmp_handle;
     }
 }
 // #else // QBDD || FBDD || ZBDD || ESRBDD
@@ -678,9 +729,11 @@ if (F->S.bdd_type == ZBDD) {
     reduced->label.swapped = 0;
     if (P->edge[1].target == rexdd_make_terminal(0)) {
         reduced->target = P->edge[0].target;
-        if (rexdd_is_terminal(P->edge[0].target) && !rexdd_terminal_value(P->edge[0].target)) {
-            reduced->label.rule = rexdd_rule_X;
-        } else {
+        if (!(rexdd_is_terminal(P->edge[0].target) && !rexdd_terminal_value(P->edge[0].target))) {
+            // if (P->level - (rexdd_is_terminal(P->edge[0].target)?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, P->edge[0].target)))>1
+            //     && P->edge[0].label.rule == rexdd_rule_X) {
+            //     printf("low edge is long X in reduce node!\n");
+            // }
             reduced->label.rule = rexdd_rule_EH0;
         }
     } else {
@@ -1007,6 +1060,26 @@ void rexdd_merge_edge(
         }
         out->label = temp.label;
         out->target = temp.target;
+    }
+    if (F->S.bdd_type == ZBDD) {
+        uint32_t target_lvl;
+        target_lvl = (rexdd_is_terminal(out->target)?0:rexdd_unpack_level(rexdd_get_packed_for_handle(F->M, out->target)));
+        rexdd_node_handle_t tmp_handle;
+        if (out->label.rule == rexdd_rule_X && m-target_lvl>0) {
+            if (out->target != rexdd_make_terminal(0)) {
+                tmp_handle = out->target;
+                rexdd_unpacked_node_t tmp;
+                for (uint_fast32_t i=target_lvl+1; i<=m; i++) {
+                    tmp.level = i;
+                    tmp.edge[0] = *out;
+                    tmp.edge[0].target = tmp_handle;
+                    tmp.edge[1] = *out;
+                    tmp.edge[1].target = tmp_handle;
+                    tmp_handle = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, &tmp));
+                }
+                out->target = tmp_handle;
+            }
+        }
     }
 }
 

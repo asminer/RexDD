@@ -78,13 +78,28 @@ struct rexdd_forest_s {
     rexdd_forest_settings_t S;
     rexdd_nodeman_t *M;
     rexdd_unique_table_t *UT;
-    rexdd_comp_table_t *CT;
 
-    uint64_t num_ops;
-    uint64_t ct_hits;
+    // AND computing table
+    rexdd_comp_table_t *CT_AND;
+    uint64_t num_ands;
+    uint64_t ct_and_hits;
+    uint64_t num_and_terms;
+//     uint64_t num_and_miss;   // not needed?
 
+    // OR computing table
+    rexdd_comp_table_t *CT_OR;
+    uint64_t num_ors;
+    uint64_t ct_or_hits;
+    uint64_t num_or_terms;
+//     uint64_t num_or_miss;    // not needed?
+
+    // NOT computing table
+    rexdd_comp_table_t *CT_NOT;
     uint64_t num_nots;
-    uint64_t ct_hits_nots;
+    uint64_t ct_not_hits;
+    
+
+    bool is_trace;
 
     // ...
 
