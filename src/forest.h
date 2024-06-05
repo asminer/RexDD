@@ -8,7 +8,7 @@
 #include "computing.h"
 #include <stdlib.h>
 
-#define REXBDD  0
+#define REXBDD  0       // push-up and swap-one
 #define QBDD    1
 #define CQBDD   2
 #define SQBDD   3
@@ -20,6 +20,9 @@
 #define ZBDD    9
 #define ESRBDD  10
 #define CESRBDD 11
+#define REX_UA  12      // push-up and swap-all
+#define REX_DO  13      // push-down and swap-one
+#define REX_DA  14      // push-down and swap-all
 
 /********************************************************************
  *

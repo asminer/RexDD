@@ -33,7 +33,13 @@ void rexdd_type_setting(rexdd_forest_settings_t* s, char type) {
         s->type_name = "ESRBDD";
     } else if (type == CESRBDD) {
         s->type_name = "CESRBDD";
-    }else {
+    } else if (type == REX_UA) {
+        s->type_name = "Rex(Push-up & swap-all)";
+    } else if (type == REX_DO) {
+        s->type_name = "Rex(Push-down & swap-one)";
+    } else if (type == REX_UA) {
+        s->type_name = "Rex(Push-down & swap-all)";
+    } else {
         printf("Unknown BDD type!\n");
         exit(1);
     }
@@ -258,26 +264,31 @@ void rexdd_reduce_node(
         rexdd_edge_t            *reduced)
 {
     rexdd_sanity1(reduced, "null reduced esge");
+/*
+ *  For BDDs with complement bit, forbidding terminal 1
+ */
 if (F->S.bdd_type == CQBDD || F->S.bdd_type == CSQBDD 
     || F->S.bdd_type == CFBDD || F->S.bdd_type == CSFBDD 
     || F->S.bdd_type == CESRBDD || F->S.bdd_type == REXBDD) {
-// #if defined C_QBDD || defined CS_QBDD || defined C_FBDD || defined CS_FBDD || defined CESRBDD || defined REXBDD
     // If the target node of unpacked node P's child edge is terminal 1, inverse the complement bit of this child edge
     if (rexdd_is_terminal(P->edge[0].target)
         && (rexdd_terminal_value(P->edge[0].target)==1)) {
-            P->edge[0].label.complemented = !P->edge[0].label.complemented;
+            // P->edge[0].label.complemented = !P->edge[0].label.complemented;
+            rexdd_edge_com(&P->edge[0]);
             P->edge[0].target = rexdd_make_terminal(0);
         }
     if (rexdd_is_terminal(P->edge[1].target)
         && (rexdd_terminal_value(P->edge[1].target)==1)) {
-            P->edge[1].label.complemented = !P->edge[1].label.complemented;
+            // P->edge[1].label.complemented = !P->edge[1].label.complemented;
+            rexdd_edge_com(&P->edge[1]);
             P->edge[1].target = rexdd_make_terminal(0);
         }
 }
-// #endif
 
+/*
+ *  Constant edge
+ */
 if (F->S.bdd_type == REXBDD || F->S.bdd_type == CESRBDD) {
-// #if defined REXBDD || defined CESRBDD
     /* -----------------------------------------------------------------------------------------
         Constant edge: the edges <ELc, 0, c, 0>, <EHc, 0, c, 0>, <ALc, 0, c, 0>, <AHc, 0, c, 0>
         with any complement bit c can be uniformly represented by <X, 0, c, 0>
@@ -298,11 +309,8 @@ if (F->S.bdd_type == REXBDD || F->S.bdd_type == CESRBDD) {
             P->edge[1].label.rule = rexdd_rule_X;
         }
 }
-// #endif
-
 // for ZBDD, there is no skipping edge, so <EH0,0,0,0> is allowed
 if (F->S.bdd_type == ESRBDD) {
-// #if defined ZBDD || defined ESRBDD
     if (rexdd_is_terminal(P->edge[0].target) && !rexdd_terminal_value(P->edge[0].target)
         && P->edge[0].label.rule != rexdd_rule_X) {
             P->edge[0].label.rule = rexdd_rule_X;
@@ -312,10 +320,9 @@ if (F->S.bdd_type == ESRBDD) {
             P->edge[1].label.rule = rexdd_rule_X;
         }
 }
-// #endif
 
+///--------------------------------------------------REXBDD-------------------------------------------------------------
 if (F->S.bdd_type == REXBDD) {
-// #ifdef REXBDD
     // The level difference between unpacked node and both child nodes
     uint_fast32_t ln, hn;
 
@@ -694,8 +701,9 @@ if (F->S.bdd_type == REXBDD) {
         reduced->target = handle;
     }
 }
-// #endif
+///--------------------------------------------------END REXBDD-------------------------------------------------------------
 
+///-------------------------------------------------------QBDDs-------------------------------------------------------------
 if (F->S.bdd_type == CQBDD || F->S.bdd_type == CSQBDD || F->S.bdd_type == QBDD || F->S.bdd_type == SQBDD) {
 // #if defined C_QBDD || defined CS_QBDD || defined QBDD || defined S_QBDD
     reduced->label.rule = rexdd_rule_X;
@@ -703,8 +711,9 @@ if (F->S.bdd_type == CQBDD || F->S.bdd_type == CSQBDD || F->S.bdd_type == QBDD |
     rexdd_normalize_node(F, P, reduced);
     reduced->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, P));
 }
-// #endif
+///--------------------------------------------------END QBDDs--------------------------------------------------------------
 
+///-------------------------------------------------------FBDDs-------------------------------------------------------------
 if (F->S.bdd_type == CFBDD || F->S.bdd_type == CSFBDD || F->S.bdd_type == FBDD || F->S.bdd_type == SFBDD) {
 // #if defined C_FBDD || defined CS_FBDD || defined FBDD || defined S_FBDD
     reduced->label.rule = rexdd_rule_X;
@@ -720,8 +729,9 @@ if (F->S.bdd_type == CFBDD || F->S.bdd_type == CSFBDD || F->S.bdd_type == FBDD |
         reduced->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, P));
     }
 }
-// #endif
+///---------------------------------------------------END FBDDs-------------------------------------------------------------
 
+///-------------------------------------------------------ZBDD--------------------------------------------------------------
 if (F->S.bdd_type == ZBDD) {
 // #ifdef ZBDD
     reduced->label.rule = rexdd_rule_X;
@@ -742,8 +752,9 @@ if (F->S.bdd_type == ZBDD) {
         reduced->target = rexdd_insert_UT(F->UT, rexdd_nodeman_get_handle(F->M, P));
     }
 }
-// #endif
+///---------------------------------------------------END ZBDD--------------------------------------------------------------
 
+///----------------------------------------------------ESRBDDs--------------------------------------------------------------
 if (F->S.bdd_type == ESRBDD || F->S.bdd_type == CESRBDD) {
 // #if defined ESRBDD || defined CESRBDD
     uint_fast32_t ln, hn;
@@ -803,7 +814,7 @@ if (F->S.bdd_type == ESRBDD || F->S.bdd_type == CESRBDD) {
         }
     }
 }
-// #endif
+///------------------------------------------------END ESRBDDs--------------------------------------------------------------
 
 
 }
@@ -1158,6 +1169,11 @@ void rexdd_reduce_edge(
         rexdd_reduce_node(F, &p, &reduced);
         // end = clock();
         // printf("** reduc_node time: %d clocks **\n", (int)(end-start));
+
+        if (F->S.bdd_type == REX_DO) {
+            // push-down and swap-one
+
+        }
         rexdd_merge_edge(F, m, p.level, l, &reduced, out);
     }
 }
