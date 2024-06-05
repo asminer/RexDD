@@ -71,6 +71,22 @@ static inline rexdd_rule_t rexdd_rule_com_t (rexdd_rule_t R)
     }
 }
 
+/****************************************************************************
+ *
+ *  The swap-all of reduction rules
+ *
+ *
+ */
+static inline rexdd_rule_t rexdd_rule_swap_t (rexdd_rule_t R) {
+    if (R == rexdd_rule_X) {
+        return R;
+    } else if (R < 4) {
+        return (rexdd_rule_t)(R + 4);
+    } else {
+        return (rexdd_rule_t)(R - 4);
+    }
+}
+
 
 /****************************************************************************
  *
