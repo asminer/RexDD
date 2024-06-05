@@ -42,8 +42,9 @@ static const uint_fast64_t primes[] = {
 void rexdd_init_CT(rexdd_comp_table_t *CT)
 {
     rexdd_sanity1(CT, "Null unique table");
-    CT->size_index = 0;
+    CT->size_index = 0; // 9
     CT->num_entries = 0;
+    CT->num_overwrite = 0;
     CT->table = malloc(primes[0]*sizeof(rexdd_edge_in_ct));
     if (!CT->table) {
         printf("Fail malloc table to initialize\n");
@@ -130,7 +131,7 @@ void rexdd_cache_CT(rexdd_comp_table_t *CT, uint32_t lvl, rexdd_edge_t *edge1, r
      *  Check if we should enlarge the table.
      *  when number of entries greater than half of size
      */
-    if (CT->num_entries > primes[CT->size_index] / 2) {
+    if (CT->num_entries > primes[CT->size_index] / 1.5) {
         CT->size_index++;
         uint_fast64_t new_size = primes[CT->size_index] ? primes[CT->size_index] : ((uint64_t)0x01 << 60);
         CT->table = realloc(CT->table, new_size*sizeof(rexdd_edge_in_ct));
@@ -154,6 +155,7 @@ void rexdd_cache_CT(rexdd_comp_table_t *CT, uint32_t lvl, rexdd_edge_t *edge1, r
         /*
          * Non-empty slot, so we overwrite it
          */
+        CT->num_overwrite++;
         rexdd_sanity1(CT->table[hash].edge1 && CT->table[hash].edge2, "Null edges pair in computing table");
     }
     CT->table[hash].lvl = lvl;

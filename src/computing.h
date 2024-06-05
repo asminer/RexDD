@@ -5,6 +5,7 @@
  *  Comoputing table.
  */
 #include "nodeman.h"
+// #include "spooky.h"
 
 /*
  *  Entry for AND computing table
@@ -17,6 +18,13 @@ typedef struct
     rexdd_edge_t *edge2;
     rexdd_edge_t *edgeA;
 } rexdd_edge_in_ct;
+
+// typedef struct
+// {
+//     uint32_t        lvl;
+//     rexdd_edge_t    edge1;
+//     rexdd_edge_t    edge2;
+// } rexdd_hash_message_in_ct;
 
 /****************************************************************************
  *
@@ -78,7 +86,13 @@ void rexdd_sweep_CT(rexdd_comp_table_t *CT, rexdd_nodeman_t *M);
 static inline uint_fast64_t 
 rexdd_hash_edges(const uint32_t lvl, const rexdd_edge_t* edge1, const rexdd_edge_t* edge2, uint_fast64_t m)
 {
+    // rexdd_hash_message_in_ct message;
+    // message.lvl = lvl;
+    // message.edge1 = *edge1;
+    // message.edge2 = *edge2;
+
     uint64_t h;
+    // return spooky_hash64(&message, sizeof(rexdd_hash_message_in_ct), 123456)%m;
     // h = (edge1->target & edge2->target) % m;
     h = edge1->target % m;
     h = (h<<32) | (edge2->target % m);
